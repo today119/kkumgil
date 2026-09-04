@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0F172A">
+<title>꿈길 답사 · 지점 찍기</title>
+<style>
+  :root{
+    --bg:#0F172A; --panel:#1E293B; --panel2:#334155;
+    --ink:#F8FAFC; --sub:#94A3B8; --line:#334155;
+    --ok:#22C55E; --warn:#F59E0B; --bad:#EF4444;
+    --fork:#EF4444; --spot:#A855F7; --wc:#0EA5E9;
+    --car:#22C55E; --risk:#F97316; --rest:#14B8A6;
+    --safe-b:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;height:100dvh}
+  body{
+    background:var(--bg);color:var(--ink);overflow:hidden;
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    -webkit-user-select:none;user-select:none;
+  }
+  button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer}
+
+  #app{height:100%;display:flex;flex-direction:column}
+
+  /* 상태바 */
+  .status{
+    flex:0 0 auto;display:flex;align-items:center;gap:10px;
+    padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 10px;background:var(--panel);
+    border-bottom:1px solid var(--line);
+  }
+  .gps{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800}
+  .led{width:12px;height:12px;border-radius:50%;background:var(--sub);flex:0 0 auto}
+  .led.ok{background:var(--ok);box-shadow:0 0 10px var(--ok)}
+  .led.mid{background:var(--warn);box-shadow:0 0 10px var(--warn)}
+  .led.bad{background:var(--bad);box-shadow:0 0 10px var(--bad);animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.35}}
+  .acc{font-variant-numeric:tabular-nums}
+  .count{margin-left:auto;font-size:15px;font-weight:800;color:var(--sub)}
+  .count b{color:var(--ink);font-size:19px}
+
+  /* 지도 */
+  #mapWrap{flex:1 1 auto;position:relative;min-height:0;background:#0B1220}
+  #map{position:absolute;inset:0}
+  #mapFallback{
+    position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+    gap:10px;text-align:center;padding:24px;color:var(--sub);font-size:15px;line-height:1.6;
+  }
+  #mapFallback b{color:var(--ink);font-size:17px}
+  .recenter{
+    position:absolute;right:12px;bottom:12px;z-index:5;
+    width:52px;height:52px;border-radius:50%;background:var(--panel);
+    border:2px solid var(--line);font-size:22px;display:grid;place-items:center;
+    box-shadow:0 6px 18px rgba(0,0,0,.45);
+  }
+
+  /* 버튼 그리드 */
+  .pad{
+    flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+    padding:10px;background:var(--panel);border-top:1px solid var(--line);
+  }
+  .cat{
+    min-height:74px;border-radius:16px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:3px;font-weight:800;font-size:14px;
+    color:#fff;transition:transform .07s;line-height:1.15;
+  }
+  .cat:active{transform:scale(.94)}
+  .cat .ico{font-size:24px}
+  .cat[disabled]{opacity:.4}
+  .c-fork{background:var(--fork)} .c-spot{background:var(--spot)} .c-wc{background:var(--wc)}
+  .c-car{background:var(--car)} .c-risk{background:var(--risk)} .c-rest{background:var(--rest)}
+
+  /* 하단 바 */
+  .bar{
+    flex:0 0 auto;display:flex;gap:8px;padding:0 10px calc(10px + var(--safe-b));
+    background:var(--panel);
+  }
+  .bar button{
+    flex:1;min-height:50px;border-radius:14px;background:var(--panel2);
+    font-size:15px;font-weight:800;border:1px solid var(--line);
+  }
+  .bar button:active{background:#475569}
+
+  /* 토스트 */
+  #toast{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:calc(150px + var(--safe-b));
+    z-index:60;background:#F8FAFC;color:#0F172A;padding:14px 20px;border-radius:16px;
+    font-size:17px;font-weight:800;box-shadow:0 10px 30px rgba(0,0,0,.5);
+    display:none;text-align:center;line-height:1.4;max-width:88vw;
+  }
+  #toast.show{display:block;animation:pop .25s}
+  @keyframes pop{from{transform:translateX(-50%) scale(.9);opacity:0}}
+  #toast.warn{background:#FEF3C7;color:#78350F}
+
+  /* 시트 */
+  .sheet{
+    position:fixed;inset:0;z-index:70;background:rgba(15,23,42,.96);
+    display:none;flex-direction:column;
+  }
+  .sheet.show{display:flex}
+  .sheet-head{
+    flex:0 0 auto;display:flex;align-items:center;gap:12px;
+    padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 14px;border-bottom:1px solid var(--line);
+  }
+  .sheet-head h2{font-size:20px;font-weight:900;letter-spacing:-.02em}
+  .sheet-head .x{margin-left:auto;font-size:26px;width:44px;height:44px;border-radius:12px;background:var(--panel2)}
+  .sheet-body{flex:1 1 auto;overflow:auto;padding:12px 16px calc(20px + var(--safe-b));-webkit-overflow-scrolling:touch}
+
+  .item{
+    display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:14px;
+    background:var(--panel);margin-bottom:8px;
+  }
+  .badge{
+    flex:0 0 auto;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;
+    font-size:19px;color:#fff;
+  }
+  .item .info{flex:1 1 auto;min-width:0}
+  .item .t1{font-size:16px;font-weight:800;display:flex;gap:8px;align-items:baseline}
+  .item .t1 .no{color:var(--sub);font-variant-numeric:tabular-nums}
+  .item .t2{font-size:13px;color:var(--sub);margin-top:3px;font-variant-numeric:tabular-nums;word-break:break-all}
+  .item .memo{font-size:14px;margin-top:6px;color:#CBD5E1;white-space:pre-wrap}
+  .item .acts{display:flex;flex-direction:column;gap:6px;flex:0 0 auto}
+  .item .acts button{
+    width:56px;min-height:34px;border-radius:10px;background:var(--panel2);
+    font-size:13px;font-weight:800;border:1px solid var(--line);
+  }
+  .item .acts .del{background:#7F1D1D;border-color:#991B1B}
+
+  .empty{text-align:center;color:var(--sub);padding:50px 20px;font-size:15px;line-height:1.7}
+
+  textarea,input[type=text]{
+    width:100%;background:var(--panel);color:var(--ink);border:2px solid var(--line);
+    border-radius:14px;padding:14px;font-size:17px;font-family:inherit;line-height:1.5;
+  }
+  textarea:focus,input:focus{outline:none;border-color:var(--wc)}
+  .row{display:flex;gap:8px;margin-top:12px}
+  .row button{flex:1;min-height:52px;border-radius:14px;font-size:16px;font-weight:800;background:var(--panel2);border:1px solid var(--line)}
+  .row button.primary{background:var(--wc);border-color:var(--wc);color:#04263A}
+  .hint{color:var(--sub);font-size:14px;line-height:1.7;margin-top:14px}
+  .hint b{color:var(--ink)}
+  pre{
+    background:#020617;border:1px solid var(--line);border-radius:12px;padding:12px;
+    font-size:11px;line-height:1.5;overflow:auto;max-height:34vh;white-space:pre-wrap;word-break:break-all;
+    color:#94A3B8;-webkit-user-select:text;user-select:text;
+  }
+  .warnbox{background:#422006;border:1px solid #78350F;color:#FDE68A;border-radius:12px;padding:12px;font-size:14px;line-height:1.6;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="status">
+    <div class="gps"><span class="led" id="led"></span><span id="gpsText">GPS 확인 중…</span></div>
+    <div class="count">기록 <b id="cnt">0</b></div>
+  </div>
+
+  <div id="mapWrap">
+    <div id="map"></div>
+    <div id="mapFallback">
+      <b>지도를 불러오지 못했습니다</b>
+      인터넷이 없어도 <b>지점 기록은 정상 작동</b>합니다.<br>그대로 버튼을 눌러 기록하세요.
+    </div>
+    <button class="recenter" id="recenter" title="내 위치로">◎</button>
+  </div>
+
+  <div class="pad">
+    <button class="cat c-fork" data-type="fork"><span class="ico">📍</span>갈림길</button>
+    <button class="cat c-spot" data-type="spot"><span class="ico">🏛</span>명소</button>
+    <button class="cat c-wc"   data-type="wc"><span class="ico">🚻</span>화장실</button>
+    <button class="cat c-car"  data-type="car"><span class="ico">🚗</span>차량진입</button>
+    <button class="cat c-risk" data-type="risk"><span class="ico">⚠️</span>위험</button>
+    <button class="cat c-rest" data-type="rest"><span class="ico">☕</span>휴식</button>
+  </div>
+
+  <div class="bar">
+    <button id="listBtn">📋 목록</button>
+    <button id="exportBtn">💾 내보내기</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- 목록 -->
+<div class="sheet" id="listSheet">
+  <div class="sheet-head"><h2>기록한 지점</h2><button class="x" data-close>×</button></div>
+  <div class="sheet-body" id="listBody"></div>
+</div>
+
+<!-- 메모 -->
+<div class="sheet" id="memoSheet">
+  <div class="sheet-head"><h2 id="memoTitle">메모</h2><button class="x" data-close>×</button></div>
+  <div class="sheet-body">
+    <textarea id="memoText" rows="5" placeholder="예) 왼쪽 등산로로. 오른쪽은 막다른 길&#10;예) 여기 화장실 2칸, 물 나옴"></textarea>
+    <div class="row">
+      <button data-close>취소</button>
+      <button class="primary" id="memoSave">저장</button>
+    </div>
+    <p class="hint">메모는 나중에 목록에서 언제든 고칠 수 있습니다. <b>급하면 그냥 건너뛰세요</b> — 좌표와 시각은 이미 저장됐습니다.</p>
+  </div>
+</div>
+
+<!-- 내보내기 -->
+<div class="sheet" id="exportSheet">
+  <div class="sheet-head"><h2>내보내기</h2><button class="x" data-close>×</button></div>
+  <div class="sheet-body">
+    <div class="warnbox">답사 끝나면 <b>꼭 내보내서 보관</b>하세요. 브라우저 데이터를 지우면 기록이 사라집니다.</div>
+    <div class="row" style="margin-top:0">
+      <button class="primary" id="dlJson">JSON 저장</button>
+      <button class="primary" id="dlGpx">GPX 저장</button>
+    </div>
+    <div class="row">
+      <button id="shareBtn">📤 공유</button>
+      <button id="copyBtn">📋 복사</button>
+    </div>
+    <p class="hint">
+      <b>가장 확실한 방법:</b> 「복사」를 누르고 카카오톡 나에게 보내기로 붙여넣으세요.<br>
+      「공유」는 카톡·메일로 파일을 바로 보낼 수 있습니다(기기에 따라 안 될 수 있음).
+    </p>
+    <pre id="preview"></pre>
+    <div class="row"><button id="clearBtn" style="background:#7F1D1D;border-color:#991B1B">전체 삭제</button></div>
+  </div>
+</div>
+
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=9316a3f1cf1a1915fe2f6d40521ce712&autoload=false"></script>
+<script>
+(function(){
+  "use strict";
+
+  var TYPES = {
+    fork:{name:"갈림길", ico:"📍", color:"#EF4444"},
+    spot:{name:"명소",   ico:"🏛", color:"#A855F7"},
+    wc:  {name:"화장실", ico:"🚻", color:"#0EA5E9"},
+    car: {name:"차량진입",ico:"🚗", color:"#22C55E"},
+    risk:{name:"위험",   ico:"⚠️", color:"#F97316"},
+    rest:{name:"휴식",   ico:"☕", color:"#14B8A6"}
+  };
+  var KEY = "kkumgil_survey_v1";
+  var ACC_GOOD = 15, ACC_OK = 30;      // m
+
+  var $ = function(id){ return document.getElementById(id); };
+  var points = load();
+  var last = null;                      // 최근 위치 {lat,lng,acc,t}
+  var map = null, meMarker = null, meCircle = null, markers = [], follow = true, mapReady = false;
+
+  function load(){
+    try{ var v = JSON.parse(localStorage.getItem(KEY)); return Array.isArray(v) ? v : []; }
+    catch(e){ return []; }
+  }
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify(points)); }
+    catch(e){ toast("저장 공간이 부족합니다. 내보내기 후 정리하세요", true, 4000); }
+  }
+
+  /* ---------- 지도 ---------- */
+  var mapTimer = setTimeout(failMap, 8000);
+  function failMap(){
+    if(mapReady) return;
+    clearTimeout(mapTimer);
+    $("map").style.display = "none";
+    $("mapFallback").style.display = "flex";
+  }
+  if(window.kakao && kakao.maps){
+    kakao.maps.load(function(){
+      try{
+        clearTimeout(mapTimer);
+        map = new kakao.maps.Map($("map"), {
+          center: new kakao.maps.LatLng(37.4938, 126.5210),  // 영종도 부근
+          level: 4
+        });
+        kakao.maps.event.addListener(map, "dragstart", function(){ follow = false; });
+        mapReady = true;
+        drawAll();
+      }catch(e){ failMap(); }
+    });
+  }else{ failMap(); }
+
+  function drawMe(){
+    if(!mapReady || !last) return;
+    var pos = new kakao.maps.LatLng(last.lat, last.lng);
+    if(!meMarker){
+      meMarker = new kakao.maps.Marker({position:pos, map:map, zIndex:10});
+      meCircle = new kakao.maps.Circle({
+        center:pos, radius:last.acc, map:map,
+        strokeWeight:2, strokeColor:"#0EA5E9", strokeOpacity:.8,
+        fillColor:"#0EA5E9", fillOpacity:.15, zIndex:1
+      });
+    }else{
+      meMarker.setPosition(pos); meCircle.setPosition(pos); meCircle.setRadius(last.acc);
+    }
+    if(follow) map.setCenter(pos);
+  }
+  function drawAll(){
+    if(!mapReady) return;
+    markers.forEach(function(m){ m.setMap(null); });
+    markers = [];
+    points.forEach(function(p, i){
+      var t = TYPES[p.type] || TYPES.spot;
+      var el = '<div style="background:'+t.color+';color:#fff;font-weight:800;font-size:12px;'+
+               'padding:4px 8px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.5)">'+
+               (i+1)+' '+t.ico+'</div>';
+      var ov = new kakao.maps.CustomOverlay({
+        position:new kakao.maps.LatLng(p.lat, p.lng), content:el, yAnchor:1.4, zIndex:5
+      });
+      ov.setMap(map); markers.push(ov);
+    });
+  }
+
+  /* ---------- GPS ---------- */
+  function ledClass(acc){ return acc <= ACC_GOOD ? "ok" : (acc <= ACC_OK ? "mid" : "bad"); }
+  function onPos(p){
+    last = {lat:p.coords.latitude, lng:p.coords.longitude, acc:Math.max(1, Math.round(p.coords.accuracy||99)), t:Date.now()};
+    $("led").className = "led " + ledClass(last.acc);
+    $("gpsText").innerHTML = '정확도 <span class="acc">' + last.acc + 'm</span>' +
+      (last.acc > ACC_OK ? " · 잠시 기다리세요" : (last.acc <= ACC_GOOD ? " · 좋음" : " · 보통"));
+    drawMe();
+  }
+  function onErr(e){
+    $("led").className = "led bad";
+    $("gpsText").textContent = e.code === 1 ? "위치 권한이 꺼져 있습니다" : "위치를 못 찾는 중…";
+  }
+  var watchId = null;
+  function startWatch(){
+    if(watchId !== null || !navigator.geolocation) return;
+    watchId = navigator.geolocation.watchPosition(onPos, onErr,
+      {enableHighAccuracy:true, maximumAge:2000, timeout:15000});
+  }
+  function stopWatch(){
+    if(watchId !== null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
+  }
+  document.addEventListener("visibilitychange", function(){
+    document.visibilityState === "visible" ? startWatch() : stopWatch();
+  });
+  if(!navigator.geolocation){
+    $("gpsText").textContent = "이 브라우저는 위치를 지원하지 않습니다";
+  }else{ startWatch(); }
+
+  /* ---------- 지점 추가 ---------- */
+  function pad(n){ return ("0"+n).slice(-2); }
+  function hhmmss(ts){ var d = new Date(ts); return pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds()); }
+
+  function addPoint(type){
+    if(!navigator.geolocation){ toast("위치를 쓸 수 없습니다", true); return; }
+    var btns = document.querySelectorAll(".cat");
+    btns.forEach(function(b){ b.disabled = true; });
+    toast("위치 확인 중…");
+
+    navigator.geolocation.getCurrentPosition(function(p){
+      btns.forEach(function(b){ b.disabled = false; });
+      var acc = Math.max(1, Math.round(p.coords.accuracy||99));
+      var pt = {
+        id: Date.now(),
+        type: type,
+        lat: +p.coords.latitude.toFixed(6),
+        lng: +p.coords.longitude.toFixed(6),
+        acc: acc,
+        time: new Date().toISOString(),
+        memo: ""
+      };
+      points.push(pt); save(); render(); drawAll();
+      last = {lat:pt.lat, lng:pt.lng, acc:acc, t:Date.now()}; drawMe();
+
+      var t = TYPES[type];
+      if(acc > ACC_OK){
+        toast("⚠️ " + points.length + "번 " + t.name + " 저장\n정확도 " + acc + "m — 잠시 후 다시 찍는 걸 권합니다", true, 4200);
+      }else{
+        toast("✅ " + points.length + "번 " + t.name + " 저장\n📷 지금 사진을 찍으세요", false, 3200);
+      }
+      openMemo(pt.id);
+    }, function(e){
+      btns.forEach(function(b){ b.disabled = false; });
+      toast(e.code === 1 ? "위치 권한을 허용해 주세요" : "위치를 못 잡았습니다. 하늘이 보이는 곳에서 다시 시도하세요", true, 4000);
+    }, {enableHighAccuracy:true, maximumAge:0, timeout:12000});
+  }
+
+  document.querySelectorAll(".cat").forEach(function(b){
+    b.addEventListener("click", function(){ addPoint(b.dataset.type); });
+  });
+  $("recenter").onclick = function(){
+    follow = true;
+    if(mapReady && last) map.setCenter(new kakao.maps.LatLng(last.lat, last.lng));
+  };
+
+  /* ---------- 토스트 ---------- */
+  var toastTimer = null;
+  function toast(msg, isWarn, ms){
+    var el = $("toast");
+    el.textContent = msg;
+    el.className = "show" + (isWarn ? " warn" : "");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.className = ""; }, ms || 2000);
+  }
+
+  /* ---------- 시트 ---------- */
+  function openSheet(id){ $(id).classList.add("show"); }
+  function closeSheets(){ document.querySelectorAll(".sheet").forEach(function(s){ s.classList.remove("show"); }); }
+  document.addEventListener("click", function(e){
+    if(e.target.closest("[data-close]")) closeSheets();
+  });
+
+  /* ---------- 목록 ---------- */
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+
+  function render(){
+    $("cnt").textContent = points.length;
+    var body = $("listBody");
+    if(!points.length){
+      body.innerHTML = '<div class="empty">아직 기록이 없습니다.<br>갈림길·명소에 도착하면 아래 버튼을 누르세요.</div>';
+      return;
+    }
+    body.innerHTML = points.map(function(p, i){
+      var t = TYPES[p.type] || TYPES.spot;
+      return '<div class="item">' +
+        '<div class="badge" style="background:'+t.color+'">'+t.ico+'</div>' +
+        '<div class="info">' +
+          '<div class="t1"><span class="no">'+(i+1)+'.</span><span>'+t.name+'</span></div>' +
+          '<div class="t2">'+hhmmss(new Date(p.time).getTime())+' · '+p.lat.toFixed(5)+', '+p.lng.toFixed(5)+' · ±'+p.acc+'m</div>' +
+          (p.memo ? '<div class="memo">'+esc(p.memo)+'</div>' : '') +
+        '</div>' +
+        '<div class="acts">' +
+          '<button data-memo="'+p.id+'">메모</button>' +
+          '<button class="del" data-del="'+p.id+'">삭제</button>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+  }
+  $("listBody").addEventListener("click", function(e){
+    var m = e.target.closest("[data-memo]"), d = e.target.closest("[data-del]");
+    if(m) openMemo(+m.dataset.memo);
+    if(d){
+      var id = +d.dataset.del;
+      var idx = points.findIndex(function(p){ return p.id === id; });
+      if(idx >= 0 && confirm((idx+1) + "번 지점을 지울까요?")){
+        points.splice(idx,1); save(); render(); drawAll();
+      }
+    }
+  });
+  $("listBtn").onclick = function(){ render(); openSheet("listSheet"); };
+
+  /* ---------- 메모 ---------- */
+  var memoId = null;
+  function openMemo(id){
+    var p = points.find(function(x){ return x.id === id; });
+    if(!p) return;
+    memoId = id;
+    var i = points.indexOf(p), t = TYPES[p.type] || TYPES.spot;
+    $("memoTitle").textContent = (i+1) + "번 " + t.name + " 메모";
+    $("memoText").value = p.memo || "";
+    openSheet("memoSheet");
+  }
+  $("memoSave").onclick = function(){
+    var p = points.find(function(x){ return x.id === memoId; });
+    if(p){ p.memo = $("memoText").value.trim(); save(); render(); }
+    closeSheets();
+  };
+
+  /* ---------- 내보내기 ---------- */
+  function jsonText(){
+    return JSON.stringify({
+      project:"꿈길 걷기 1일차 답사",
+      exportedAt:new Date().toISOString(),
+      count:points.length,
+      points:points.map(function(p, i){
+        return {no:i+1, type:p.type, typeName:(TYPES[p.type]||{}).name, lat:p.lat, lng:p.lng,
+                accuracy:p.acc, time:p.time, memo:p.memo};
+      })
+    }, null, 2);
+  }
+  function gpxText(){
+    var w = points.map(function(p, i){
+      var t = TYPES[p.type] || TYPES.spot;
+      return '  <wpt lat="'+p.lat+'" lon="'+p.lng+'">\n' +
+             '    <name>'+(i+1)+'. '+t.name+'</name>\n' +
+             '    <desc>'+esc(p.memo || "")+' (정확도 '+p.acc+'m)</desc>\n' +
+             '    <type>'+p.type+'</type>\n' +
+             '    <time>'+p.time+'</time>\n' +
+             '  </wpt>';
+    }).join("\n");
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<gpx version="1.1" creator="꿈길 답사" xmlns="http://www.topografix.com/GPX/1/1">\n' +
+      '  <metadata><name>꿈길 걷기 1일차 답사</name></metadata>\n' + w + '\n</gpx>';
+  }
+  function stamp(){
+    var d = new Date();
+    return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+"_"+pad(d.getHours())+pad(d.getMinutes());
+  }
+  function download(text, name, mime){
+    var blob = new Blob([text], {type:mime});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1500);
+  }
+  $("exportBtn").onclick = function(){
+    if(!points.length){ toast("아직 기록이 없습니다", true); return; }
+    $("preview").textContent = jsonText();
+    openSheet("exportSheet");
+  };
+  $("dlJson").onclick = function(){ download(jsonText(), "꿈길답사_"+stamp()+".json", "application/json"); };
+  $("dlGpx").onclick  = function(){ download(gpxText(),  "꿈길답사_"+stamp()+".gpx",  "application/gpx+xml"); };
+  $("copyBtn").onclick = function(){
+    var t = jsonText();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(function(){ toast("복사했습니다\n카톡에 붙여넣으세요", false, 2600); })
+        .catch(function(){ toast("복사 실패 — 아래 내용을 길게 눌러 복사하세요", true, 3500); });
+    }else{ toast("아래 내용을 길게 눌러 복사하세요", true, 3500); }
+  };
+  $("shareBtn").onclick = function(){
+    var t = jsonText();
+    if(navigator.share){
+      var f;
+      try{ f = new File([t], "꿈길답사_"+stamp()+".json", {type:"application/json"}); }catch(e){}
+      if(f && navigator.canShare && navigator.canShare({files:[f]})){
+        navigator.share({files:[f], title:"꿈길 답사 기록"}).catch(function(){});
+      }else{
+        navigator.share({title:"꿈길 답사 기록", text:t}).catch(function(){});
+      }
+    }else{ toast("이 기기는 공유를 지원하지 않습니다. 「복사」를 쓰세요", true, 3500); }
+  };
+  $("clearBtn").onclick = function(){
+    if(!confirm("기록 " + points.length + "개를 모두 지웁니다. 내보내기는 하셨나요?")) return;
+    if(!confirm("정말 삭제할까요? 되돌릴 수 없습니다.")) return;
+    points = []; save(); render(); drawAll(); closeSheets();
+    toast("모두 삭제했습니다");
+  };
+
+  /* ---------- 시작 ---------- */
+  render();
+  if(points.length) toast("이전 기록 " + points.length + "개를 불러왔습니다", false, 2600);
+})();
+</script>
+</body>
+</html>
