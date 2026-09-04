@@ -38,8 +38,9 @@
   .led.bad{background:var(--bad);box-shadow:0 0 10px var(--bad);animation:blink 1s infinite}
   @keyframes blink{50%{opacity:.35}}
   .acc{font-variant-numeric:tabular-nums}
-  .count{margin-left:auto;font-size:15px;font-weight:800;color:var(--sub)}
-  .count b{color:var(--ink);font-size:19px}
+  .count{margin-left:auto;font-size:14px;font-weight:800;color:var(--sub);text-align:right;line-height:1.3}
+  .count b{color:var(--ink);font-size:18px}
+  .count .dist{display:block;font-size:12px;color:#38BDF8;font-variant-numeric:tabular-nums}
 
   /* 지도 */
   #mapWrap{flex:1 1 auto;position:relative;min-height:0;background:#0B1220}
@@ -153,7 +154,7 @@
 <div id="app">
   <div class="status">
     <div class="gps"><span class="led" id="led"></span><span id="gpsText">GPS 확인 중…</span></div>
-    <div class="count">기록 <b id="cnt">0</b></div>
+    <div class="count">기록 <b id="cnt">0</b><span class="dist" id="dist">0.00 km</span></div>
   </div>
 
   <div id="mapWrap">
@@ -218,8 +219,12 @@
       <b>가장 확실한 방법:</b> 「복사」를 누르고 카카오톡 나에게 보내기로 붙여넣으세요.<br>
       「공유」는 카톡·메일로 파일을 바로 보낼 수 있습니다(기기에 따라 안 될 수 있음).
     </p>
+    <p class="hint" id="trackInfo"></p>
     <pre id="preview"></pre>
-    <div class="row"><button id="clearBtn" style="background:#7F1D1D;border-color:#991B1B">전체 삭제</button></div>
+    <div class="row">
+      <button id="clearTrackBtn">경로만 지우기</button>
+      <button id="clearBtn" style="background:#7F1D1D;border-color:#991B1B">전체 삭제</button>
+    </div>
   </div>
 </div>
 
@@ -236,21 +241,43 @@
     risk:{name:"위험",   ico:"⚠️", color:"#F97316"},
     rest:{name:"휴식",   ico:"☕", color:"#14B8A6"}
   };
-  var KEY = "kkumgil_survey_v1";
+  var KEY = "kkumgil_survey_v1", TKEY = "kkumgil_track_v1";
   var ACC_GOOD = 15, ACC_OK = 30;      // m
+  var MIN_STEP = 5;                     // 이만큼(m) 움직여야 경로에 점 추가
+  var MAX_ACC  = 60;                    // 정확도가 이보다 나쁘면 경로에 안 넣음
+  var MAX_TRK  = 6000;                  // 경로 점 상한
 
   var $ = function(id){ return document.getElementById(id); };
-  var points = load();
+  var points = load(KEY);
+  var track  = load(TKEY);              // [{lat,lng,t}]
   var last = null;                      // 최근 위치 {lat,lng,acc,t}
-  var map = null, meMarker = null, meCircle = null, markers = [], follow = true, mapReady = false;
+  var map = null, meMarker = null, meCircle = null, markers = [], line = null;
+  var follow = true, mapReady = false;
 
-  function load(){
-    try{ var v = JSON.parse(localStorage.getItem(KEY)); return Array.isArray(v) ? v : []; }
+  function load(k){
+    try{ var v = JSON.parse(localStorage.getItem(k)); return Array.isArray(v) ? v : []; }
     catch(e){ return []; }
   }
   function save(){
     try{ localStorage.setItem(KEY, JSON.stringify(points)); }
     catch(e){ toast("저장 공간이 부족합니다. 내보내기 후 정리하세요", true, 4000); }
+  }
+  function saveTrack(){
+    try{ localStorage.setItem(TKEY, JSON.stringify(track)); }catch(e){}
+  }
+
+  /* 두 좌표 사이 거리(m) */
+  function dist(a, b){
+    var R = 6371000, r = Math.PI/180;
+    var dLat = (b.lat-a.lat)*r, dLng = (b.lng-a.lng)*r;
+    var s = Math.sin(dLat/2)*Math.sin(dLat/2) +
+            Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLng/2)*Math.sin(dLng/2);
+    return 2*R*Math.asin(Math.min(1, Math.sqrt(s)));
+  }
+  function trackMeters(){
+    var d = 0;
+    for(var i=1;i<track.length;i++) d += dist(track[i-1], track[i]);
+    return d;
   }
 
   /* ---------- 지도 ---------- */
@@ -270,8 +297,12 @@
           level: 4
         });
         kakao.maps.event.addListener(map, "dragstart", function(){ follow = false; });
+        line = new kakao.maps.Polyline({
+          map:map, path:[], strokeWeight:6, strokeColor:"#38BDF8",
+          strokeOpacity:.85, strokeStyle:"solid", zIndex:2
+        });
         mapReady = true;
-        drawAll();
+        drawAll(); drawLine();
       }catch(e){ failMap(); }
     });
   }else{ failMap(); }
@@ -290,6 +321,10 @@
       meMarker.setPosition(pos); meCircle.setPosition(pos); meCircle.setRadius(last.acc);
     }
     if(follow) map.setCenter(pos);
+  }
+  function drawLine(){
+    if(!mapReady || !line) return;
+    line.setPath(track.map(function(p){ return new kakao.maps.LatLng(p.lat, p.lng); }));
   }
   function drawAll(){
     if(!mapReady) return;
@@ -315,6 +350,23 @@
     $("gpsText").innerHTML = '정확도 <span class="acc">' + last.acc + 'm</span>' +
       (last.acc > ACC_OK ? " · 잠시 기다리세요" : (last.acc <= ACC_GOOD ? " · 좋음" : " · 보통"));
     drawMe();
+    addTrack(last);
+  }
+
+  var trkSaveTimer = null;
+  function addTrack(pos){
+    if(pos.acc > MAX_ACC) return;                      // 튀는 좌표는 경로에 안 넣음
+    var tail = track[track.length-1];
+    if(tail && dist(tail, pos) < MIN_STEP) return;     // 제자리면 건너뜀
+    if(track.length >= MAX_TRK) track.shift();
+    track.push({lat:pos.lat, lng:pos.lng, t:new Date().toISOString()});
+    drawLine(); updateDist();
+    clearTimeout(trkSaveTimer);
+    trkSaveTimer = setTimeout(saveTrack, 3000);        // 3초 몰아서 저장
+  }
+  function updateDist(){
+    var m = trackMeters();
+    $("dist").textContent = (m < 1000) ? Math.round(m) + " m" : (m/1000).toFixed(2) + " km";
   }
   function onErr(e){
     $("led").className = "led bad";
@@ -465,7 +517,13 @@
       points:points.map(function(p, i){
         return {no:i+1, type:p.type, typeName:(TYPES[p.type]||{}).name, lat:p.lat, lng:p.lng,
                 accuracy:p.acc, time:p.time, memo:p.memo};
-      })
+      }),
+      track:{
+        note:"앱이 켜져 있는 동안만 기록된 경로입니다. 전체 경로는 램블러 GPX를 쓰세요.",
+        meters:Math.round(trackMeters()),
+        count:track.length,
+        path:track
+      }
     }, null, 2);
   }
   function gpxText(){
@@ -478,9 +536,17 @@
              '    <time>'+p.time+'</time>\n' +
              '  </wpt>';
     }).join("\n");
+    var trk = "";
+    if(track.length > 1){
+      trk = '\n  <trk>\n    <name>답사 경로(앱 사용 중 기록)</name>\n    <trkseg>\n' +
+        track.map(function(p){
+          return '      <trkpt lat="'+p.lat+'" lon="'+p.lng+'"><time>'+p.t+'</time></trkpt>';
+        }).join("\n") +
+        '\n    </trkseg>\n  </trk>';
+    }
     return '<?xml version="1.0" encoding="UTF-8"?>\n' +
       '<gpx version="1.1" creator="꿈길 답사" xmlns="http://www.topografix.com/GPX/1/1">\n' +
-      '  <metadata><name>꿈길 걷기 1일차 답사</name></metadata>\n' + w + '\n</gpx>';
+      '  <metadata><name>꿈길 걷기 1일차 답사</name></metadata>\n' + w + trk + '\n</gpx>';
   }
   function stamp(){
     var d = new Date();
@@ -494,9 +560,19 @@
     setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1500);
   }
   $("exportBtn").onclick = function(){
-    if(!points.length){ toast("아직 기록이 없습니다", true); return; }
+    if(!points.length && track.length < 2){ toast("아직 기록이 없습니다", true); return; }
+    var m = trackMeters();
+    $("trackInfo").innerHTML = "지나온 경로 <b>" + track.length + "점 · " +
+      (m < 1000 ? Math.round(m)+"m" : (m/1000).toFixed(2)+"km") + "</b><br>" +
+      "앱이 <b>켜져 있는 동안만</b> 기록됩니다. 전체 경로는 램블러 GPX를 쓰세요.";
     $("preview").textContent = jsonText();
     openSheet("exportSheet");
+  };
+  $("clearTrackBtn").onclick = function(){
+    if(!confirm("지나온 경로만 지웁니다. 찍은 지점은 그대로 남습니다.")) return;
+    track = []; saveTrack(); drawLine(); updateDist();
+    toast("경로를 지웠습니다");
+    closeSheets();
   };
   $("dlJson").onclick = function(){ download(jsonText(), "꿈길답사_"+stamp()+".json", "application/json"); };
   $("dlGpx").onclick  = function(){ download(gpxText(),  "꿈길답사_"+stamp()+".gpx",  "application/gpx+xml"); };
@@ -522,12 +598,17 @@
   $("clearBtn").onclick = function(){
     if(!confirm("기록 " + points.length + "개를 모두 지웁니다. 내보내기는 하셨나요?")) return;
     if(!confirm("정말 삭제할까요? 되돌릴 수 없습니다.")) return;
-    points = []; save(); render(); drawAll(); closeSheets();
+    points = []; track = []; save(); saveTrack();
+    render(); drawAll(); drawLine(); updateDist(); closeSheets();
     toast("모두 삭제했습니다");
   };
 
   /* ---------- 시작 ---------- */
-  render();
+  render(); updateDist();
+  window.addEventListener("pagehide", saveTrack);
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "hidden") saveTrack();
+  });
   if(points.length) toast("이전 기록 " + points.length + "개를 불러왔습니다", false, 2600);
 })();
 </script>
