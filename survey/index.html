@@ -147,6 +147,33 @@
     color:#94A3B8;-webkit-user-select:text;user-select:text;
   }
   .warnbox{background:#422006;border:1px solid #78350F;color:#FDE68A;border-radius:12px;padding:12px;font-size:14px;line-height:1.6;margin-bottom:12px}
+
+  /* ── 사진 ── */
+  .phbox{margin-bottom:16px}
+  .phtitle{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;margin-bottom:10px}
+  .phtitle .c{color:var(--sub);font-weight:700;font-size:14px}
+  .phgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .ph{position:relative;background:var(--panel2);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .ph.go{border-color:#22C55E;box-shadow:0 0 0 2px #22C55E inset}
+  .ph img{width:100%;height:118px;object-fit:cover;display:block;background:#0b1220}
+  .ph .pin{padding:8px}
+  .phchips{display:flex;flex-wrap:wrap;gap:4px}
+  .phchips button{flex:none;padding:5px 8px;border-radius:9px;font-size:12px;font-weight:800;
+    background:#182234;border:1px solid var(--line);color:var(--sub);min-height:0}
+  .phchips button.on{background:#1D4ED8;border-color:#3B82F6;color:#fff}
+  .phgo{width:100%;margin-top:6px;padding:9px;border-radius:10px;font-size:13px;font-weight:900;
+    background:#182234;border:1px solid var(--line);color:var(--sub);min-height:0}
+  .phgo.on{background:#166534;border-color:#22C55E;color:#DCFCE7}
+  .phdel{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:9px;
+    background:rgba(2,6,23,.72);border:1px solid var(--line);color:#FCA5A5;font-size:16px;font-weight:900;min-height:0}
+  .shot{display:block;margin-top:10px;text-align:center;padding:16px;border-radius:14px;
+    background:var(--fork);color:#fff;font-size:17px;font-weight:900;cursor:pointer}
+  .shot.busy{opacity:.55}
+  .phempty{color:var(--sub);font-size:14px;padding:14px;text-align:center;
+    border:1px dashed var(--line);border-radius:12px}
+  .badge2{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:8px;
+    background:#1D4ED8;color:#fff;font-size:11px;font-weight:900;vertical-align:middle}
+  .badge2.go{background:#166534;color:#DCFCE7}
 </style>
 </head>
 <body>
@@ -193,6 +220,14 @@
 <div class="sheet" id="memoSheet">
   <div class="sheet-head"><h2 id="memoTitle">메모</h2><button class="x" data-close>×</button></div>
   <div class="sheet-body">
+    <div class="phbox">
+      <div class="phtitle">📷 사진 <span class="c" id="phCnt"></span></div>
+      <div id="phGrid" class="phgrid"></div>
+      <label class="shot" id="shotLabel">📷 사진 찍기
+        <input type="file" id="shotInput" accept="image/*" capture="environment" multiple hidden>
+      </label>
+      <p class="hint" id="phHint"></p>
+    </div>
     <textarea id="memoText" rows="5" placeholder="예) 왼쪽 등산로로. 오른쪽은 막다른 길&#10;예) 여기 화장실 2칸, 물 나옴"></textarea>
     <div class="row">
       <button data-close>취소</button>
@@ -214,6 +249,9 @@
     <div class="row">
       <button id="shareBtn">📤 공유</button>
       <button id="copyBtn">📋 복사</button>
+    </div>
+    <div class="row">
+      <button class="primary" id="dlZip">📦 사진 모두 저장 (ZIP)</button>
     </div>
     <p class="hint">
       <b>가장 확실한 방법:</b> 「복사」를 누르고 카카오톡 나에게 보내기로 붙여넣으세요.<br>
@@ -279,6 +317,75 @@
     for(var i=1;i<track.length;i++) d += dist(track[i-1], track[i]);
     return d;
   }
+
+
+  /* ---------- 사진 저장소 (IndexedDB) ----------
+     localStorage는 5MB에서 터진다. 갈림길 20곳에 사진 60장이면 12MB라
+     사진은 IndexedDB에, 좌표·메모 같은 가벼운 정보는 그대로 localStorage에 둔다. */
+  var DIRS = [
+    {k:"left",     ico:"⬅️", name:"왼쪽"},
+    {k:"right",    ico:"➡️", name:"오른쪽"},
+    {k:"straight", ico:"⬆️", name:"직진"},
+    {k:"back",     ico:"↩️", name:"뒤돌아본 길"}
+  ];
+  function dirName(k){
+    for(var i=0;i<DIRS.length;i++) if(DIRS[i].k===k) return DIRS[i].name;
+    return "";
+  }
+  var PDB = null;
+  function pdb(){
+    return new Promise(function(res, rej){
+      if(PDB) return res(PDB);
+      if(!window.indexedDB) return rej(new Error("no-idb"));
+      var r = indexedDB.open("kkumgil_photos", 1);
+      r.onupgradeneeded = function(){
+        var db = r.result;
+        if(!db.objectStoreNames.contains("photos")) db.createObjectStore("photos", {keyPath:"id"});
+      };
+      r.onsuccess = function(){ PDB = r.result; res(PDB); };
+      r.onerror   = function(){ rej(r.error); };
+    });
+  }
+  function idbRun(mode, fn){
+    return pdb().then(function(db){
+      return new Promise(function(res, rej){
+        var tx = db.transaction("photos", mode), st = tx.objectStore("photos"), out;
+        out = fn(st);
+        tx.oncomplete = function(){ res(out && out.result !== undefined ? out.result : out); };
+        tx.onerror    = function(){ rej(tx.error); };
+      });
+    });
+  }
+  function photoPut(rec){ return idbRun("readwrite", function(st){ st.put(rec); }); }
+  function photoGet(id){  return idbRun("readonly",  function(st){ return st.get(id); }); }
+  function photoDel(id){  return idbRun("readwrite", function(st){ st.delete(id); }); }
+
+  /* 찍은 사진을 긴 변 1200px로 줄여 저장한다(장당 200KB 안팎).
+     실패하면 원본을 그대로 넣는다 — 사진을 잃는 것보다 낫다. */
+  function shrink(file, maxSide, q){
+    return new Promise(function(res){
+      var url = URL.createObjectURL(file), img = new Image();
+      var done = false;
+      var give = function(blob, w, h){ if(done) return; done = true; URL.revokeObjectURL(url); res({blob:blob, w:w, h:h}); };
+      setTimeout(function(){ give(file, 0, 0); }, 8000);   // 아주 느린 기기 보호
+      img.onload = function(){
+        try{
+          var w = img.naturalWidth, h = img.naturalHeight;
+          var sc = Math.min(1, maxSide / Math.max(w, h));
+          var cw = Math.max(1, Math.round(w*sc)), ch = Math.max(1, Math.round(h*sc));
+          var c = document.createElement("canvas"); c.width = cw; c.height = ch;
+          c.getContext("2d").drawImage(img, 0, 0, cw, ch);
+          c.toBlob(function(b){ give(b || file, cw, ch); }, "image/jpeg", q);
+        }catch(e){ give(file, 0, 0); }
+      };
+      img.onerror = function(){ give(file, 0, 0); };
+      img.src = url;
+    });
+  }
+
+  /* 화면에 띄운 blob URL 정리용 */
+  var phUrls = [];
+  function freeUrls(){ phUrls.forEach(function(u){ try{ URL.revokeObjectURL(u); }catch(e){} }); phUrls = []; }
 
   /* ---------- 지도 ---------- */
   var mapTimer = setTimeout(failMap, 8000);
@@ -455,6 +562,14 @@
   function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
     return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
 
+  function photoBadge(p){
+    var n = (p.photos || []).length;
+    if(!n) return "";
+    var go = (p.photos || []).filter(function(q){ return q.go; })[0];
+    var b = ' <span class="badge2">📷 '+n+'</span>';
+    if(go) b += '<span class="badge2 go">✅ '+(dirName(go.dir) || "이쪽")+'</span>';
+    return b;
+  }
   function render(){
     $("cnt").textContent = points.length;
     var body = $("listBody");
@@ -468,7 +583,7 @@
         '<div class="badge" style="background:'+t.color+'">'+t.ico+'</div>' +
         '<div class="info">' +
           '<div class="t1"><span class="no">'+(i+1)+'.</span><span>'+t.name+'</span></div>' +
-          '<div class="t2">'+hhmmss(new Date(p.time).getTime())+' · '+p.lat.toFixed(5)+', '+p.lng.toFixed(5)+' · ±'+p.acc+'m</div>' +
+          '<div class="t2">'+hhmmss(new Date(p.time).getTime())+' · '+p.lat.toFixed(5)+', '+p.lng.toFixed(5)+' · ±'+p.acc+'m' + photoBadge(p) + '</div>' +
           (p.memo ? '<div class="memo">'+esc(p.memo)+'</div>' : '') +
         '</div>' +
         '<div class="acts">' +
@@ -484,22 +599,27 @@
     if(d){
       var id = +d.dataset.del;
       var idx = points.findIndex(function(p){ return p.id === id; });
-      if(idx >= 0 && confirm((idx+1) + "번 지점을 지울까요?")){
+      if(idx >= 0 && confirm((idx+1) + "번 지점을 지울까요?" + ((points[idx].photos||[]).length ? "\n사진 "+points[idx].photos.length+"장도 함께 지워집니다." : ""))){
+        (points[idx].photos || []).forEach(function(q){ photoDel(q.id).catch(function(){}); });
         points.splice(idx,1); save(); render(); drawAll();
       }
     }
   });
   $("listBtn").onclick = function(){ render(); openSheet("listSheet"); };
 
-  /* ---------- 메모 ---------- */
+  /* ---------- 메모 + 사진 ---------- */
   var memoId = null;
   function openMemo(id){
     var p = points.find(function(x){ return x.id === id; });
     if(!p) return;
     memoId = id;
     var i = points.indexOf(p), t = TYPES[p.type] || TYPES.spot;
-    $("memoTitle").textContent = (i+1) + "번 " + t.name + " 메모";
+    $("memoTitle").textContent = (i+1) + "번 " + t.name;
     $("memoText").value = p.memo || "";
+    $("phHint").innerHTML = (p.type === "fork")
+      ? "갈림길은 <b>왼쪽·오른쪽을 각각</b> 찍고, 우리가 갈 쪽에 <b>✅ 이쪽으로</b>를 눌러 주세요.<br>학생 앱에서 그 사진이 크게 뜹니다."
+      : "한 장이면 충분합니다. <b>급하면 건너뛰셔도</b> 좌표와 시각은 이미 저장됐습니다.";
+    renderPhotos();
     openSheet("memoSheet");
   }
   $("memoSave").onclick = function(){
@@ -507,6 +627,94 @@
     if(p){ p.memo = $("memoText").value.trim(); save(); render(); }
     closeSheets();
   };
+
+  function curPoint(){ return points.find(function(x){ return x.id === memoId; }); }
+
+  function renderPhotos(){
+    var p = curPoint(); if(!p) return;
+    var list = p.photos || [];
+    var isFork = (p.type === "fork");
+    $("phCnt").textContent = list.length ? list.length + "장" : "";
+    var grid = $("phGrid");
+    freeUrls();
+    if(!list.length){
+      grid.innerHTML = '<div class="phempty">아직 사진이 없습니다.<br>아래 버튼으로 찍어 주세요.</div>';
+      return;
+    }
+    grid.innerHTML = list.map(function(ph){
+      var chips = isFork ? '<div class="phchips">' + DIRS.map(function(d){
+            return '<button data-dir="'+d.k+'" data-pid="'+ph.id+'" class="'+(ph.dir===d.k?"on":"")+'">'+d.ico+' '+d.name+'</button>';
+          }).join("") + '</div>' : "";
+      var go = isFork ? '<button class="phgo '+(ph.go?"on":"")+'" data-go="'+ph.id+'">'+(ph.go?"✅ 이쪽으로":"이쪽으로 지정")+'</button>' : "";
+      return '<div class="ph '+(ph.go?"go":"")+'">' +
+               '<img data-img="'+ph.id+'" alt="">' +
+               '<button class="phdel" data-phdel="'+ph.id+'">✕</button>' +
+               (chips || go ? '<div class="pin">'+chips+go+'</div>' : '') +
+             '</div>';
+    }).join("");
+    list.forEach(function(ph){
+      photoGet(ph.id).then(function(rec){
+        if(!rec || !rec.blob) return;
+        var el = grid.querySelector('[data-img="'+ph.id+'"]');
+        if(!el) return;
+        var u = URL.createObjectURL(rec.blob); phUrls.push(u); el.src = u;
+      }).catch(function(){});
+    });
+  }
+
+  $("shotInput").addEventListener("change", function(e){
+    var files = Array.prototype.slice.call(e.target.files || []);
+    e.target.value = "";
+    if(!files.length) return;
+    var p = curPoint(); if(!p) return;
+    $("shotLabel").classList.add("busy");
+    toast("사진 저장 중…", false, 4000);
+    var chain = Promise.resolve();
+    files.forEach(function(f){
+      chain = chain.then(function(){
+        return shrink(f, 1200, 0.72).then(function(r){
+          var pid = "ph" + Date.now() + Math.random().toString(36).slice(2,7);
+          return photoPut({id:pid, ptId:p.id, blob:r.blob, w:r.w, h:r.h, at:new Date().toISOString()})
+            .then(function(){
+              p.photos = p.photos || [];
+              p.photos.push({id:pid, dir:"", go:false});
+            });
+        });
+      });
+    });
+    chain.then(function(){
+      save(); render(); renderPhotos();
+      $("shotLabel").classList.remove("busy");
+      toast("✅ 사진 " + files.length + "장 저장", false, 1800);
+    }).catch(function(){
+      $("shotLabel").classList.remove("busy");
+      toast("사진 저장에 실패했습니다. 다시 시도해 주세요", true, 4000);
+    });
+  });
+
+  $("phGrid").addEventListener("click", function(e){
+    var p = curPoint(); if(!p) return;
+    var d = e.target.closest("[data-dir]"),
+        g = e.target.closest("[data-go]"),
+        x = e.target.closest("[data-phdel]");
+    if(d){
+      var ph = (p.photos||[]).find(function(q){ return q.id === d.dataset.pid; });
+      if(ph){ ph.dir = (ph.dir === d.dataset.dir) ? "" : d.dataset.dir; save(); renderPhotos(); }
+    }
+    if(g){
+      var id = g.dataset.go, on = false;
+      (p.photos||[]).forEach(function(q){ if(q.id === id) on = !q.go; });
+      (p.photos||[]).forEach(function(q){ q.go = (q.id === id) ? on : false; });   // 하나만
+      save(); render(); renderPhotos();
+    }
+    if(x){
+      var pid = x.dataset.phdel;
+      if(!confirm("이 사진을 지울까요?")) return;
+      p.photos = (p.photos||[]).filter(function(q){ return q.id !== pid; });
+      save(); render(); renderPhotos();
+      photoDel(pid).catch(function(){});
+    }
+  });
 
   /* ---------- 내보내기 ---------- */
   function jsonText(){
@@ -516,7 +724,10 @@
       count:points.length,
       points:points.map(function(p, i){
         return {no:i+1, type:p.type, typeName:(TYPES[p.type]||{}).name, lat:p.lat, lng:p.lng,
-                accuracy:p.acc, time:p.time, memo:p.memo};
+                accuracy:p.acc, time:p.time, memo:p.memo,
+                photos:(p.photos||[]).map(function(q, j){
+                  return {file:photoFileName(i, p, q, j), dir:q.dir||"", dirName:dirName(q.dir), go:!!q.go};
+                })};
       }),
       track:{
         note:"앱이 켜져 있는 동안만 기록된 경로입니다. 전체 경로는 램블러 GPX를 쓰세요.",
@@ -547,6 +758,23 @@
     return '<?xml version="1.0" encoding="UTF-8"?>\n' +
       '<gpx version="1.1" creator="꿈길 답사" xmlns="http://www.topografix.com/GPX/1/1">\n' +
       '  <metadata><name>꿈길 걷기 1일차 답사</name></metadata>\n' + w + trk + '\n</gpx>';
+  }
+  function photoFileName(i, p, q, j){
+    var t = TYPES[p.type] || TYPES.spot;
+    var nm = pad(i+1) + "_" + t.name;
+    if(q.dir) nm += "_" + dirName(q.dir);
+    if(q.go)  nm += "_GO";
+    return nm + (j ? "_" + (j+1) : "") + ".jpg";
+  }
+  function loadJSZip(){
+    return new Promise(function(res, rej){
+      if(window.JSZip) return res(window.JSZip);
+      var sc = document.createElement("script");
+      sc.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+      sc.onload = function(){ window.JSZip ? res(window.JSZip) : rej(new Error("no-jszip")); };
+      sc.onerror = function(){ rej(new Error("net")); };
+      document.head.appendChild(sc);
+    });
   }
   function stamp(){
     var d = new Date();
@@ -595,9 +823,40 @@
       }
     }else{ toast("이 기기는 공유를 지원하지 않습니다. 「복사」를 쓰세요", true, 3500); }
   };
+  $("dlZip").onclick = function(){
+    var total = points.reduce(function(a,p){ return a + (p.photos||[]).length; }, 0);
+    if(!total){ toast("저장된 사진이 없습니다", true, 2600); return; }
+    toast("사진 " + total + "장 묶는 중…", false, 20000);
+    loadJSZip().then(function(JSZip){
+      var zip = new JSZip(), chain = Promise.resolve();
+      points.forEach(function(p, i){
+        (p.photos||[]).forEach(function(q, j){
+          chain = chain.then(function(){
+            return photoGet(q.id).then(function(rec){
+              if(rec && rec.blob) zip.file(photoFileName(i, p, q, j), rec.blob);
+            }).catch(function(){});
+          });
+        });
+      });
+      return chain.then(function(){
+        zip.file("지점목록.json", jsonText());
+        return zip.generateAsync({type:"blob"});
+      });
+    }).then(function(blob){
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = "꿈길답사_사진_" + stamp() + ".zip";
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 3000);
+      toast("✅ ZIP 저장 완료", false, 2600);
+    }).catch(function(){
+      toast("사진 묶기에 실패했습니다.\n인터넷 연결을 확인하고 다시 시도하세요", true, 4500);
+    });
+  };
   $("clearBtn").onclick = function(){
     if(!confirm("기록 " + points.length + "개를 모두 지웁니다. 내보내기는 하셨나요?")) return;
     if(!confirm("정말 삭제할까요? 되돌릴 수 없습니다.")) return;
+    points.forEach(function(p){ (p.photos||[]).forEach(function(q){ photoDel(q.id).catch(function(){}); }); });
     points = []; track = []; save(); saveTrack();
     render(); drawAll(); drawLine(); updateDist(); closeSheets();
     toast("모두 삭제했습니다");
