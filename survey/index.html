@@ -139,6 +139,19 @@
   .row{display:flex;gap:8px;margin-top:12px}
   .row button{flex:1;min-height:52px;border-radius:14px;font-size:16px;font-weight:800;background:var(--panel2);border:1px solid var(--line)}
   .row button.primary{background:var(--wc);border-color:var(--wc);color:#04263A}
+  .recbtn{padding:8px 12px;border-radius:11px;font-size:14px;font-weight:900;min-height:0;
+    background:#0B1220;border:1px solid var(--line);color:var(--sub);white-space:nowrap;
+    -webkit-tap-highlight-color:transparent}
+  .recbtn.on{background:#14532D;border-color:#22C55E;color:#DCFCE7}
+  .recbtn.off{background:#7C2D12;border-color:#F97316;color:#FFEDD5}
+  .status.paused{background:#7C2D12}
+  .resume{display:none;align-items:center;gap:8px;padding:10px 12px;background:#1E3A5F;
+    border-bottom:1px solid var(--line);font-size:14px;font-weight:700;color:#DBEAFE}
+  .resume.show{display:flex}
+  .resume span{flex:1;line-height:1.4}
+  .resume button{padding:9px 12px;border-radius:10px;font-size:13px;font-weight:900;
+    background:#0B1220;border:1px solid var(--line);color:#DBEAFE;min-height:0;white-space:nowrap}
+  .resume button.warn{background:#7F1D1D;border-color:#991B1B;color:#FEE2E2}
   .dist{cursor:pointer;-webkit-tap-highlight-color:transparent}
   .dist:active{opacity:.6}
   .hint{color:var(--sub);font-size:14px;line-height:1.7;margin-top:14px}
@@ -183,7 +196,14 @@
 <div id="app">
   <div class="status">
     <div class="gps"><span class="led" id="led"></span><span id="gpsText">GPS 확인 중…</span></div>
+    <button class="recbtn" id="recBtn">⏸ 기록 중단</button>
     <div class="count">기록 <b id="cnt">0</b><span class="dist" id="dist" title="눌러서 경로 지우기">0.00 km</span></div>
+  </div>
+
+  <div class="resume" id="resumeBar">
+    <span id="resumeText"></span>
+    <button id="resumeKeep">이어서</button>
+    <button class="warn" id="resumeNew">새로 시작</button>
   </div>
 
   <div id="mapWrap">
@@ -283,7 +303,7 @@
     risk:{name:"위험",   ico:"⚠️", color:"#F97316"},
     rest:{name:"휴식",   ico:"☕", color:"#14B8A6"}
   };
-  var KEY = "kkumgil_survey_v1", TKEY = "kkumgil_track_v1";
+  var KEY = "kkumgil_survey_v1", TKEY = "kkumgil_track_v1", PKEY = "kkumgil_paused_v1";
   var ACC_GOOD = 15, ACC_OK = 30;      // m
   var MIN_STEP = 5;                     // 이만큼(m) 움직여야 경로에 점 추가
   var MAX_ACC  = 60;                    // 정확도가 이보다 나쁘면 경로에 안 넣음
@@ -295,6 +315,8 @@
   var last = null;                      // 최근 위치 {lat,lng,acc,t}
   var map = null, meMarker = null, meCircle = null, markers = [], line = null;
   var follow = true, mapReady = false;
+  var paused = false;
+  try{ paused = localStorage.getItem(PKEY) === "1"; }catch(e){}
 
   function load(k){
     try{ var v = JSON.parse(localStorage.getItem(k)); return Array.isArray(v) ? v : []; }
@@ -466,6 +488,7 @@
 
   var trkSaveTimer = null;
   function addTrack(pos){
+    if(paused) return;                                 // 「기록 중단」 눌러 둔 상태
     if(pos.acc > MAX_ACC) return;                      // 튀는 좌표는 경로에 안 넣음
     var tail = track[track.length-1];
     if(tail && dist(tail, pos) < MIN_STEP) return;     // 제자리면 건너뜀
@@ -871,6 +894,29 @@
     toast("모두 삭제했습니다");
   };
 
+  /* ---------- 기록 시작 / 중단 ----------
+     기본값은 「기록 중」이다. 시작 버튼을 안 눌러서 답사가 통째로 날아가는 게
+     제일 위험하기 때문. 필요할 때만 멈추는 방식으로 둔다.
+     멈춰 두면 상단이 주황색으로 바뀌어 한눈에 보인다. (내 위치 표시는 계속 됨) */
+  function paintRec(){
+    var b = $("recBtn");
+    b.className = "recbtn " + (paused ? "off" : "on");
+    b.textContent = paused ? "▶ 기록 시작" : "⏸ 기록 중단";
+    document.querySelector(".status").classList.toggle("paused", paused);
+  }
+  $("recBtn").onclick = function(){
+    paused = !paused;
+    try{ localStorage.setItem(PKEY, paused ? "1" : "0"); }catch(e){}
+    paintRec();
+    if(paused){
+      saveTrack();
+      toast("⏸ 경로 기록을 멈췄습니다\n지점 찍기는 그대로 됩니다", false, 2800);
+    }else{
+      toast("▶ 경로를 다시 기록합니다", false, 2000);
+    }
+  };
+  paintRec();
+
   /* ---------- 시작 ---------- */
   render(); updateDist();
   window.addEventListener("pagehide", saveTrack);
@@ -878,6 +924,35 @@
     if(document.visibilityState === "hidden") saveTrack();
   });
   if(points.length) toast("이전 기록 " + points.length + "개를 불러왔습니다", false, 2600);
+
+  /* 지난번 경로가 남아 있으면 물어본다.
+     「기록 시작」 버튼을 따로 두지 않는 이유: 누르는 걸 잊으면 답사가 통째로 날아간다.
+     자동으로 기록하되, 시작할 때 한 번만 이어서/새로를 고르게 한다. */
+  (function askResume(){
+    if(track.length < 2) return;
+    var m = trackMeters();
+    var t = (m < 1000 ? Math.round(m)+"m" : (m/1000).toFixed(2)+"km");
+    /* 경로 점의 t는 ISO 문자열로 저장된다(옛 기록엔 숫자도 있음) — 둘 다 받는다 */
+    var lt = track[track.length-1].t;
+    var ms = (typeof lt === "number") ? lt : Date.parse(lt);
+    var when = "";
+    if(isFinite(ms)){
+      var age = Date.now() - ms;
+      when = age < 3600000 ? "방금 전"
+           : (age < 86400000 ? Math.round(age/3600000) + "시간 전"
+           : Math.round(age/86400000) + "일 전");
+    }
+    $("resumeText").innerHTML = "지난 경로 <b>" + t + "</b>가 남아 있습니다" +
+      (when ? " <span style=\"opacity:.7\">(" + when + ")</span>" : "");
+    $("resumeBar").classList.add("show");
+  })();
+  $("resumeKeep").onclick = function(){ $("resumeBar").classList.remove("show"); };
+  $("resumeNew").onclick = function(){
+    track = []; saveTrack(); drawLine(); updateDist();
+    if(paused){ paused = false; try{ localStorage.setItem(PKEY,"0"); }catch(e){} paintRec(); }
+    $("resumeBar").classList.remove("show");
+    toast("🧹 새로 기록합니다", false, 2000);
+  };
 })();
 </script>
 </body>
