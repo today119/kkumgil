@@ -139,6 +139,8 @@
   .row{display:flex;gap:8px;margin-top:12px}
   .row button{flex:1;min-height:52px;border-radius:14px;font-size:16px;font-weight:800;background:var(--panel2);border:1px solid var(--line)}
   .row button.primary{background:var(--wc);border-color:var(--wc);color:#04263A}
+  .dist{cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .dist:active{opacity:.6}
   .hint{color:var(--sub);font-size:14px;line-height:1.7;margin-top:14px}
   .hint b{color:var(--ink)}
   pre{
@@ -181,7 +183,7 @@
 <div id="app">
   <div class="status">
     <div class="gps"><span class="led" id="led"></span><span id="gpsText">GPS 확인 중…</span></div>
-    <div class="count">기록 <b id="cnt">0</b><span class="dist" id="dist">0.00 km</span></div>
+    <div class="count">기록 <b id="cnt">0</b><span class="dist" id="dist" title="눌러서 경로 지우기">0.00 km</span></div>
   </div>
 
   <div id="mapWrap">
@@ -258,9 +260,11 @@
       「공유」는 카톡·메일로 파일을 바로 보낼 수 있습니다(기기에 따라 안 될 수 있음).
     </p>
     <p class="hint" id="trackInfo"></p>
+    <div class="row">
+      <button id="clearTrackBtn">🧹 지나온 경로만 지우기</button>
+    </div>
     <pre id="preview"></pre>
     <div class="row">
-      <button id="clearTrackBtn">경로만 지우기</button>
       <button id="clearBtn" style="background:#7F1D1D;border-color:#991B1B">전체 삭제</button>
     </div>
   </div>
@@ -796,12 +800,17 @@
     $("preview").textContent = jsonText();
     openSheet("exportSheet");
   };
-  $("clearTrackBtn").onclick = function(){
-    if(!confirm("지나온 경로만 지웁니다. 찍은 지점은 그대로 남습니다.")) return;
+  function clearTrack(){
+    if(track.length < 2){ toast("지울 경로가 없습니다", true, 2000); return; }
+    var m = trackMeters();
+    var t = (m < 1000 ? Math.round(m)+"m" : (m/1000).toFixed(2)+"km");
+    if(!confirm("지나온 경로 " + t + "를 지웁니다.\n찍은 지점(" + points.length + "개)은 그대로 남습니다.")) return;
     track = []; saveTrack(); drawLine(); updateDist();
-    toast("경로를 지웠습니다");
+    toast("🧹 경로를 지웠습니다");
     closeSheets();
-  };
+  }
+  $("clearTrackBtn").onclick = clearTrack;
+  $("dist").onclick = clearTrack;
   $("dlJson").onclick = function(){ download(jsonText(), "꿈길답사_"+stamp()+".json", "application/json"); };
   $("dlGpx").onclick  = function(){ download(gpxText(),  "꿈길답사_"+stamp()+".gpx",  "application/gpx+xml"); };
   $("copyBtn").onclick = function(){
