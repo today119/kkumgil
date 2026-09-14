@@ -399,6 +399,9 @@
       key = "wait";
       html = '<div class="tx"><div class="k">' + C.title + ' · ' + fmtM(C.lengthM) + '</div>' +
         '<div class="big">' + (state.pos ? "출발 지점으로 가 주세요" : "위치를 찾고 있어요") + '</div></div>';
+    }else if(state.isOff){
+      key = "off";   // 이탈 중에는 앞 갈림길 안내가 경고와 엇갈려 헷갈리므로 감춘다
+      html = '<div class="tx"><div class="k">지도의 빨간 점선을 따라가세요</div><div class="big">먼저 코스로 돌아가요</div></div>';
     }else{
       var spot = C.points.filter(function(p){
         return (p.type === "spot" || p.type === "rest" || p.type === "wc") && Math.abs(p.m - prog) <= SPOT_NEAR;
