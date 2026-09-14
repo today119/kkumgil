@@ -2,6 +2,17 @@
 
 인천영종고등학교 특색사업 「꿈길 걷기」(제10회, 2026.10.30~31) 지원 웹앱.
 
+## 학생용 걷기 앱 (v1 개발 중)
+https://today119.github.io/kkumgil/walk/  ·  체험 모드: https://today119.github.io/kkumgil/walk/?demo
+
+- 갈림길 200m 앞부터 답사 사진 + 방향(왼쪽/오른쪽/직진) 표시, 30m 안이면 「지금」
+- 코스에서 30m 넘게 두 번 연속 벗어나면 진동·소리 경보 + 코스 방향 + 방금 지난 갈림길 사진
+- 명소·휴식·화장실 도착 카드, 다음 지점까지 거리
+- SOS: 무전으로 읽을 위치 문장(「용궁사 60m 전, 코스 4.6km 지점」) + 지도 링크 공유
+- 서버·로그인 없음. 위치는 폰 밖으로 나가지 않음
+- 데이터: `python3 tools/build_walk.py` → `walk/course.json`, `walk/photos/`
+  (답사 구간·컴퓨터로 그린 GPX 구간을 순서대로 이어 붙임)
+
 ## 답사 지점 찍기
 https://today119.github.io/kkumgil/survey/
 

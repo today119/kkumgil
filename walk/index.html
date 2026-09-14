@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0F172A">
+<title>꿈길 걷기</title>
+<style>
+  :root{
+    --bg:#0F172A; --panel:#1E293B; --panel2:#334155;
+    --ink:#F8FAFC; --sub:#94A3B8; --line:#334155;
+    --ok:#22C55E; --warn:#F59E0B; --bad:#EF4444;
+    --fork:#EF4444; --spot:#A855F7; --wc:#0EA5E9; --rest:#14B8A6; --risk:#F97316; --car:#22C55E;
+    --route:#38BDF8;
+    --safe-b:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;height:100dvh}
+  body{
+    background:var(--bg);color:var(--ink);overflow:hidden;
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    -webkit-user-select:none;user-select:none;word-break:keep-all;
+  }
+  button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer}
+  #app{height:100%;display:flex;flex-direction:column}
+
+  /* 상단 */
+  .top{
+    flex:0 0 auto;padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 10px;
+    background:var(--panel);border-bottom:1px solid var(--line);
+  }
+  .toprow{display:flex;align-items:center;gap:10px}
+  .gps{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--sub)}
+  .led{width:11px;height:11px;border-radius:50%;background:var(--sub);flex:0 0 auto}
+  .led.ok{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .led.mid{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+  .led.bad{background:var(--bad);animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.35}}
+  .prog{margin-left:auto;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+  .prog small{color:var(--sub);font-weight:700}
+  .wake{padding:7px 10px;border-radius:10px;font-size:13px;font-weight:800;background:#0B1220;
+    border:1px solid var(--line);color:var(--sub);white-space:nowrap}
+  .wake.on{background:#713F12;border-color:#F59E0B;color:#FEF3C7}
+  .bar{height:6px;border-radius:3px;background:#0B1220;margin-top:9px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:var(--route);border-radius:3px;transition:width .6s}
+
+  /* 지도 */
+  #mapWrap{flex:1 1 auto;position:relative;min-height:0;background:#0B1220}
+  #map{position:absolute;inset:0}
+  #mapFallback{
+    position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+    gap:8px;text-align:center;padding:24px;color:var(--sub);font-size:15px;line-height:1.6;
+  }
+  #mapFallback b{color:var(--ink)}
+  .fab{
+    position:absolute;right:12px;z-index:6;border-radius:50%;display:grid;place-items:center;
+    box-shadow:0 6px 18px rgba(0,0,0,.45);
+  }
+  .recenter{bottom:88px;width:50px;height:50px;background:var(--panel);border:2px solid var(--line);font-size:22px}
+  .sos{bottom:14px;width:64px;height:64px;background:#DC2626;border:3px solid #FCA5A5;
+    font-size:15px;font-weight:900;color:#fff;letter-spacing:-.02em;line-height:1}
+
+  /* 경고 띠 */
+  .alert{
+    position:absolute;left:10px;right:10px;top:10px;z-index:8;display:none;
+    border-radius:16px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.5);line-height:1.45;
+  }
+  .alert.show{display:block}
+  .alert.off{background:#B91C1C;color:#fff;animation:pulse 1.2s infinite}
+  .alert.far{background:#1E3A5F;color:#DBEAFE}
+  .alert.weak{background:#422006;color:#FDE68A}
+  @keyframes pulse{50%{background:#7F1D1D}}
+  .alert b{font-size:20px;display:block;letter-spacing:-.02em}
+  .alert .s{font-size:15px;font-weight:700;margin-top:3px}
+  .alert .back{display:flex;gap:10px;align-items:center;margin-top:10px;background:rgba(0,0,0,.25);border-radius:12px;padding:8px}
+  .alert .back img{width:64px;height:64px;object-fit:cover;border-radius:9px;flex:0 0 auto}
+  .alert button{margin-top:10px;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,.15);font-weight:800;font-size:14px}
+
+  /* 하단 카드 */
+  .card{
+    flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line);
+    padding:12px 12px calc(12px + var(--safe-b));
+  }
+  .next{display:flex;gap:12px;align-items:stretch;min-height:112px}
+  .next .ph{flex:0 0 auto;width:112px;border-radius:14px;overflow:hidden;background:#0B1220;position:relative}
+  .next .ph img{width:100%;height:100%;object-fit:cover;display:block}
+  .next .ph .more{position:absolute;right:5px;bottom:5px;background:rgba(2,6,23,.75);font-size:11px;font-weight:800;padding:2px 6px;border-radius:7px}
+  .next .tx{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:4px}
+  .next .k{font-size:14px;font-weight:800;color:var(--sub)}
+  .next .big{display:flex;align-items:center;gap:10px;font-size:30px;font-weight:900;letter-spacing:-.03em;line-height:1.1}
+  .next .big svg{width:40px;height:40px;flex:0 0 auto}
+  .next .sub{font-size:14px;color:#CBD5E1;font-weight:700}
+  .next.now{background:#14532D;border-radius:16px;padding:8px;margin:-8px}
+  .next.now .k{color:#BBF7D0}
+  .next.spotcard .big{font-size:24px}
+  .next.idle{min-height:0}
+  .next.idle .tx{padding:6px 2px}
+  .next.idle .big{font-size:20px}
+  .chips{display:flex;gap:6px;margin-top:10px;overflow-x:auto;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;padding:7px 10px;border-radius:999px;background:#0B1220;border:1px solid var(--line);
+    font-size:13px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .chip.risk{border-color:#F97316;color:#FED7AA}
+
+  /* 시트 */
+  .sheet{position:fixed;inset:0;z-index:70;background:rgba(15,23,42,.97);display:none;flex-direction:column}
+  .sheet.show{display:flex}
+  .sheet-head{flex:0 0 auto;display:flex;align-items:center;gap:12px;
+    padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 14px;border-bottom:1px solid var(--line)}
+  .sheet-head h2{font-size:20px;font-weight:900}
+  .sheet-head .x{margin-left:auto;font-size:26px;width:44px;height:44px;border-radius:12px;background:var(--panel2)}
+  .sheet-body{flex:1 1 auto;overflow:auto;padding:16px 16px calc(20px + var(--safe-b))}
+  .say{background:#FEF2F2;color:#7F1D1D;border-radius:18px;padding:18px;margin-bottom:14px}
+  .say .k{font-size:14px;font-weight:800;color:#B91C1C}
+  .say .v{font-size:28px;font-weight:900;letter-spacing:-.03em;line-height:1.3;margin-top:6px}
+  .stay{background:#422006;color:#FDE68A;border-radius:14px;padding:14px;font-size:17px;font-weight:800;line-height:1.5;margin-bottom:14px}
+  .coord{font-size:14px;color:var(--sub);font-variant-numeric:tabular-nums;margin-bottom:12px;-webkit-user-select:text;user-select:text}
+  .row{display:flex;gap:8px;margin-top:10px}
+  .row button{flex:1;min-height:54px;border-radius:14px;font-size:16px;font-weight:800;background:var(--panel2);border:1px solid var(--line)}
+  .hint{color:var(--sub);font-size:14px;line-height:1.7;margin-top:14px}
+  .hint b{color:var(--ink)}
+  .gallery img{width:100%;border-radius:14px;display:block;margin-bottom:10px;background:#0B1220}
+  .desc{font-size:16px;line-height:1.7;color:#E2E8F0;margin-bottom:14px;white-space:pre-wrap}
+
+  /* 시작 화면 */
+  #intro{position:fixed;inset:0;z-index:90;background:var(--bg);display:flex;flex-direction:column;
+    justify-content:center;padding:28px 24px calc(28px + var(--safe-b));gap:14px}
+  #intro h1{font-size:34px;font-weight:900;letter-spacing:-.04em}
+  #intro p{font-size:16px;line-height:1.7;color:#CBD5E1}
+  #intro ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin:6px 0}
+  #intro li{background:var(--panel);border-radius:14px;padding:12px 14px;font-size:15px;line-height:1.5}
+  #intro li b{display:block;font-size:16px}
+  #intro .go{min-height:60px;border-radius:16px;background:var(--route);color:#04263A;font-size:19px;font-weight:900;margin-top:8px}
+  #intro .demo{min-height:48px;border-radius:14px;background:var(--panel2);font-size:15px;font-weight:800}
+
+  /* 체험 모드 */
+  #demo{display:none;flex:0 0 auto;background:#312E81;padding:8px 12px;gap:8px;align-items:center;font-size:13px;font-weight:800}
+  #demo.show{display:flex}
+  #demo input{flex:1 1 auto;accent-color:#A5B4FC}
+  #demo button{padding:8px 10px;border-radius:9px;background:rgba(255,255,255,.15);font-size:13px;font-weight:800;white-space:nowrap}
+  #demo button.on{background:#B91C1C}
+
+  #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(170px + var(--safe-b));z-index:95;
+    background:#F8FAFC;color:#0F172A;padding:12px 18px;border-radius:14px;font-size:16px;font-weight:800;
+    display:none;text-align:center;max-width:88vw;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  #toast.show{display:block}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="top">
+    <div class="toprow">
+      <div class="gps"><span class="led" id="led"></span><span id="gpsText">위치 확인 중</span></div>
+      <button class="wake" id="wakeBtn">🔅 화면 켜두기</button>
+      <div class="prog"><span id="progNow">-</span> <small>/ <span id="progAll"></span> km</small></div>
+    </div>
+    <div class="bar"><i id="barFill"></i></div>
+  </div>
+
+  <div id="demo">
+    <span>체험</span>
+    <button id="demoPlay">▶</button>
+    <input type="range" id="demoRange" min="0" max="1000" value="0">
+    <button id="demoOff">코스 벗어나기</button>
+  </div>
+
+  <div id="mapWrap">
+    <div id="map"></div>
+    <div id="mapFallback">
+      <b>지도를 불러오지 못했어요</b>
+      지도가 없어도 <b>갈림길 안내와 이탈 경보는 그대로 작동</b>해요.
+    </div>
+    <div class="alert" id="alert"></div>
+    <button class="fab recenter" id="recenter" title="내 위치로">◎</button>
+    <button class="fab sos" id="sosBtn">SOS</button>
+  </div>
+
+  <div class="card">
+    <div class="next idle" id="next"></div>
+    <div class="chips" id="chips"></div>
+  </div>
+</div>
+
+<div id="intro">
+  <h1>꿈길 걷기</h1>
+  <p>정해진 코스를 따라 걸으면 폰이 길을 챙겨 줄게요.</p>
+  <ul>
+    <li><b>📍 갈림길 미리 알림</b>갈림길 가까이 가면 사진과 방향을 보여 줘요.</li>
+    <li><b>⚠️ 코스 이탈 경보</b>길을 벗어나면 진동과 소리로 알려 줘요.</li>
+    <li><b>🆘 내 위치 알리기</b>무전으로 읽어 줄 위치 문장을 크게 보여 줘요.</li>
+  </ul>
+  <p style="font-size:14px;color:var(--sub)">화면이 꺼지면 알림도 멈춰요. <b style="color:var(--ink)">갈림길이 많은 산길에서는 「화면 켜두기」</b>를 눌러 두세요.</p>
+  <button class="go" id="startBtn">걷기 시작</button>
+  <button class="demo" id="demoBtn">🧪 체험 모드 (코스 밖에서 미리 보기)</button>
+</div>
+
+<div class="sheet" id="sosSheet">
+  <div class="sheet-head"><h2>🆘 내 위치 알리기</h2><button class="x" data-close>×</button></div>
+  <div class="sheet-body">
+    <div class="say"><div class="k">📻 선생님께 이 문장을 그대로 읽어 주세요</div><div class="v" id="sayText"></div></div>
+    <div class="stay">🧍 움직이지 말고 그 자리에서 기다리세요.<br>선생님이 이 위치로 찾아와요.</div>
+    <div class="coord" id="coordText"></div>
+    <div class="row">
+      <button id="copyLoc">📋 위치 복사</button>
+      <button id="shareLoc">📤 지도 링크 보내기</button>
+    </div>
+    <p class="hint">잘못 눌렀으면 그냥 <b>×</b>로 닫으면 돼요. 아무 기록도 남지 않아요.</p>
+  </div>
+</div>
+
+<div class="sheet" id="photoSheet">
+  <div class="sheet-head"><h2 id="photoTitle"></h2><button class="x" data-close>×</button></div>
+  <div class="sheet-body">
+    <div class="desc" id="photoDesc"></div>
+    <div class="gallery" id="gallery"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=9316a3f1cf1a1915fe2f6d40521ce712&autoload=false"></script>
+<script>
+(function(){
+  "use strict";
+
+  var TYPES = {
+    fork:{name:"갈림길", ico:"📍", color:"#EF4444"},
+    spot:{name:"명소",   ico:"🏛", color:"#A855F7"},
+    wc:  {name:"화장실", ico:"🚻", color:"#0EA5E9"},
+    rest:{name:"휴식",   ico:"☕", color:"#14B8A6"},
+    risk:{name:"주의",   ico:"⚠️", color:"#F97316"},
+    car: {name:"차량 진입",ico:"🚗", color:"#22C55E"}
+  };
+  var DIRS = {left:"왼쪽", right:"오른쪽", straight:"직진"};
+
+  var FORK_AHEAD = 200;   // 이 거리(m) 안에 들어오면 갈림길 사진을 띄운다
+  var FORK_NOW   = 30;    // 이 안이면 「지금」
+  var FORK_PASS  = 20;    // 갈림길을 이만큼 지나면 다음 갈림길로 넘어간다
+  var SPOT_NEAR  = 40;    // 명소·휴식·화장실 도착 판정
+  var RISK_AHEAD = 100;
+  var OFF_M      = 30;    // 코스에서 이만큼 벗어나면 이탈
+  var BACK_M     = 20;    // 이 안으로 돌아오면 이탈 해제
+  var FAR_M      = 1000;  // 이보다 멀면 「행사 코스 밖」 (경보 안 울림)
+  var MAX_ACC    = 50;    // 정확도가 이보다 나쁘면 이탈 판정을 보류
+  var STALE_MS   = 30000;
+
+  var $ = function(id){ return document.getElementById(id); };
+  var C = null;                 // course.json
+  var XY = [], CUM = [];        // 코스 꼭짓점의 평면 좌표(m)와 누적 거리
+  var LAT0 = 0, LNG0 = 0, KX = 0, KY = 111320;
+  var state = {progress:null, off:0, offCount:0, isOff:false, pos:null, lastFix:0, snap:null};
+  var demo = false;
+
+  /* ---------- 좌표 계산 ----------
+     영종도 정도 넓이면 위경도를 평면(m)으로 펴서 계산해도 오차가 1m도 안 된다. */
+  function toXY(lat, lng){ return [(lng-LNG0)*KX, (lat-LAT0)*KY]; }
+  function toLL(x, y){ return {lat:LAT0 + y/KY, lng:LNG0 + x/KX}; }
+
+  function prepCourse(){
+    var c = C.course;
+    LAT0 = c[0][0]; LNG0 = c[0][1];
+    KX = 111320*Math.cos(LAT0*Math.PI/180);
+    XY = c.map(function(p){ return toXY(p[0], p[1]); });
+    CUM = [0];
+    for(var i=1;i<XY.length;i++) CUM.push(CUM[i-1] + Math.hypot(XY[i][0]-XY[i-1][0], XY[i][1]-XY[i-1][1]));
+    C.lengthM = CUM[CUM.length-1];
+  }
+
+  /* 내 위치를 코스 위에 내려 「코스 몇 m 지점」과 「코스에서 몇 m 떨어졌나」를 구한다.
+     코스가 자기 자신 가까이 다시 지나는 곳(학교로 돌아오는 길 등)에서 엉뚱한 쪽에 붙지 않도록,
+     직전 진행 위치에서 멀리 떨어진 후보에는 벌점을 준다.
+     허용 폭은 마지막 위치 이후 흐른 시간만큼 넓힌다 — 화면을 끄고 30분 걸었다면 2km쯤 앞에 있을 수 있으니까. */
+  function project(lat, lng){
+    var p = toXY(lat, lng), best = null;
+    var reach = 400 + (state.lastFix ? (Date.now() - state.lastFix)/1000 * 2 : 0);
+    for(var i=1;i<XY.length;i++){
+      var a = XY[i-1], b = XY[i];
+      var dx = b[0]-a[0], dy = b[1]-a[1], L2 = dx*dx + dy*dy;
+      var t = L2 ? Math.max(0, Math.min(1, ((p[0]-a[0])*dx + (p[1]-a[1])*dy)/L2)) : 0;
+      var qx = a[0] + t*dx, qy = a[1] + t*dy;
+      var off = Math.hypot(p[0]-qx, p[1]-qy);
+      var along = CUM[i-1] + t*Math.sqrt(L2);
+      var cost = off;
+      if(state.progress !== null) cost += Math.max(0, Math.abs(along - state.progress) - reach) * 0.2;
+      if(!best || cost < best.cost) best = {cost:cost, off:off, along:along, qx:qx, qy:qy, px:p[0], py:p[1]};
+    }
+    return best;
+  }
+
+  /* 코스 위 s(m) 지점의 좌표. side(m)만큼 진행 방향 오른쪽으로 비켜난 곳 — 체험 모드용 */
+  function pointAt(s, side){
+    s = Math.max(0, Math.min(C.lengthM, s));
+    var i = 1;
+    while(i < CUM.length-1 && CUM[i] < s) i++;
+    var a = XY[i-1], b = XY[i], L = CUM[i]-CUM[i-1] || 1, t = (s-CUM[i-1])/L;
+    var ux = (b[0]-a[0])/L, uy = (b[1]-a[1])/L;
+    return toLL(a[0] + t*(b[0]-a[0]) + uy*(side||0), a[1] + t*(b[1]-a[1]) - ux*(side||0));
+  }
+
+  function compass(dx, dy){
+    var names = ["북", "북동", "동", "남동", "남", "남서", "서", "북서"];
+    var deg = (Math.atan2(dx, dy)*180/Math.PI + 360) % 360;
+    return names[Math.round(deg/45) % 8] + "쪽";
+  }
+  function fmtM(m){ m = Math.max(0, m); return m < 1000 ? Math.round(m/10)*10 + "m" : (m/1000).toFixed(1) + "km"; }
+
+  /* ---------- 위치가 들어올 때마다 ---------- */
+  function onPosition(lat, lng, acc){
+    var r = project(lat, lng);
+    state.pos = {lat:lat, lng:lng, acc:acc};
+    state.lastFix = Date.now();
+    state.snap = r;
+    state.off = r.off;
+
+    if(r.off > FAR_M){
+      state.isOff = false; state.offCount = 0;          // 코스 근처에도 없으면 경보 대신 안내만
+    }else{
+      if(state.progress === null || r.off < OFF_M) state.progress = r.along;
+      if(acc <= MAX_ACC){
+        if(r.off > OFF_M + Math.min(acc, 30)*0.5) state.offCount++;
+        else if(r.off < BACK_M) state.offCount = 0;
+        var wasOff = state.isOff;
+        if(state.offCount >= 2) state.isOff = true;     // 튀는 좌표 한 번에 울리지 않게 두 번 연속일 때만
+        if(state.offCount === 0) state.isOff = false;
+        if(state.isOff && !wasOff) ring();
+        if(!state.isOff && wasOff) toast("✅ 코스로 돌아왔어요");
+      }
+    }
+    paint();
+  }
+
+  /* ---------- 화면 ---------- */
+  function upcoming(type, from){
+    return C.points.filter(function(p){ return p.type === type && p.m > from; })[0] || null;
+  }
+  function lastPassed(type, at){
+    var list = C.points.filter(function(p){ return p.type === type && p.m <= at; });
+    return list[list.length-1] || null;
+  }
+
+  var shown = "";   // 같은 카드를 다시 그려 사진이 깜빡이지 않게
+  function paint(){
+    var acc = state.pos ? state.pos.acc : 99;
+    $("led").className = "led " + (!state.pos ? "" : acc <= 15 ? "ok" : acc <= 30 ? "mid" : "bad");
+    $("gpsText").textContent = !state.pos ? "위치 확인 중" : "±" + acc + "m";
+
+    var far = state.snap && state.snap.off > FAR_M;
+    var prog = state.progress === null ? 0 : state.progress;
+    $("progNow").textContent = (state.progress === null || far) ? "-" : (prog/1000).toFixed(1);
+    $("barFill").style.width = (far ? 0 : Math.min(100, prog/C.lengthM*100)) + "%";
+
+    paintAlert(far);
+    paintNext(far, prog);
+    paintChips(far, prog);
+    drawMe();
+  }
+
+  function paintAlert(far){
+    var el = $("alert"), r = state.snap;
+    if(far){
+      el.className = "alert far show";
+      el.innerHTML = "<b>행사 코스에서 멀리 있어요</b><div class='s'>코스까지 " + fmtM(r.off) +
+        ". 출발 지점에 가면 안내가 시작돼요.</div>" +
+        (demo ? "" : "<button id='toDemo'>🧪 체험 모드로 미리 보기</button>");
+      var b = $("toDemo"); if(b) b.onclick = startDemo;
+      return;
+    }
+    if(state.isOff){
+      var dir = compass(r.qx - r.px, r.qy - r.py);
+      var f = lastPassed("fork", state.progress + 5);
+      var back = "";
+      if(f && state.progress - f.m < 150){
+        back = "<div class='back'>" + (f.photos[0] ? "<img src='photos/" + f.photos[0] + "' alt=''>" : "") +
+          "<div>방금 지난 갈림길에서<br><b style='font-size:18px;display:inline'>" + (DIRS[f.dir] || "코스 방향") + "</b>이었어요</div></div>";
+      }
+      el.className = "alert off show";
+      el.innerHTML = "<b>⚠️ 코스를 벗어났어요</b><div class='s'>코스는 " + dir + "으로 " + fmtM(r.off) +
+        ". 멈추고 주변 친구·선생님을 확인하세요.</div>" + back;
+      return;
+    }
+    if(state.pos && Date.now() - state.lastFix > STALE_MS){
+      el.className = "alert weak show";
+      el.innerHTML = "<b>위치 신호가 약해요</b><div class='s'>하늘이 트인 곳으로 잠깐 나가 보세요.</div>";
+      return;
+    }
+    el.className = "alert";
+  }
+
+  function arrowSvg(dir){
+    var rot = {left:-90, right:90, straight:0}[dir];
+    if(rot === undefined) return "";
+    return '<svg viewBox="0 0 40 40" style="transform:rotate(' + rot + 'deg)"><path d="M20 4 L34 20 H25 V36 H15 V20 H6 Z" fill="#F8FAFC"/></svg>';
+  }
+
+  function paintNext(far, prog){
+    var el = $("next"), html = "", cls = "next idle", key;
+    if(!state.pos || far || !C){
+      key = "wait";
+      html = '<div class="tx"><div class="k">' + C.title + ' · ' + fmtM(C.lengthM) + '</div>' +
+        '<div class="big">' + (state.pos ? "출발 지점으로 가 주세요" : "위치를 찾고 있어요") + '</div></div>';
+    }else{
+      var spot = C.points.filter(function(p){
+        return (p.type === "spot" || p.type === "rest" || p.type === "wc") && Math.abs(p.m - prog) <= SPOT_NEAR;
+      })[0];
+      var fork = C.points.filter(function(p){ return p.type === "fork" && p.m > prog - FORK_PASS; })[0];
+      var risk = upcoming("risk", prog - 10);
+      var dF = fork ? fork.m - prog : Infinity;
+
+      if(fork && dF <= FORK_AHEAD){
+        var now = dF <= FORK_NOW;
+        key = "fork" + fork.m + now;
+        cls = "next" + (now ? " now" : "");
+        html = photoBox(fork) +
+          '<div class="tx"><div class="k">' + (now ? "지금 여기 갈림길" : fmtM(dF) + " 앞 갈림길") + '</div>' +
+          '<div class="big">' + arrowSvg(fork.dir) + (DIRS[fork.dir] || "코스 따라") + (now ? "으로" : "") + '</div>' +
+          (fork.name !== "갈림길" ? '<div class="sub">' + fork.name + '</div>' : '<div class="sub">사진과 같은 곳에서 방향을 확인하세요</div>') +
+          '</div>';
+      }else if(spot){
+        key = "spot" + spot.m;
+        cls = "next spotcard";
+        var t = TYPES[spot.type];
+        html = photoBox(spot) +
+          '<div class="tx"><div class="k">' + t.ico + ' 도착했어요</div><div class="big">' + spot.name + '</div>' +
+          '<div class="sub">사진을 누르면 크게 볼 수 있어요</div></div>';
+      }else if(risk && risk.m - prog <= RISK_AHEAD){
+        key = "risk" + risk.m;
+        cls = "next";
+        html = photoBox(risk) +
+          '<div class="tx"><div class="k">' + fmtM(risk.m - prog) + ' 앞</div><div class="big">⚠️ ' + risk.name + '</div></div>';
+      }else{
+        key = "idle" + (fork ? Math.round(dF/50) : "end");
+        html = '<div class="tx"><div class="k">코스를 잘 따라가고 있어요</div><div class="big">' +
+          (fork ? "다음 갈림길까지 " + fmtM(dF) : (prog > C.lengthM - 30 ? "🎉 도착!" : "끝까지 코스를 따라 걸어요")) + '</div></div>';
+      }
+    }
+    if(key === shown) return;
+    shown = key;
+    el.className = cls;
+    el.innerHTML = html;
+  }
+
+  function photoBox(p){
+    if(!p.photos.length) return "";
+    return '<div class="ph" data-pm="' + p.m + '"><img src="photos/' + p.photos[0] + '" alt="">' +
+      (p.photos.length > 1 ? '<span class="more">+' + (p.photos.length-1) + '</span>' : '') + '</div>';
+  }
+
+  function paintChips(far, prog){
+    if(far || !state.pos){ $("chips").innerHTML = ""; return; }
+    var out = [];
+    ["spot", "rest", "wc"].forEach(function(k){
+      var p = upcoming(k, prog + SPOT_NEAR);
+      if(p) out.push('<span class="chip">' + TYPES[k].ico + " " + (k === "spot" ? p.name : TYPES[k].name) + " " + fmtM(p.m - prog) + '</span>');
+    });
+    var r = upcoming("risk", prog);
+    if(r && r.m - prog < 500) out.push('<span class="chip risk">⚠️ ' + r.name + " " + fmtM(r.m - prog) + '</span>');
+    $("chips").innerHTML = out.join("");
+  }
+
+  document.addEventListener("click", function(e){
+    var ph = e.target.closest("[data-pm]");
+    if(ph){
+      var p = C.points.filter(function(x){ return String(x.m) === ph.dataset.pm; })[0];
+      if(p) openPhotos(p);
+    }
+    if(e.target.closest("[data-close]")) document.querySelectorAll(".sheet").forEach(function(s){ s.classList.remove("show"); });
+  });
+  function openPhotos(p){
+    $("photoTitle").textContent = TYPES[p.type].ico + " " + (p.type === "fork" ? (DIRS[p.dir] || "") + " · " + p.name : p.name);
+    $("photoDesc").textContent = p.desc || "";
+    $("photoDesc").style.display = p.desc ? "block" : "none";
+    $("gallery").innerHTML = p.photos.map(function(f){ return '<img src="photos/' + f + '" alt="">'; }).join("");
+    $("photoSheet").classList.add("show");
+  }
+
+  /* ---------- 경보 소리·진동 ---------- */
+  var audio = null;
+  function unlockAudio(){
+    try{ audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); }catch(e){}
+  }
+  function ring(){
+    if(navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
+    if(!audio) return;
+    [0, 0.35, 0.7].forEach(function(t){
+      var o = audio.createOscillator(), g = audio.createGain();
+      o.type = "square"; o.frequency.value = 880;
+      g.gain.setValueAtTime(0.25, audio.currentTime + t);
+      g.gain.setValueAtTime(0, audio.currentTime + t + 0.22);
+      o.connect(g); g.connect(audio.destination);
+      o.start(audio.currentTime + t); o.stop(audio.currentTime + t + 0.25);
+    });
+  }
+
+  /* ---------- 화면 켜두기 ----------
+     산길에서는 화면이 꺼지면 경보도 멈춘다. 배터리가 들므로 기본은 끔, 필요한 구간에서만 켠다. */
+  var wakeLock = null, wantWake = false;
+  function setWake(on){
+    wantWake = on;
+    $("wakeBtn").className = "wake" + (on ? " on" : "");
+    $("wakeBtn").textContent = on ? "🔆 화면 켜짐" : "🔅 화면 켜두기";
+    if(!("wakeLock" in navigator)){
+      if(on){ toast("이 폰은 화면 켜두기를 지원하지 않아요.\n설정에서 자동 잠금 시간을 늘려 주세요"); setWake(false); }
+      return;
+    }
+    if(on){
+      navigator.wakeLock.request("screen").then(function(l){ wakeLock = l; }).catch(function(){});
+    }else if(wakeLock){
+      wakeLock.release().catch(function(){}); wakeLock = null;
+    }
+  }
+  $("wakeBtn").onclick = function(){ setWake(!wantWake); };
+
+  /* ---------- 지도 ---------- */
+  var map = null, mapReady = false, meMarker = null, meCircle = null, doneLine = null, snapLine = null, follow = true;
+  var mapTimer = setTimeout(failMap, 8000);
+  function failMap(){
+    if(mapReady) return;
+    $("map").style.display = "none";
+    $("mapFallback").style.display = "flex";
+  }
+  function initMap(){
+    if(!(window.kakao && kakao.maps)){ failMap(); return; }
+    kakao.maps.load(function(){
+      try{
+        clearTimeout(mapTimer);
+        var path = C.course.map(function(p){ return new kakao.maps.LatLng(p[0], p[1]); });
+        map = new kakao.maps.Map($("map"), {center:path[0], level:4});
+        kakao.maps.event.addListener(map, "dragstart", function(){ follow = false; });
+        new kakao.maps.Polyline({map:map, path:path, strokeWeight:8, strokeColor:"#38BDF8", strokeOpacity:.9, zIndex:2});
+        doneLine = new kakao.maps.Polyline({map:map, path:[], strokeWeight:8, strokeColor:"#64748B", strokeOpacity:.95, zIndex:3});
+        snapLine = new kakao.maps.Polyline({map:map, path:[], strokeWeight:4, strokeColor:"#EF4444", strokeStyle:"shortdash", zIndex:4});
+        C.points.forEach(function(p){
+          var t = TYPES[p.type] || TYPES.spot, small = p.type === "fork";
+          var el = small
+            ? '<div style="width:14px;height:14px;border-radius:50%;background:' + t.color + ';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)"></div>'
+            : '<div style="background:' + t.color + ';color:#fff;font-weight:800;font-size:12px;padding:4px 8px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.5)">' +
+              t.ico + ' ' + (p.type === "spot" ? p.name : t.name) + '</div>';
+          new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(p.lat, p.lng), content:el, yAnchor:small ? .5 : 1.3, zIndex:5}).setMap(map);
+        });
+        var bounds = new kakao.maps.LatLngBounds();
+        path.forEach(function(ll){ bounds.extend(ll); });
+        map.setBounds(bounds);
+        mapReady = true;
+        drawMe();
+      }catch(e){ failMap(); }
+    });
+  }
+  function drawMe(){
+    if(!mapReady || !state.pos) return;
+    var pos = new kakao.maps.LatLng(state.pos.lat, state.pos.lng);
+    if(!meMarker){
+      meMarker = new kakao.maps.CustomOverlay({position:pos, zIndex:10,
+        content:'<div style="width:20px;height:20px;border-radius:50%;background:#0EA5E9;border:3px solid #fff;box-shadow:0 0 0 6px rgba(14,165,233,.3)"></div>'});
+      meMarker.setMap(map);
+      meCircle = new kakao.maps.Circle({center:pos, radius:state.pos.acc, map:map, strokeWeight:1,
+        strokeColor:"#0EA5E9", strokeOpacity:.6, fillColor:"#0EA5E9", fillOpacity:.12, zIndex:1});
+      map.setLevel(3);
+    }else{
+      meMarker.setPosition(pos); meCircle.setPosition(pos); meCircle.setRadius(state.pos.acc);
+    }
+    var far = state.snap.off > FAR_M;
+    var done = [];
+    if(!far && state.progress !== null){
+      for(var i=0;i<CUM.length && CUM[i] <= state.progress;i++) done.push(new kakao.maps.LatLng(C.course[i][0], C.course[i][1]));
+      var e = pointAt(state.progress, 0); done.push(new kakao.maps.LatLng(e.lat, e.lng));
+    }
+    doneLine.setPath(done);
+    if(state.isOff){
+      var q = toLL(state.snap.qx, state.snap.qy);
+      snapLine.setPath([pos, new kakao.maps.LatLng(q.lat, q.lng)]);
+    }else snapLine.setPath([]);
+    if(follow && !far) map.setCenter(pos);
+  }
+  $("recenter").onclick = function(){
+    follow = true;
+    if(mapReady && state.pos) map.setCenter(new kakao.maps.LatLng(state.pos.lat, state.pos.lng));
+  };
+
+  /* ---------- SOS ---------- */
+  function placeText(){
+    if(!state.pos) return "위치를 아직 못 찾았어요";
+    if(state.snap.off > FAR_M) return "코스 밖, 코스에서 " + fmtM(state.snap.off);
+    var prog = state.progress, named = C.points.filter(function(p){
+      return p.type !== "risk" && (p.type !== "fork" || p.name !== "갈림길");
+    });
+    var before = null, after = null;
+    named.forEach(function(p){
+      if(p.m <= prog) before = p;
+      else if(!after) after = p;
+    });
+    var label = function(p){ return p.type === "fork" ? p.name.replace(/ 방향$/, "") + " 갈림길" : p.name; };
+    var s;
+    if(after && after.m - prog < 30) s = label(after) + " 바로 앞";
+    else if(before && prog - before.m < 30) s = label(before) + " 바로 앞";
+    else if(after && after.m - prog <= 150 && (!before || after.m - prog < prog - before.m)) s = label(after) + " " + fmtM(after.m - prog) + " 전";
+    else if(before) s = label(before) + " 지나 " + fmtM(prog - before.m);
+    else s = "출발 후 " + fmtM(prog);
+    s += ", 코스 " + (prog/1000).toFixed(1) + "km 지점";
+    if(state.isOff) s += " (코스에서 " + fmtM(state.snap.off) + " 벗어남)";
+    return s;
+  }
+  function mapLink(){ return "https://map.kakao.com/link/map/" + encodeURIComponent("여기 있어요") + "," + state.pos.lat.toFixed(6) + "," + state.pos.lng.toFixed(6); }
+  $("sosBtn").onclick = function(){
+    $("sayText").textContent = placeText();
+    $("coordText").textContent = state.pos ? "좌표 " + state.pos.lat.toFixed(5) + ", " + state.pos.lng.toFixed(5) + " · 정확도 ±" + state.pos.acc + "m" : "";
+    $("sosSheet").classList.add("show");
+  };
+  function locMessage(){ return "[꿈길 걷기] " + placeText() + "\n" + (state.pos ? mapLink() : ""); }
+  $("copyLoc").onclick = function(){
+    if(!state.pos){ toast("아직 위치를 못 찾았어요"); return; }
+    if(navigator.clipboard) navigator.clipboard.writeText(locMessage()).then(function(){ toast("복사했어요. 문자·카톡에 붙여넣으세요"); }, function(){ toast("복사가 안 돼요. 문장을 읽어 주세요"); });
+  };
+  $("shareLoc").onclick = function(){
+    if(!state.pos){ toast("아직 위치를 못 찾았어요"); return; }
+    if(navigator.share) navigator.share({title:"꿈길 걷기 내 위치", text:locMessage()}).catch(function(){});
+    else $("copyLoc").onclick();
+  };
+
+  /* ---------- GPS ---------- */
+  var watchId = null;
+  function startWatch(){
+    if(demo || watchId !== null || !navigator.geolocation) return;
+    watchId = navigator.geolocation.watchPosition(function(p){
+      onPosition(p.coords.latitude, p.coords.longitude, Math.max(1, Math.round(p.coords.accuracy || 99)));
+    }, function(e){
+      $("led").className = "led bad";
+      $("gpsText").textContent = e.code === 1 ? "위치 권한 꺼짐" : "위치 찾는 중";
+      if(e.code === 1) toast("위치 권한을 허용해 주세요.\n설정 → 브라우저 → 위치", 5000);
+    }, {enableHighAccuracy:true, maximumAge:3000, timeout:20000});
+  }
+  function stopWatch(){ if(watchId !== null){ navigator.geolocation.clearWatch(watchId); watchId = null; } }
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "visible"){ startWatch(); if(wantWake) setWake(true); }
+    else stopWatch();
+  });
+  setInterval(function(){ if(C && state.pos) paintAlert(state.snap.off > FAR_M); }, 5000);
+
+  /* ---------- 체험 모드 ----------
+     책상에서 코스를 따라 걷는 것처럼 움직여 본다. 슬라이더 = 코스 위치, 「코스 벗어나기」 = 옆으로 60m. */
+  var demoSide = 0, demoTimer = null;
+  function startDemo(){
+    demo = true; stopWatch();
+    state.progress = null;
+    $("intro").style.display = "none";
+    $("demo").classList.add("show");
+    unlockAudio();
+    demoMove();
+  }
+  function demoMove(){
+    var s = $("demoRange").value/1000 * C.lengthM;
+    var p = pointAt(s, demoSide);
+    onPosition(p.lat, p.lng, 5);
+  }
+  $("demoRange").oninput = function(){ follow = true; state.progress = null; demoMove(); };   // 손으로 끌면 순간이동이라 진행 위치를 새로 잡는다
+  $("demoOff").onclick = function(){
+    demoSide = demoSide ? 0 : 60;
+    this.classList.toggle("on", !!demoSide);
+    this.textContent = demoSide ? "코스로 돌아가기" : "코스 벗어나기";
+    demoMove(); setTimeout(demoMove, 50);   // 튀는 좌표 방지 로직이 두 번 연속을 요구하므로
+  };
+  $("demoPlay").onclick = function(){
+    if(demoTimer){ clearInterval(demoTimer); demoTimer = null; this.textContent = "▶"; return; }
+    this.textContent = "⏸";
+    demoTimer = setInterval(function(){
+      var r = $("demoRange"), step = 1000 * 12 / C.lengthM;   // 한 번에 12m (실제 약 10배속)
+      r.value = Math.min(1000, +r.value + step);
+      demoMove();
+      if(+r.value >= 1000){ clearInterval(demoTimer); demoTimer = null; $("demoPlay").textContent = "▶"; }
+    }, 1000);
+  };
+
+  /* ---------- 토스트 ---------- */
+  var toastTimer = null;
+  function toast(msg, ms){
+    var el = $("toast"); el.textContent = msg; el.className = "show";
+    clearTimeout(toastTimer); toastTimer = setTimeout(function(){ el.className = ""; }, ms || 2400);
+  }
+
+  /* ---------- 시작 ---------- */
+  $("startBtn").onclick = function(){
+    unlockAudio();
+    $("intro").style.display = "none";
+    startWatch();
+  };
+  $("demoBtn").onclick = startDemo;
+
+  window.__kkumgil = {onPosition:onPosition, state:state, placeText:placeText};   // 검증 스크립트용
+
+  fetch("course.json", {cache:"no-cache"}).then(function(r){ return r.json(); }).then(function(d){
+    C = d; prepCourse();
+    $("progAll").textContent = (C.lengthM/1000).toFixed(1);
+    paint(); initMap();
+    /* ?demo=3000&off — 체험 모드를 코스 3000m 지점(코스 밖 60m)에서 바로 연다. 링크로 특정 장면을 보여줄 때 */
+    var q = location.search.match(/[?&]demo(?:=(\d+))?/);
+    if(q){
+      $("demoRange").value = Math.round((+q[1] || 0) / C.lengthM * 1000);
+      if(/[?&]off\b/.test(location.search)){ demoSide = 60; $("demoOff").classList.add("on"); $("demoOff").textContent = "코스로 돌아가기"; }
+      startDemo(); demoMove();
+    }
+  }).catch(function(){
+    $("next").innerHTML = '<div class="tx"><div class="big">코스 정보를 못 불러왔어요</div><div class="sub">인터넷 연결을 확인하고 새로고침 해 주세요</div></div>';
+  });
+})();
+</script>
+</body>
+</html>
