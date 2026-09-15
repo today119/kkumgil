@@ -23,6 +23,9 @@ from PIL import Image, ImageOps
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SEGMENTS = [
     {"survey": "data/survey-20260911/course_seg1.json", "photos": "data/survey-20260911/photos"},
+    # ⚠️ 초안 — OSM 도보 경로 자동 계산. 실제 코스(중산교차로 경유 등)와 다를 수 있음. 사용자 확인/직접 그린 GPX 로 교체할 것
+    {"gpx": "data/draft/gap_1to2_osm_draft.gpx"},
+    {"survey": "data/survey-20260915/course_seg2.json", "photos": "data/survey-20260915/photos"},
 ]
 OUT = os.path.join(ROOT, "walk")
 MAX_SIDE, QUALITY = 800, 70
