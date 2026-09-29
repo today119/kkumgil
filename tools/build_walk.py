@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""답사 결과·GPX → 학생 앱 데이터(walk/course.json + walk/photos/).
+"""답사 결과·GPX → 학생 앱 데이터(walk/course-dayN.json + walk/photos/).
+
+  하루치씩 만든다.  DAY 를 바꿔 다시 돌리면 그 날 코스가 만들어진다.
+    python3 tools/build_walk.py        # 1일차
+    python3 tools/build_walk.py 2      # 2일차 (SEGMENTS_DAY2 를 채운 뒤)
+  ⚠️ 사진은 두 날이 같은 폴더(walk/photos)를 쓰므로 파일 이름에 날짜를 넣어 겹치지 않게 한다.
 
   python3 tools/build_walk.py
 
@@ -15,18 +20,36 @@
 import json
 import math
 import os
+import sys
 import unicodedata
 import xml.etree.ElementTree as ET
 
 from PIL import Image, ImageOps
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SEGMENTS = [
+DAY = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 1
+
+SEGMENTS_DAY1 = [
     {"survey": "data/survey-20260911/course_seg1.json", "photos": "data/survey-20260911/photos"},
     # 2026-09-16 사용자가 gpx.studio 로 직접 그린 구간(용궁사 앞~중산교차로~하늘초 앞, 2.78km)
     {"gpx": "data/gpx/gap_1to2_20260916_joined.gpx"},
     {"survey": "data/survey-20260915/course_seg2.json", "photos": "data/survey-20260915/photos"},
 ]
+# 2일차(무의도)는 아직 답사 전이다. GPX·답사 JSON 이 생기면 여기에 줄을 채우면 된다.
+SEGMENTS_DAY2 = []
+
+DAYS = {
+    1: {"segments": SEGMENTS_DAY1, "title": "꿈길 걷기 1일차", "file": "course-day1.json"},
+    2: {"segments": SEGMENTS_DAY2, "title": "꿈길 걷기 2일차", "file": "course-day2.json"},
+}
+if DAY not in DAYS:
+    raise SystemExit("1 또는 2 만 됩니다 — python3 tools/build_walk.py 2")
+SEGMENTS = DAYS[DAY]["segments"]
+TITLE = DAYS[DAY]["title"]
+OUTFILE = DAYS[DAY]["file"]
+if not SEGMENTS:
+    raise SystemExit("%d일차 구간이 비어 있습니다. 답사 GPX/JSON 을 넣고 SEGMENTS_DAY%d 를 채워 주세요." % (DAY, DAY))
+
 OUT = os.path.join(ROOT, "walk")
 MAX_SIDE, QUALITY = 800, 70
 GAP_WARN = 30
@@ -115,7 +138,7 @@ def load_survey(seg, no):
             if not real:
                 print("  사진 없음:", name)
                 continue
-            out_name = "s%d_%s" % (no, nfc(name))
+            out_name = "d%d_s%d_%s" % (DAY, no, nfc(name))   # 날짜를 앞에 붙여 두 날 사진이 안 겹치게
             shrink(os.path.join(photo_dir, real), os.path.join(OUT, "photos", out_name))
             photos.append(out_name)
         points.append({
@@ -150,8 +173,11 @@ def load_gpx(seg):
 
 def main():
     os.makedirs(os.path.join(OUT, "photos"), exist_ok=True)
+    # ★ 통째로 비우면 «다른 날 사진»까지 지워진다. 이 날 것만 지운다.
+    pre = "d%d_" % DAY
     for f in os.listdir(os.path.join(OUT, "photos")):
-        os.remove(os.path.join(OUT, "photos", f))
+        if f.startswith(pre):
+            os.remove(os.path.join(OUT, "photos", f))
     course, points, offset_m = [], [], 0.0
     for no, seg in enumerate(SEGMENTS, 1):
         path, seg_len, seg_points = load_survey(seg, no) if "survey" in seg else load_gpx(seg)
@@ -173,12 +199,12 @@ def main():
     for p in points:
         p["desc"] = ""  # 명소 해설: 출처 확인이 끝난 것만 채울 것
     data = {
-        "title": "꿈길 걷기 1일차",
+        "title": TITLE,
         "lengthM": round(offset_m),
         "course": course,
         "points": sorted(points, key=lambda x: x["m"]),
     }
-    with open(os.path.join(OUT, "course.json"), "w", encoding="utf-8") as f:
+    with open(os.path.join(OUT, OUTFILE), "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
     photos = os.listdir(os.path.join(OUT, "photos"))
     size = sum(os.path.getsize(os.path.join(OUT, "photos", x)) for x in photos)

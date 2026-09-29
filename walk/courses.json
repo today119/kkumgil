@@ -1,0 +1,22 @@
+{
+  "_": "코스 목록. 앱 첫 화면이 이 파일을 읽어 카드를 그린다. 거리는 각 코스 파일에서 자동으로 읽으므로 여기 적지 않는다.",
+  "courses": [
+    {
+      "id": "day1",
+      "label": "1일차",
+      "date": "10/30(금)",
+      "place": "영종도",
+      "file": "course-day1.json",
+      "ready": true
+    },
+    {
+      "id": "day2",
+      "label": "2일차",
+      "date": "10/31(토)",
+      "place": "무의도",
+      "file": "course-day2.json",
+      "ready": false,
+      "note": "답사 준비 중"
+    }
+  ]
+}

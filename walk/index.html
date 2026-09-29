@@ -131,6 +131,17 @@
   #intro li{background:var(--panel);border-radius:14px;padding:12px 14px;font-size:15px;line-height:1.5}
   #intro li b{display:block;font-size:16px}
   #intro .go{min-height:60px;border-radius:16px;background:var(--route);color:#04263A;font-size:19px;font-weight:900;margin-top:8px}
+  /* 코스 고르기 — 이틀을 각각 다른 날 걷는다. 첫 화면에서 «오늘 걸을 코스»를 고른다. */
+  .picks{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+  .pick{display:flex;align-items:center;gap:14px;text-align:left;padding:16px;border-radius:16px;
+    background:var(--route);color:#04263A;font-weight:900}
+  .pick .d{flex:1;min-width:0}
+  .pick .t{font-size:20px;letter-spacing:-.02em}
+  .pick .s{font-size:14px;font-weight:800;opacity:.72;margin-top:3px}
+  .pick .km{font-size:24px;font-weight:900;white-space:nowrap}
+  .pick .km small{font-size:13px;font-weight:800;opacity:.7}
+  .pick.off{background:var(--panel);color:var(--sub);cursor:default}
+  .pick.off .km{font-size:15px}
   #intro .demo{min-height:48px;border-radius:14px;background:var(--panel2);font-size:15px;font-weight:800}
 
   /* 체험 모드 */
@@ -191,7 +202,7 @@
     <li><b>🆘 내 위치 알리기</b>무전으로 읽어 줄 위치 문장을 크게 보여 줘요.</li>
   </ul>
   <p style="font-size:14px;color:var(--sub)">화면이 꺼지면 알림도 멈춰요. <b style="color:var(--ink)">갈림길이 많은 산길에서는 「화면 켜두기」</b>를 눌러 두세요.</p>
-  <button class="go" id="startBtn">걷기 시작</button>
+  <div class="picks" id="picks"></div>
   <button class="demo" id="demoBtn">🧪 체험 모드 (코스 밖에서 미리 보기)</button>
 </div>
 
@@ -681,28 +692,78 @@
   }
 
   /* ---------- 시작 ---------- */
-  $("startBtn").onclick = function(){
+  function beginWalk(){
     unlockAudio();
     $("intro").style.display = "none";
     startWatch();
-  };
+  }
   $("demoBtn").onclick = startDemo;
 
   window.__kkumgil = {onPosition:onPosition, state:state, placeText:placeText};   // 검증 스크립트용
 
-  fetch("course.json", {cache:"no-cache"}).then(function(r){ return r.json(); }).then(function(d){
-    C = d; prepCourse();
-    $("progAll").textContent = (C.lengthM/1000).toFixed(1);
-    paint(); initMap();
-    /* ?demo=3000&off — 체험 모드를 코스 3000m 지점(코스 밖 60m)에서 바로 연다. 링크로 특정 장면을 보여줄 때 */
-    var q = location.search.match(/[?&]demo(?:=(\d+))?/);
-    if(q){
-      $("demoRange").value = Math.round((+q[1] || 0) / C.lengthM * 1000);
-      if(/[?&]off\b/.test(location.search)){ demoSide = 60; $("demoOff").classList.add("on"); $("demoOff").textContent = "코스로 돌아가기"; }
-      startDemo(); demoMove();
+  /* 코스 하나를 실제로 불러와 길안내를 준비한다. */
+  function loadCourse(file){
+    return fetch(file, {cache:"no-cache"}).then(function(r){ return r.json(); }).then(function(d){
+      C = d; prepCourse();
+      $("progAll").textContent = (C.lengthM/1000).toFixed(1);
+      paint(); initMap();
+      /* ?demo=3000&off — 체험 모드를 코스 3000m 지점(코스 밖 60m)에서 바로 연다. 링크로 특정 장면을 보여줄 때 */
+      var q = location.search.match(/[?&]demo(?:=(\d+))?/);
+      if(q){
+        $("demoRange").value = Math.round((+q[1] || 0) / C.lengthM * 1000);
+        if(/[?&]off\b/.test(location.search)){ demoSide = 60; $("demoOff").classList.add("on"); $("demoOff").textContent = "코스로 돌아가기"; }
+        startDemo(); demoMove();
+      }
+    }).catch(function(){
+      $("next").innerHTML = '<div class="tx"><div class="big">코스 정보를 못 불러왔어요</div><div class="sub">인터넷 연결을 확인하고 새로고침 해 주세요</div></div>';
+    });
+  }
+
+  /* ---------- 코스 고르기 ----------
+     이틀을 각각 다른 날 걷는다. 어느 코스인지 앱이 알아야 이탈 판정이 맞는다.
+     ★ 거리는 «코스 파일에서 읽어» 보여 준다. 손으로 적어 두면 코스를 고칠 때마다 어긋난다. */
+  var LIST = null;
+  function drawPicks(){
+    $("picks").innerHTML = LIST.courses.map(function(c, i){
+      var km = c.lengthM ? (c.lengthM/1000).toFixed(1) : null;
+      var on = c.ready && km;
+      return '<button class="pick' + (on ? '' : ' off') + '" data-pick="' + i + '"' +
+             (on ? '' : ' disabled') + '>' +
+             '<div class="d"><div class="t">' + c.label + ' · ' + c.place + '</div>' +
+             '<div class="s">' + c.date + (on ? ' · 눌러서 길안내 시작' : ' · ' + (c.note || '준비 중')) + '</div></div>' +
+             '<div class="km">' + (on ? km + '<small>km</small>' : '🔒') + '</div></button>';
+    }).join('');
+    $("picks").querySelectorAll('[data-pick]').forEach(function(b){
+      b.onclick = function(){
+        var c = LIST.courses[+b.dataset.pick];
+        loadCourse(c.file).then(beginWalk);
+      };
+    });
+  }
+
+  fetch("courses.json", {cache:"no-cache"}).then(function(r){ return r.json(); }).then(function(list){
+    LIST = list;
+    // 각 코스의 «실제 거리»를 미리 읽어 카드에 띄운다(코스 파일이 유일한 출처).
+    return Promise.all(LIST.courses.map(function(c){
+      if(!c.ready) return null;
+      return fetch(c.file, {cache:"no-cache"}).then(function(r){ return r.json(); })
+        .then(function(d){ c.lengthM = d.lengthM; c.title = d.title; })
+        .catch(function(){ c.ready = false; c.note = '코스 파일을 못 읽었어요'; });
+    }));
+  }).then(function(){
+    drawPicks();
+    /* 주소로 코스를 지정할 수 있다 — QR 을 코스별로 따로 뿌릴 때 쓴다. ?day=1 / ?day=2 */
+    var m = location.search.match(/[?&]day=(\d+)/);
+    var pick = m ? LIST.courses[+m[1] - 1] : null;
+    if(pick && pick.ready){ loadCourse(pick.file).then(beginWalk); return; }
+    /* 체험 모드는 첫 번째 «준비된» 코스로 연다 */
+    if(/[?&]demo/.test(location.search)){
+      var d0 = LIST.courses.filter(function(c){ return c.ready; })[0];
+      if(d0) loadCourse(d0.file);
     }
   }).catch(function(){
-    $("next").innerHTML = '<div class="tx"><div class="big">코스 정보를 못 불러왔어요</div><div class="sub">인터넷 연결을 확인하고 새로고침 해 주세요</div></div>';
+    $("picks").innerHTML = '<div class="pick off"><div class="d"><div class="t">코스 목록을 못 불러왔어요</div>' +
+      '<div class="s">인터넷 연결을 확인하고 새로고침 해 주세요</div></div></div>';
   });
 })();
 </script>
