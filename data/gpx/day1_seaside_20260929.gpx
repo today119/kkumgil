@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="kkumgil-brouter" xmlns="http://www.topografix.com/GPX/1/1">
-  <metadata><name>하늘도시 중심상가~씨사이드파크~카라반캠핑장</name><desc>사용자가 보낸 카카오맵 도보 길찾기(kko.to/ew_IDEiLlp)를 보고 같은 길을 BRouter 도보 경로로 다시 뽑음. 카카오 안내 1053m 와 일치 확인.</desc></metadata>
+  <metadata><name>하늘도시 중심상가~해안길~카라반캠핑장</name><desc>씨사이드파크를 «경유지로 강제하지 않는다». 강제하면 공원까지 들어갔다 되돌아 나오는 390m 짜리 왕복이 생기는데, 실제로는 해안길을 따라 지나갈 뿐이다(공원과 184m 거리). 사용자가 보낸 카카오맵 도보 길찾기(kko.to/ew_IDEiLlp)를 보고 뽑음.</desc></metadata>
   <trk><name>day1_seg4_seaside</name><trkseg>
-    <trkpt lat="37.487201" lon="126.560390"></trkpt>
+    <trkpt lat="37.487200" lon="126.560389"></trkpt>
     <trkpt lat="37.486838" lon="126.560007"></trkpt>
     <trkpt lat="37.486269" lon="126.559404"></trkpt>
     <trkpt lat="37.485787" lon="126.560115"></trkpt>
@@ -21,14 +21,6 @@
     <trkpt lat="37.481550" lon="126.565129"></trkpt>
     <trkpt lat="37.481425" lon="126.565336"></trkpt>
     <trkpt lat="37.481434" lon="126.565343"></trkpt>
-    <trkpt lat="37.481480" lon="126.565399"></trkpt>
-    <trkpt lat="37.481499" lon="126.565380"></trkpt>
-    <trkpt lat="37.481605" lon="126.565371"></trkpt>
-    <trkpt lat="37.481734" lon="126.565410"></trkpt>
-    <trkpt lat="37.482834" lon="126.566546"></trkpt>
-    <trkpt lat="37.481734" lon="126.565410"></trkpt>
-    <trkpt lat="37.481605" lon="126.565371"></trkpt>
-    <trkpt lat="37.481499" lon="126.565380"></trkpt>
     <trkpt lat="37.481480" lon="126.565399"></trkpt>
     <trkpt lat="37.481514" lon="126.565437"></trkpt>
     <trkpt lat="37.481324" lon="126.565595"></trkpt>
