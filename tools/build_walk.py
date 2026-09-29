@@ -35,8 +35,10 @@ SEGMENTS_DAY1 = [
     {"gpx": "data/gpx/gap_1to2_20260916_joined.gpx"},
     {"survey": "data/survey-20260915/course_seg2.json", "photos": "data/survey-20260915/photos"},
 ]
-# 2일차(무의도)는 아직 답사 전이다. GPX·답사 JSON 이 생기면 여기에 줄을 채우면 된다.
-SEGMENTS_DAY2 = []
+# 2일차(무의도) — 2026-09-23 답사분. 아직 «앞 4.8km 뿐»이고 뒷구간은 답사 전이다.
+SEGMENTS_DAY2 = [
+    {"survey": "data/survey-20260923/course_day2_seg1.json", "photos": "data/survey-20260923/photos"},
+]
 
 DAYS = {
     1: {"segments": SEGMENTS_DAY1, "title": "꿈길 걷기 1일차", "file": "course-day1.json"},
