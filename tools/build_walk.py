@@ -34,6 +34,10 @@ SEGMENTS_DAY1 = [
     # 2026-09-16 사용자가 gpx.studio 로 직접 그린 구간(용궁사 앞~중산교차로~하늘초 앞, 2.78km)
     {"gpx": "data/gpx/gap_1to2_20260916_joined.gpx"},
     {"survey": "data/survey-20260915/course_seg2.json", "photos": "data/survey-20260915/photos"},
+    # 2026-09-29 사용자가 보낸 카카오맵 도보 길찾기를 보고 같은 길을 다시 뽑은 구간
+    #   하늘도시 중심상가 ~ 씨사이드파크 ~ 영종씨사이드 카라반캠핑장
+    #   ⚠️ 답사가 아니라 «지도에서 뽑은» 길이다. 갈림길 사진이 없다.
+    {"gpx": "data/gpx/day1_seaside_20260929.gpx"},
 ]
 # 2일차(무의도) — 2026-09-23 답사분. 아직 «앞 4.8km 뿐»이고 뒷구간은 답사 전이다.
 SEGMENTS_DAY2 = [
