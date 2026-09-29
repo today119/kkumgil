@@ -44,13 +44,20 @@ SEGMENTS_DAY2 = [
     {"survey": "data/survey-20260923/course_day2_seg1.json", "photos": "data/survey-20260923/photos"},
 ]
 
+# ★ 코스 «전체»를 그린 GPX 가 있으면 그것을 선으로 쓴다.
+#   답사 지점·사진은 그대로 살리고, 새 선 위의 몇 km 지점인지만 다시 계산한다.
+#   (선생님이 gpx.studio 에서 뒷구간을 이어 그려 오시면 이 자리에 넣는다)
+FULL_DAY1 = "data/gpx/day1_full_20260929.gpx"
+FULL_DAY2 = None
+
 DAYS = {
-    1: {"segments": SEGMENTS_DAY1, "title": "꿈길 걷기 1일차", "file": "course-day1.json"},
-    2: {"segments": SEGMENTS_DAY2, "title": "꿈길 걷기 2일차", "file": "course-day2.json"},
+    1: {"segments": SEGMENTS_DAY1, "title": "꿈길 걷기 1일차", "file": "course-day1.json", "full": FULL_DAY1},
+    2: {"segments": SEGMENTS_DAY2, "title": "꿈길 걷기 2일차", "file": "course-day2.json", "full": FULL_DAY2},
 }
 if DAY not in DAYS:
     raise SystemExit("1 또는 2 만 됩니다 — python3 tools/build_walk.py 2")
 SEGMENTS = DAYS[DAY]["segments"]
+FULL = DAYS[DAY].get("full")
 TITLE = DAYS[DAY]["title"]
 OUTFILE = DAYS[DAY]["file"]
 if not SEGMENTS:
@@ -132,6 +139,26 @@ def shrink(src, dst):
     im.save(dst, "JPEG", quality=QUALITY, optimize=True, progressive=True)
 
 
+def project(path, pt):
+    """점이 선의 몇 m 지점에 붙는지, 선에서 얼마나 떨어졌는지."""
+    best_d, best_m, run = 1e9, 0.0, 0.0
+    for i in range(1, len(path)):
+        a, b = path[i - 1], path[i]
+        seg = meters(a, b)
+        if seg == 0:
+            continue
+        mx = 111320 * math.cos(math.radians(pt[0]))
+        A = ((pt[0] - a[0]) * 111320, (pt[1] - a[1]) * mx)
+        B = ((b[0] - a[0]) * 111320, (b[1] - a[1]) * mx)
+        L = B[0] ** 2 + B[1] ** 2
+        t = 0 if L == 0 else max(0.0, min(1.0, (A[0] * B[0] + A[1] * B[1]) / L))
+        d = math.hypot(A[0] - B[0] * t, A[1] - B[1] * t)
+        if d < best_d:
+            best_d, best_m = d, run + seg * t
+        run += seg
+    return best_d, best_m
+
+
 def load_survey(seg, no):
     data = json.load(open(os.path.join(ROOT, seg["survey"]), encoding="utf-8"))
     photo_dir = os.path.join(ROOT, seg["photos"])
@@ -201,6 +228,24 @@ def main():
         points += seg_points
         print("  %d구간 %.2fkm · 지점 %d개 (%s)" % (no, seg_len / 1000, len(seg_points), name))
         offset_m += seg_len
+
+    # ★ 코스 전체를 그린 GPX 가 있으면 «선만» 그것으로 갈아끼운다.
+    #   답사 지점과 사진은 그대로 두고, 새 선 위의 몇 m 지점인지만 다시 잰다.
+    #   답사한 길을 그대로 두고 뒤를 이어 그린 GPX 라야 한다(안 그러면 지점이 엉뚱한 데 붙는다).
+    if FULL:
+        full_path, full_len, _ = load_gpx({"gpx": FULL})
+        moved = []
+        for p in points:
+            off, m_ = project(full_path, (p["lat"], p["lng"]))
+            moved.append(off)
+            p["m"] = round(m_)
+        far = [o for o in moved if o > 40]
+        print("  전체 GPX 로 선 교체: %.2fkm → %.2fkm · 지점 %d개 다시 붙임"
+              % (offset_m / 1000, full_len / 1000, len(points)))
+        print("     지점이 새 선에서 벗어난 거리: 평균 %.0fm · 최대 %.0fm%s"
+              % (sum(moved) / len(moved), max(moved),
+                 ("  ⚠️ 40m 넘는 지점 %d개" % len(far)) if far else ""))
+        course, offset_m = full_path, full_len
 
     for p in points:
         p["desc"] = ""  # 명소 해설: 출처 확인이 끝난 것만 채울 것
