@@ -26,12 +26,18 @@
 
   /* ★ 버튼은 «세 개»만 둔다. 다섯 개를 한 줄에 넣으면 글자가 11px 아래로 내려가 누르기 어려웠다.
        회의 중 실제로 오가는 단위가 「1일차냐 2일차냐」 이므로 그 둘 + 인원이면 충분하다. */
-  nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;display:flex;gap:6px;
-      padding:9px 12px;background:rgba(255,255,255,.97);border-bottom:1px solid var(--line)}
+  /* ★ 스크롤해도 «항상» 맨 위에 붙어 있게.
+       - top 은 0 으로 두고 노치 여백은 «padding» 으로 준다. top 에 env() 를 주면
+         버튼이 사파리 주소창 밑으로 파고들어 윗부분이 잘려 보였다.
+       - 배경은 반투명(.97)이 아니라 «완전 불투명» 으로 — 밑의 글자가 비쳐 지저분했다. */
+  nav{position:sticky;position:-webkit-sticky;top:0;z-index:50;display:flex;gap:6px;
+      padding:calc(9px + env(safe-area-inset-top,0px)) 12px 9px;
+      background:#fff;border-bottom:1px solid var(--line);box-shadow:0 3px 10px rgba(16,36,58,.09)}
   nav a{flex:1 1 0;min-width:0;text-align:center;font-size:15px;font-weight:800;color:var(--sea);text-decoration:none;
         white-space:nowrap;background:var(--mist);border:1px solid var(--line);padding:11px 6px;border-radius:10px}
 
-  section{padding:22px 18px 4px;border-top:10px solid #F2F6F9}
+  section{padding:22px 18px 4px;border-top:10px solid #F2F6F9;scroll-margin-top:66px}
+  html{scroll-behavior:smooth}
   section:first-of-type{border-top:0}
   /* 같은 일차 안의 이어지는 꼭지는 얇은 선으로 — 일차가 바뀔 때만 두꺼운 선 */
   section.same{border-top:1px solid var(--line);padding-top:18px}
