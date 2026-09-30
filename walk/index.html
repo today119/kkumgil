@@ -119,6 +119,36 @@
   .sheet-head h2{font-size:20px;font-weight:900}
   .sheet-head .x{margin-left:auto;font-size:26px;width:44px;height:44px;border-radius:12px;background:var(--panel2)}
   .sheet-body{flex:1 1 auto;overflow:auto;padding:16px 16px calc(20px + var(--safe-b))}
+  /* ── 스탬프 ── */
+  .stamps{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:10px}
+  .st{background:var(--panel);border-radius:18px;padding:14px 8px;text-align:center;border:2px solid transparent}
+  .st .em{font-size:34px;line-height:1.2;filter:grayscale(1) opacity(.35)}
+  .st .nm{font-size:12px;font-weight:800;color:var(--sub);margin-top:6px;line-height:1.3}
+  .st .km{font-size:11px;font-weight:700;color:#475569;margin-top:2px}
+  .st.got{background:#064E3B;border-color:#10B981}
+  .st.got .em{filter:none}
+  .st.got .nm{color:#A7F3D0}
+  .st.got .km{color:#6EE7B7}
+  .stamp-top{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
+  .stamp-top b{font-size:30px;font-weight:900}
+  .stamp-top span{font-size:14px;color:var(--sub);font-weight:800}
+  .card{background:var(--panel);border-radius:18px;padding:16px;margin-bottom:12px}
+  .card h3{font-size:22px;font-weight:900;margin-bottom:8px}
+  .card .body{font-size:16px;line-height:1.8;color:#CBD5E1}
+  .quiz button{display:block;width:100%;text-align:left;margin-top:8px;padding:14px 16px;border-radius:14px;
+    background:var(--panel2);font-size:16px;font-weight:800;color:var(--ink)}
+  .quiz button.wrong{background:#7F1D1D;color:#FECACA}
+  .quiz button.right{background:#065F46;color:#A7F3D0}
+  .got-big{text-align:center;padding:24px 0}
+  .got-big .em{font-size:84px;animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+  .got-big .t{font-size:24px;font-weight:900;margin-top:8px}
+  @keyframes pop{0%{transform:scale(.2) rotate(-20deg);opacity:0}70%{transform:scale(1.15) rotate(6deg)}100%{transform:scale(1) rotate(0);opacity:1}}
+  .hintbox{background:#422006;color:#FED7AA;border-radius:14px;padding:12px 14px;margin-top:10px;font-size:14px;line-height:1.6}
+  .stamp-btn{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 96px);z-index:20;
+    min-width:52px;height:52px;border-radius:26px;background:var(--panel2);font-size:20px;font-weight:900;
+    box-shadow:0 6px 18px rgba(0,0,0,.4)}
+  .stamp-btn b{font-size:13px;display:block;margin-top:-2px;color:var(--sub)}
+
   .say{background:#FEF2F2;color:#7F1D1D;border-radius:18px;padding:18px;margin-bottom:14px}
   .say .k{font-size:14px;font-weight:800;color:#B91C1C}
   .say .v{font-size:28px;font-weight:900;letter-spacing:-.03em;line-height:1.3;margin-top:6px}
@@ -201,6 +231,7 @@
     <div class="alert" id="alert"></div>
     <button class="fab recenter" id="recenter" title="내 위치로">◎</button>
     <button class="fab sos" id="sosBtn">SOS</button>
+    <button class="stamp-btn" id="stampBtn">🏅<b id="stampCount">0/5</b></button>
   </div>
 
   <div class="card">
@@ -235,6 +266,14 @@
     </div>
     <p class="hint">잘못 눌렀으면 그냥 <b>×</b>로 닫으면 돼요. 아무 기록도 남지 않아요.</p>
   </div>
+</div>
+
+<!-- ══ 스탬프 투어 ══
+     명소에 붙은 QR 을 찍거나(기본), 그 자리 가까이 가면(예비) 열린다.
+     해설을 읽고 퀴즈를 맞히면 도장이 찍힌다. 기록은 «폰 안에만» 남는다. -->
+<div class="sheet" id="stampSheet">
+  <div class="sheet-head"><h2 id="stampTitle">스탬프 투어</h2><button class="x" data-close>×</button></div>
+  <div class="sheet-body" id="stampBody"></div>
 </div>
 
 <div class="sheet" id="photoSheet">
@@ -335,6 +374,7 @@
 
   /* ---------- 위치가 들어올 때마다 ---------- */
   function onPosition(lat, lng, acc){
+    checkStampNear(lat, lng);          // 명소 가까이 오면 알려 준다(QR 을 못 봤을 때의 예비)
     var r = project(lat, lng);
     state.pos = {lat:lat, lng:lng, acc:acc};
     state.lastFix = Date.now();
@@ -716,7 +756,10 @@
   }
   $("demoBtn").onclick = startDemo;
 
-  window.__kkumgil = {onPosition:onPosition, state:state, placeText:placeText};   // 검증 스크립트용
+  // 검증 스크립트용 — 화면 밖에서 상태를 들여다볼 수 있게 열어 둔다
+  window.__kkumgil = {onPosition:onPosition, state:state, placeText:placeText,
+                      stamps:function(){ return STAMPS; }, got:gotSet,
+                      openStamp:openStamp, board:showStampBoard, near:checkStampNear};
 
   /* 코스 하나를 실제로 불러와 길안내를 준비한다. */
   function loadCourse(file){
@@ -757,6 +800,129 @@
       };
     });
   }
+
+  /* ══════════════════════════════════════════════════════
+     스탬프 투어
+       · 여는 방법 두 가지 — QR(?stamp=id) 이 기본, 그 자리 가까이 가면(GPS) 예비
+         안내판이 떨어지거나 누가 떼어가도 스탬프를 못 찍는 일이 없게 둘 다 둔다.
+       · 기록은 «폰 안에만» 남는다(localStorage). 서버도 이름도 없다.
+       · 틀려도 다시 풀 수 있다. 시험이 아니라 읽게 만드는 게 목적이다.
+     ══════════════════════════════════════════════════════ */
+  var STAMPS = null;
+  var NEAR_M = 60;               // 이 거리 안에 들어오면 «여기 스탬프 있어요» 알림
+  var gotKey = "kkumgil.stamps";
+
+  function gotSet(){
+    try { return JSON.parse(localStorage.getItem(gotKey) || "[]"); } catch(e){ return []; }
+  }
+  function gotAdd(id){
+    var g = gotSet();
+    if(g.indexOf(id) < 0){ g.push(id); try{ localStorage.setItem(gotKey, JSON.stringify(g)); }catch(e){} }
+    paintStampCount();
+  }
+  function paintStampCount(){
+    if(!STAMPS) return;
+    var n = gotSet().length, all = STAMPS.stamps.length;
+    var el2 = $("stampCount"); if(el2) el2.textContent = n + "/" + all;
+  }
+
+  /* 스탬프판 */
+  function showStampBoard(){
+    if(!STAMPS) return;
+    var got = gotSet();
+    $("stampTitle").textContent = STAMPS.title || "스탬프 투어";
+    $("stampBody").innerHTML =
+      '<div class="stamp-top"><b>' + got.length + '</b><span>/ ' + STAMPS.stamps.length + ' 개 모았어요</span></div>' +
+      '<div class="stamps">' + STAMPS.stamps.map(function(s){
+        var on = got.indexOf(s.id) >= 0;
+        return '<button class="st' + (on ? ' got' : '') + '" data-st="' + s.id + '">' +
+               '<div class="em">' + s.emoji + '</div><div class="nm">' + s.name + '</div>' +
+               '<div class="km">' + s.km.toFixed(1) + 'km</div></button>';
+      }).join('') + '</div>' +
+      (got.length === STAMPS.stamps.length
+        ? '<div class="card" style="margin-top:14px;background:#064E3B"><h3>🎉 다 모았습니다!</h3>' +
+          '<div class="body">이 화면을 캡처해서 선생님께 보여 주세요.</div></div>'
+        : '<div class="card" style="margin-top:14px"><div class="body">명소에 붙은 <b>QR 을 찍거나</b>, 그 자리에 가까이 가면 문제가 열려요.</div></div>');
+    $("stampBody").querySelectorAll("[data-st]").forEach(function(b){
+      b.onclick = function(){ openStamp(b.dataset.st, true); };
+    });
+    $("stampSheet").classList.add("show");
+  }
+
+  /* 명소 하나 — 해설 + 퀴즈.  board=true 면 스탬프판에서 눌러 들어온 것 */
+  function openStamp(id, fromBoard){
+    if(!STAMPS) return;
+    var s = STAMPS.stamps.filter(function(x){ return x.id === id; })[0];
+    if(!s) return;
+    var got = gotSet().indexOf(id) >= 0;
+    $("stampTitle").textContent = s.emoji + " " + s.name;
+    var h = '';
+    if(got){
+      h += '<div class="got-big"><div class="em">' + s.emoji + '</div><div class="t">이미 받은 스탬프예요</div></div>';
+    }
+    h += '<div class="card"><h3>' + s.emoji + ' ' + s.name + '</h3>' +
+         (s.photo ? '<img src="photos/' + s.photo + '" style="width:100%;border-radius:14px;margin:4px 0 10px">' : '') +
+         '<div class="body">' + s.desc + '</div></div>';
+    if(!got){
+      h += '<div class="card quiz" id="quizBox"><h3>❓ ' + s.quiz.q + '</h3>' +
+           s.quiz.choices.map(function(c,i){
+             return '<button data-ch="' + i + '">' + String.fromCharCode(9312+i) + ' ' + c + '</button>';
+           }).join('') + '<div id="hint"></div></div>';
+    }
+    h += '<button class="go" style="width:100%;margin-top:6px" id="toBoard">🏅 스탬프판 보기</button>';
+    $("stampBody").innerHTML = h;
+    $("toBoard").onclick = showStampBoard;
+    if(!got){
+      $("stampBody").querySelectorAll("[data-ch]").forEach(function(b){
+        b.onclick = function(){
+          var ok = (+b.dataset.ch === s.quiz.answer);
+          if(ok){
+            b.className = "right";
+            try{ navigator.vibrate && navigator.vibrate([40,60,120]); }catch(e){}
+            ring();
+            gotAdd(s.id);
+            $("stampBody").innerHTML =
+              '<div class="got-big"><div class="em">' + s.emoji + '</div>' +
+              '<div class="t">스탬프 획득!</div></div>' +
+              '<div class="card"><div class="body">' + (s.quiz.after || "잘했어요!") + '</div></div>' +
+              '<button class="go" style="width:100%" id="toBoard2">🏅 스탬프판 보기 (' + gotSet().length + '/' + STAMPS.stamps.length + ')</button>';
+            $("toBoard2").onclick = showStampBoard;
+          }else{
+            b.className = "wrong";
+            $("hint").innerHTML = '<div class="hintbox">💡 ' + (s.quiz.hint || "해설을 다시 읽어 보세요.") + '<br>다시 골라 보세요 — 몇 번이든 괜찮아요.</div>';
+            setTimeout(function(){ b.className = ""; }, 900);
+          }
+        };
+      });
+    }
+    $("stampSheet").classList.add("show");
+  }
+
+  /* 걷다가 명소 가까이 오면 한 번만 알려 준다(QR 을 못 봤을 때의 예비) */
+  var stampTold = {};
+  function checkStampNear(lat, lng){
+    if(!STAMPS) return;
+    var got = gotSet();
+    STAMPS.stamps.forEach(function(s){
+      if(got.indexOf(s.id) >= 0 || stampTold[s.id]) return;
+      var a = toXY(lat, lng), b = toXY(s.lat, s.lng);
+      if(Math.hypot(a[0]-b[0], a[1]-b[1]) <= NEAR_M){
+        stampTold[s.id] = 1;
+        try{ navigator.vibrate && navigator.vibrate([60,80,60]); }catch(e){}
+        toast("🏅 " + s.name + " — 스탬프가 있어요! 눌러서 도전하세요", 6000);
+        openStamp(s.id);
+      }
+    });
+  }
+
+  $("stampBtn").onclick = showStampBoard;
+
+  fetch("stamps.json", {cache:"no-cache"}).then(function(r){ return r.json(); }).then(function(d){
+    STAMPS = d; paintStampCount();
+    /* QR 로 들어온 경우 — ?stamp=baegunsan */
+    var q = location.search.match(/[?&]stamp=([\w-]+)/);
+    if(q){ $("intro").style.display = "none"; openStamp(q[1]); }
+  }).catch(function(){ var b=$("stampBtn"); if(b) b.style.display="none"; });
 
   /* ══ 홈 화면 설치 · 오프라인 미리 받기 ══
      ★ 신호가 약한 산에서 «열자마자» 떠야 한다. 코스·사진을 미리 폰에 받아 둔다.
