@@ -78,6 +78,15 @@
   .names b{display:block;font-size:12.5px;font-weight:800;color:var(--muted);margin:6px 0 1px}
   .names b:first-child{margin-top:0}
   .names small{display:block;margin-top:6px;font-size:12.5px;color:#8A6100;background:#FFF8E6;padding:6px 9px;border-radius:6px}
+  /* ★ 코스명을 표의 «한 칸»에 넣었더니 폰에서 글자가 한 자씩 세로로 쪼개졌다.
+       칸을 나누지 말고 «제목 + 본문» 한 덩어리로 둔다. */
+  .course{margin:10px 0 0;border:1px solid var(--line);border-left:5px solid var(--sky);border-radius:12px;padding:13px 14px;background:#FBFDFE}
+  .course:nth-of-type(2){border-left-color:var(--forest)}
+  .course:nth-of-type(3){border-left-color:#7C5BC0}
+  .course .ch{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .course h4{margin:0;font-size:15.5px;font-weight:900;color:var(--deep);line-height:1.4;word-break:keep-all}
+  .course .cls{flex:0 0 auto;font-size:13px;font-weight:900;color:#fff;background:var(--sea);padding:4px 11px;border-radius:99px;white-space:nowrap}
+  .course p{margin:7px 0 0;font-size:14px;line-height:1.75;color:var(--muted);word-break:keep-all}
   figure{margin:10px -18px 2px;background:#F2F6F9;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
   figure img{display:block;width:100%;height:auto}
   figcaption{padding:8px 18px 10px;font-size:12.5px;font-weight:700;color:var(--muted)}
@@ -251,25 +260,17 @@
     </div>
 
     <h3>코스 3곳</h3>
-    <div class="scroll">
-      <table>
-        <tr><th>코스</th><th>상세</th><th>학급</th></tr>
-        <tr>
-          <td><b>배움과 지식 탐구의 공간,<br>인천의 대학</b></td>
-          <td>인천대 미추홀 → 인하대 항공우주융합 → 연세대 국제 → 인천글로벌캠퍼스 → 인천재능대 송도 → 인천가톨릭대 송도국제</td>
-          <td class="t">1·2·3·5·9반</td>
-        </tr>
-        <tr>
-          <td><b>개항장 일대와<br>종교의 전파과정</b></td>
-          <td>인천역 → 의선당 → 공화춘 → 대불호텔 → 인천개항박물관 → 근대건축전시관 → 한국근대문학관</td>
-          <td class="t">4·7반</td>
-        </tr>
-        <tr>
-          <td><b>인천의 오늘,<br>그리고 미래</b></td>
-          <td>센트럴파크역 → G타워 → 트라이볼 → 컴팩스마트시티(인천도시역사관) → 센트럴파크</td>
-          <td class="t">6·8·10반</td>
-        </tr>
-      </table>
+    <div class="course">
+      <div class="ch"><h4>배움과 지식 탐구의 공간, 인천의 대학</h4><span class="cls">1·2·3·5·9반</span></div>
+      <p>인천대 미추홀 → 인하대 항공우주융합 → 연세대 국제 → 인천글로벌캠퍼스 → 인천재능대 송도 → 인천가톨릭대 송도국제</p>
+    </div>
+    <div class="course">
+      <div class="ch"><h4>개항장 일대와 종교의 전파과정</h4><span class="cls">4·7반</span></div>
+      <p>인천역 → 의선당 → 공화춘 → 대불호텔 → 인천개항박물관 → 근대건축전시관 → 한국근대문학관</p>
+    </div>
+    <div class="course">
+      <div class="ch"><h4>인천의 오늘, 그리고 미래</h4><span class="cls">6·8·10반</span></div>
+      <p>센트럴파크역 → G타워 → 트라이볼 → 컴팩스마트시티(인천도시역사관) → 센트럴파크</p>
     </div>
 
     <h3>학급별 담당교사</h3>
