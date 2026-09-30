@@ -61,6 +61,18 @@
   ul{margin:8px 0 2px;padding-left:18px;font-size:13px}
   li{margin:3px 0}
   li b{color:var(--sea)}
+  details{margin:6px 0 0;border:1px solid var(--line);border-radius:10px;background:#FCFDFE;overflow:hidden}
+  details[open]{background:#fff}
+  summary{cursor:pointer;list-style:none;padding:10px 12px;font-size:12.5px;font-weight:800;color:var(--sea);
+          display:flex;align-items:center;gap:7px;min-height:44px}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:'▾';margin-left:auto;color:var(--ghost);font-size:13px;transition:transform .15s}
+  details[open] summary::after{transform:rotate(180deg)}
+  summary em{font-style:normal;font-weight:700;color:var(--ghost);font-size:11.5px}
+  .names{padding:2px 12px 12px;font-size:12.5px;line-height:1.85;color:var(--deep)}
+  .names b{display:block;font-size:11.5px;font-weight:800;color:var(--muted);margin:6px 0 1px}
+  .names b:first-child{margin-top:0}
+  .names small{display:block;margin-top:6px;font-size:11.5px;color:#8A6100;background:#FFF8E6;padding:6px 9px;border-radius:6px}
   figure{margin:10px -18px 2px;background:#F2F6F9;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
   figure img{display:block;width:100%;height:auto}
   figcaption{padding:7px 18px 9px;font-size:11.5px;font-weight:700;color:var(--muted)}
@@ -95,6 +107,40 @@
     </div>
     <p class="lead">교직원 39명 = 인솔 23 · 차량 5 · 간식 5 · 잔류지도 6 &nbsp;|&nbsp; 안전요원 15명 별도</p>
 
+    <details>
+      <summary>인솔 <em>23명</em></summary>
+      <div class="names">
+        <b>선두·후미</b>이재성 교장 · 차영신 교감 · 김시형
+        <b>1그룹 (1~3반)</b>김희연 · 양장관 · 송창석 · 문필재 · 임하은 · 박정은
+        <b>2그룹 (4~7반)</b>김은서 · 박삼병 · 정우철 · 박현미 · 고은화 · 김효곤 · 이은정 · 김진범
+        <b>3그룹 (8~10반)</b>이은지 · 서정주 · 윤영은 · 오희찬 · 진소라 · 김양선
+      </div>
+    </details>
+
+    <details>
+      <summary>차량 <em>5명</em></summary>
+      <div class="names">
+        <b>중도포기 학생 후송 차량</b>김주희 · 김소영 · 박창효 · 임예은 · 정솔지
+        <small>인하항공여행사 15인승 밴 1대와 함께 운영</small>
+      </div>
+    </details>
+
+    <details>
+      <summary>간식·상황실 <em>5명</em></summary>
+      <div class="names">
+        <b>상황실 운영 및 간식 분배</b>김정미 · 이세미 · 이슬기 · 전수빈
+        <small>계획서 표에는 4명만 적혀 있습니다 — 1명은 확인이 필요합니다.</small>
+      </div>
+    </details>
+
+    <details>
+      <summary>잔류지도 <em>6명</em></summary>
+      <div class="names">
+        <b>1·2학년 (멀티미디어실)</b>1~2교시 최재호 · 3~4교시 문수정 · 5~6교시 윤희진
+        <b>3학년</b>1~2교시 김현옥 · 3~4교시 김미영 · 5~6교시 임한솔
+      </div>
+    </details>
+
     <h3>2일차 (10/31 토) — 희망자</h3>
     <div class="cards">
       <div class="card"><b>1학년</b><span>53<em>명</em></span></div>
@@ -103,6 +149,23 @@
       <div class="card tot"><b>합계</b><span>133<em>명</em></span></div>
     </div>
     <p class="lead">교직원 28명 = 인솔 23 · 간식 5 &nbsp;|&nbsp; 안전요원 5명 별도</p>
+
+    <details>
+      <summary>인솔 <em>23명</em></summary>
+      <div class="names">
+        <b>선두·후미</b>김시형 · 김양선
+        <b>2학년 지도</b>임재근 · 김진범 · 최재호 · 박현미 · 임정숙 · 고명원 · 이원순 · 박정은 · 이소망
+        <b>1학년 지도</b>양장관 · 이은지 · 고은화 · 문필재 · 박삼병 · 최경호 · 윤정화 · 이지훈 · 정우철
+        <small>그룹별 짝은 아래 <b>2일차</b> 항목의 지도교사 표를 보세요.</small>
+      </div>
+    </details>
+
+    <details>
+      <summary>간식·상황실 <em>5명</em></summary>
+      <div class="names">
+        <b>상황실 운영 및 간식 분배</b>이선화 · 이세미 · 이슬기 · 전수빈 · 조현주
+      </div>
+    </details>
     <div class="note">학생 신청 상황에 따라 인원은 바뀔 수 있습니다.</div>
   </section>
 
