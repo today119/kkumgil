@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- 교사 실명이 들어 있어 검색엔진에 잡히지 않게 한다 (링크를 아는 사람만) -->
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="theme-color" content="#0B4F82">
+</head>
+<body style="margin:0">
+<title>꿈길 걷기 교직원 안내</title>
+<style>
+  :root{
+    --sky:#2FB2E8; --sea:#0B4F82; --deep:#10243A; --forest:#2F7D57; --sun:#FFC93C;
+    --paper:#FFFFFF; --mist:#EFF7FC; --line:#DCE8F0; --muted:#4A657C; --ghost:#7D91A3;
+    color-scheme: light;
+  }
+  *{box-sizing:border-box}
+  body{background:#EAF1F6;font-family:'Noto Sans KR',system-ui,-apple-system,sans-serif;color:var(--deep);line-height:1.6}
+  .wrap{max-width:720px;margin:0 auto;background:var(--paper)}
+
+  header{background:var(--sea);color:#fff;padding:22px 20px 18px}
+  header .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.1em;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);padding:5px 11px;border-radius:99px}
+  header h1{margin:10px 0 4px;font-size:22px;font-weight:900;letter-spacing:-.02em;line-height:1.25}
+  header p{margin:0;font-size:13px;color:#CFE6F5}
+
+  nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;display:flex;gap:6px;overflow-x:auto;
+      padding:10px 14px;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);-webkit-overflow-scrolling:touch}
+  nav a{flex:0 0 auto;font-size:12.5px;font-weight:700;color:var(--sea);text-decoration:none;
+        background:var(--mist);border:1px solid var(--line);padding:7px 12px;border-radius:99px}
+
+  section{padding:22px 18px 4px;border-top:10px solid #F2F6F9}
+  section:first-of-type{border-top:0}
+  h2{margin:0 0 4px;font-size:18px;font-weight:900;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+  h2 i{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:7px;
+       background:var(--sky);color:#fff;font-style:normal;font-size:12px;font-weight:900;flex:0 0 auto}
+  h3{margin:18px 0 6px;font-size:14px;font-weight:900;color:var(--sea)}
+  p.lead{margin:2px 0 10px;font-size:13px;color:var(--muted)}
+
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 4px}
+  .card{background:var(--mist);border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+  .card b{display:block;font-size:11.5px;font-weight:700;color:var(--muted)}
+  .card span{display:block;font-size:20px;font-weight:900;color:var(--sea);line-height:1.25}
+  .card span em{font-style:normal;font-size:12px;font-weight:700;color:var(--ghost)}
+  .card.tot{background:var(--sea);border-color:var(--sea)}
+  .card.tot b{color:#BFE4F7}.card.tot span{color:#fff}
+
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:8px -18px 0;padding:0 18px}
+  table{width:100%;min-width:320px;border-collapse:collapse;font-size:12.5px}
+  th,td{border:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+  th{background:var(--mist);color:var(--sea);font-weight:800;white-space:nowrap}
+  td.t{white-space:nowrap;font-weight:700;color:var(--deep);font-variant-numeric:tabular-nums}
+  td.km{white-space:nowrap;text-align:right;color:var(--forest);font-weight:800}
+  tr.meal td{background:#FFFBF0}
+
+  .route{margin:10px 0 2px;padding:12px 14px;background:#F4FAF6;border:1px solid #CFE6D8;border-radius:12px;
+         font-size:13px;font-weight:700;color:#1F5A3D;line-height:1.75;word-break:keep-all}
+  .route b{color:var(--forest)}
+  .note{margin:10px 0 2px;padding:11px 13px;background:#FFF8E6;border-left:4px solid var(--sun);border-radius:8px;font-size:12.5px;color:#6B5200}
+  ul{margin:8px 0 2px;padding-left:18px;font-size:13px}
+  li{margin:3px 0}
+  li b{color:var(--sea)}
+  figure{margin:10px -18px 2px;background:#F2F6F9;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  figure img{display:block;width:100%;height:auto}
+  figcaption{padding:7px 18px 9px;font-size:11.5px;font-weight:700;color:var(--muted)}
+  figcaption b{color:var(--sea)}
+  footer{padding:22px 18px calc(28px + env(safe-area-inset-bottom,0px));background:#F2F6F9;color:var(--muted);font-size:12px;text-align:center;border-top:1px solid var(--line)}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+
+<div class="wrap">
+  <header>
+    <span class="tag">2026. 10. 30.(금) ~ 10. 31.(토)</span>
+    <h1>제10회 꿈길 걷기 프로젝트<br>교직원 안내</h1>
+    <p>인천영종고등학교 · 교직원 회의 자료</p>
+  </header>
+
+  <nav aria-label="바로가기">
+    <a href="#p1">참가 인원</a>
+    <a href="#p2">1일차 1학년</a>
+    <a href="#p3">1일차 지도교사</a>
+    <a href="#p4">1일차 2학년</a>
+    <a href="#p5">2일차</a>
+  </nav>
+
+  <section id="p1">
+    <h2><i>1</i>참가 인원</h2>
+    <h3>1일차 (10/30 금)</h3>
+    <div class="cards">
+      <div class="card"><b>1학년</b><span>251<em>명</em></span></div>
+      <div class="card"><b>2학년</b><span>294<em>명</em></span></div>
+      <div class="card"><b>교직원</b><span>39<em>명</em></span></div>
+      <div class="card tot"><b>합계</b><span>599<em>명</em></span></div>
+    </div>
+    <p class="lead">교직원 39명 = 인솔 23 · 차량 5 · 간식 5 · 잔류지도 6 &nbsp;|&nbsp; 안전요원 15명 별도</p>
+
+    <h3>2일차 (10/31 토) — 희망자</h3>
+    <div class="cards">
+      <div class="card"><b>1학년</b><span>53<em>명</em></span></div>
+      <div class="card"><b>2학년</b><span>66<em>명</em></span></div>
+      <div class="card"><b>교직원</b><span>28<em>명</em></span></div>
+      <div class="card tot"><b>합계</b><span>133<em>명</em></span></div>
+    </div>
+    <p class="lead">교직원 28명 = 인솔 23 · 간식 5 &nbsp;|&nbsp; 안전요원 5명 별도</p>
+    <div class="note">학생 신청 상황에 따라 인원은 바뀔 수 있습니다.</div>
+  </section>
+
+  <section id="p2">
+    <h2><i>2</i>1일차 · 1학년 도보 코스</h2>
+    <p class="lead">영종 국제도시의 어제와 오늘 — 총 <b>25km</b></p>
+    <div class="route">
+      학교 → <b>백운산</b> → 용궁사 → 중산사거리 → 하늘도시 → <b>영종진(구읍뱃터)</b> → 씨사이드파크 → 인천대교 → 학교
+    </div>
+
+    <figure>
+      <img src="course-day1.jpg" alt="1일차 전체 도보 코스 지도 — 학교에서 백운산을 지나 영종진과 씨사이드파크를 돌아 학교로 돌아오는 약 25km 경로" loading="lazy">
+      <figcaption><b>1일차 전체 코스</b> — 학교 출발 → 백운산 → 용궁사 → 하늘도시 → 영종진 → 씨사이드파크 → 학교 (약 25km)</figcaption>
+    </figure>
+
+    <h3>세부 일정</h3>
+    <div class="scroll">
+      <table>
+        <tr><th>시간</th><th>코스 및 내용</th><th>거리</th></tr>
+        <tr><td class="t">08:10</td><td>등교 후 담임 출석 확인 <small>(샌드위치·음료·간식)</small></td><td class="km"></td></tr>
+        <tr><td class="t">08:10~08:15</td><td>교장 선생님 안전 당부 말씀</td><td class="km"></td></tr>
+        <tr><td class="t">08:15~08:25</td><td>운영·안전 지도단 소개 및 안전교육</td><td class="km"></td></tr>
+        <tr><td class="t">08:25~08:30</td><td>일정 안내, 스트레칭, 출발 선포</td><td class="km"></td></tr>
+        <tr><td class="t">08:30~09:30</td><td>학교 → 백운산 정상</td><td class="km">3km</td></tr>
+        <tr><td class="t">09:30~09:40</td><td>백운산 정상 — 휴식</td><td class="km"></td></tr>
+        <tr><td class="t">09:40~12:30</td><td>백운산 → 용궁사 → 중산교차로 → 박석공원 → 영종진 <small>(용궁사 생수)</small></td><td class="km">11km</td></tr>
+        <tr class="meal"><td class="t">12:30~13:30</td><td><b>점심</b> — 하늘신도시 방앗간 한식뷔페 <small>(생수·아이스크림)</small></td><td class="km"></td></tr>
+        <tr><td class="t">13:30~14:50</td><td>씨사이드파크 → 족욕장</td><td class="km">8km</td></tr>
+        <tr><td class="t">14:50~15:10</td><td>족욕장 — 휴식·간식, 학급별 캠페인 사진 촬영</td><td class="km"></td></tr>
+        <tr><td class="t">15:10~15:40</td><td>족욕장 → 학교</td><td class="km">3km</td></tr>
+      </table>
+    </div>
+
+    <h3>운영</h3>
+    <ul>
+      <li><b>선두</b> 이재성 교장, 김시형, 한상형 실장(인하항공여행사)</li>
+      <li><b>후미</b> 차영신 교감, 인하항공여행사 1명</li>
+      <li><b>출발 순서</b> 1그룹(1~3반) → 2그룹(4~7반) → 3그룹(8~10반)</li>
+      <li><b>안전 위탁</b> 인하항공여행사 — 책임지도자 1명, 보조지도자 10명</li>
+      <li><b>차량</b> 15인승 승합차 1대, 킥보드 2대</li>
+    </ul>
+  </section>
+
+  <section id="p3">
+    <h2><i>3</i>1일차 · 도보 지도교사</h2>
+    <div class="scroll">
+      <table>
+        <tr><th>그룹</th><th>학급</th><th>제1지도(담임)</th><th>제2지도</th><th>인원</th></tr>
+        <tr><td class="t">1그룹</td><td class="t">1반</td><td>김희연</td><td>양장관</td><td class="km">25</td></tr>
+        <tr><td class="t"></td><td class="t">2반</td><td>송창석</td><td>문필재</td><td class="km">26</td></tr>
+        <tr><td class="t"></td><td class="t">3반</td><td>임하은</td><td>박정은</td><td class="km">23</td></tr>
+        <tr><td class="t">2그룹</td><td class="t">4반</td><td>김은서</td><td>박삼병</td><td class="km">26</td></tr>
+        <tr><td class="t"></td><td class="t">5반</td><td>정우철</td><td>박현미</td><td class="km">23</td></tr>
+        <tr><td class="t"></td><td class="t">6반</td><td>고은화</td><td>김효곤</td><td class="km">26</td></tr>
+        <tr><td class="t"></td><td class="t">7반</td><td>이은정</td><td>김진범</td><td class="km">25</td></tr>
+        <tr><td class="t">3그룹</td><td class="t">8반</td><td>이은지</td><td>서정주</td><td class="km">26</td></tr>
+        <tr><td class="t"></td><td class="t">9반</td><td>윤영은</td><td>오희찬</td><td class="km">25</td></tr>
+        <tr><td class="t"></td><td class="t">10반</td><td>진소라</td><td>김양선</td><td class="km">26</td></tr>
+      </table>
+    </div>
+    <div class="note">당일 상황에 따라 학생 인원·지도교사는 변동될 수 있습니다.</div>
+  </section>
+
+  <section id="p4">
+    <h2><i>4</i>1일차 · 2학년 인천바로알기</h2>
+    <p class="lead">인천길탐방 연계코스 — 학급별 버스 이동</p>
+
+    <h3>세부 일정</h3>
+    <div class="scroll">
+      <table>
+        <tr><th>시간</th><th>내용</th></tr>
+        <tr><td class="t">08:40~08:50</td><td>등교 후 담임 출석 확인</td></tr>
+        <tr><td class="t">08:50~09:40</td><td>행사 안내 및 안전교육</td></tr>
+        <tr><td class="t">09:40~10:00</td><td>버스 탑승 및 출발 준비</td></tr>
+        <tr><td class="t">10:00~11:00</td><td>학급별 코스로 버스 출발</td></tr>
+        <tr class="meal"><td class="t">11:00~12:30</td><td><b>점심</b> — 코스별 인근 식당</td></tr>
+        <tr><td class="t">12:30~14:30</td><td>인천길탐방 활동 (학급별 코스)</td></tr>
+        <tr><td class="t">14:30~15:30</td><td>탐방 종료 후 버스 탑승</td></tr>
+      </table>
+    </div>
+
+    <h3>코스 3곳</h3>
+    <div class="scroll">
+      <table>
+        <tr><th>코스</th><th>상세</th><th>학급</th></tr>
+        <tr>
+          <td><b>배움과 지식 탐구의 공간,<br>인천의 대학</b></td>
+          <td>인천대 미추홀 → 인하대 항공우주융합 → 연세대 국제 → 인천글로벌캠퍼스 → 인천재능대 송도 → 인천가톨릭대 송도국제</td>
+          <td class="t">1·2·3·5·9반</td>
+        </tr>
+        <tr>
+          <td><b>개항장 일대와<br>종교의 전파과정</b></td>
+          <td>인천역 → 의선당 → 공화춘 → 대불호텔 → 인천개항박물관 → 근대건축전시관 → 한국근대문학관</td>
+          <td class="t">4·7반</td>
+        </tr>
+        <tr>
+          <td><b>인천의 오늘,<br>그리고 미래</b></td>
+          <td>센트럴파크역 → G타워 → 트라이볼 → 컴팩스마트시티(인천도시역사관) → 센트럴파크</td>
+          <td class="t">6·8·10반</td>
+        </tr>
+      </table>
+    </div>
+
+    <h3>학급별 담당교사</h3>
+    <div class="scroll">
+      <table>
+        <tr><th>학급</th><th>담당</th><th>학생</th><th>학급</th><th>담당</th><th>학생</th></tr>
+        <tr><td class="t">2-1</td><td>양희균</td><td class="km">27</td><td class="t">2-6</td><td>이정아</td><td class="km">30</td></tr>
+        <tr><td class="t">2-2</td><td>최지영</td><td class="km">29</td><td class="t">2-7</td><td>고명원</td><td class="km">29</td></tr>
+        <tr><td class="t">2-3</td><td>조가비</td><td class="km">27</td><td class="t">2-8</td><td>곽아람</td><td class="km">29</td></tr>
+        <tr><td class="t">2-4</td><td>백수진</td><td class="km">29</td><td class="t">2-9</td><td>고다율</td><td class="km">28</td></tr>
+        <tr><td class="t">2-5</td><td>김찬겸</td><td class="km">29</td><td class="t">2-10</td><td>윤희진</td><td class="km">28</td></tr>
+      </table>
+    </div>
+    <p class="lead">학급당 버스 1대 · 승차 10:00 <b>세계로 가는 교회</b> 앞 · 최종 하차 14:30 출발 → 인천영종고</p>
+  </section>
+
+  <section id="p5">
+    <h2><i>5</i>2일차 · 도보 코스와 지도교사</h2>
+    <p class="lead">과거와 현재가 만나는 인천의 섬 — 총 <b>25km</b> · 1·2학년 희망자</p>
+    <div class="route">
+      학교 →<b>(버스)</b>→ 무의도 공영주차장 → 잠진도 → <b>마시안해변</b> → 선녀바위 → 을왕 → 왕산 → 용유초 →<b>(버스)</b>→ 학교
+    </div>
+
+    <figure>
+      <img src="course-day2.jpg" alt="2일차 전체 도보 코스 지도 — 무의도 공영주차장에서 마시안해변과 을왕을 거쳐 용유초까지 약 25km 경로" loading="lazy">
+      <figcaption><b>2일차 전체 코스</b> — 무의도 공영주차장 → 잠진도 → 마시안해변 → 선녀바위 → 을왕 → 용유초 (약 25km)</figcaption>
+    </figure>
+
+    <h3>세부 일정</h3>
+    <div class="scroll">
+      <table>
+        <tr><th>시간</th><th>코스 및 내용</th><th>거리</th></tr>
+        <tr><td class="t">08:10</td><td>등교 후 담임 출석 확인 <small>(샌드위치·음료·간식)</small></td><td class="km"></td></tr>
+        <tr><td class="t">08:10~08:20</td><td>출발 준비 (버스 체크)</td><td class="km"></td></tr>
+        <tr><td class="t">08:20~08:55</td><td>학교 → 무의도 공영주차장 <small>(버스·화장실)</small></td><td class="km">18km</td></tr>
+        <tr><td class="t">08:55~10:15</td><td>공영주차장 → 잠진도 → 마시안해변 진입</td><td class="km">4.5km</td></tr>
+        <tr><td class="t">10:15~11:05</td><td><b>해변 청소 행군</b> <small>(쓰레기봉투·단체사진)</small></td><td class="km">1.8km</td></tr>
+        <tr><td class="t">11:05~12:30</td><td>마시안해변 → 선녀바위 → 을왕해수욕장 <small>(차량 통제)</small></td><td class="km">5km</td></tr>
+        <tr class="meal"><td class="t">12:30~13:30</td><td><b>점심</b> — 을왕 인근 식당 또는 밥차</td><td class="km"></td></tr>
+        <tr><td class="t">13:30~15:00</td><td>을왕해수욕장 → 용유초 <small>(마지막 도보·염전)</small></td><td class="km">7km</td></tr>
+        <tr><td class="t">15:00~15:20</td><td>용유초 — 휴식·음료</td><td class="km"></td></tr>
+        <tr><td class="t">15:20~15:50</td><td>용유초 → 학교 <small>(버스)</small></td><td class="km">16km</td></tr>
+        <tr><td class="t">15:50~16:20</td><td>학교 강당 — 하교 지도</td><td class="km"></td></tr>
+      </table>
+    </div>
+
+    <h3>지도교사</h3>
+    <div class="scroll">
+      <table>
+        <tr><th>그룹</th><th>2학년 지도교사</th><th>인원</th><th>1학년 지도교사</th><th>인원</th></tr>
+        <tr><td class="t">1그룹</td><td>김시형, 임재근</td><td class="km">14</td><td>양장관, 이은지</td><td class="km">11</td></tr>
+        <tr><td class="t">2그룹</td><td>김진범, 최재호</td><td class="km">13</td><td>고은화, 문필재</td><td class="km">11</td></tr>
+        <tr><td class="t">3그룹</td><td>박현미, 임정숙</td><td class="km">13</td><td>박삼병, 최경호</td><td class="km">11</td></tr>
+        <tr><td class="t">4그룹</td><td>고명원, 이원순</td><td class="km">13</td><td>윤정화, 이지훈</td><td class="km">10</td></tr>
+        <tr><td class="t">5그룹</td><td>박정은, 이소망</td><td class="km">13</td><td>김양선, 정우철</td><td class="km">10</td></tr>
+      </table>
+    </div>
+
+    <h3>운영</h3>
+    <ul>
+      <li><b>선두</b> 김시형, 한상형 실장(인하항공여행사)</li>
+      <li><b>후미</b> 김양선, 인하항공여행사 안전요원 1명</li>
+      <li><b>출발 순서</b> 1그룹 → 2그룹 → 3그룹 → 4그룹</li>
+      <li><b>안전 위탁</b> 인하항공여행사 — 책임지도자 1명, 보조지도자 5명</li>
+      <li><b>차량</b> 15인승 밴 1대, 킥보드 2대</li>
+    </ul>
+    <div class="note">무전기 — 1일차 25대, 2일차 15대 운영 · 안전지도 위탁 <b>인하항공여행사 010-2285-1088</b></div>
+  </section>
+
+  <footer>
+    2026 제10회 꿈길 걷기 프로젝트 · 인천영종고등학교<br>
+    자세한 내용은 계획서 원문을 참고해 주세요.
+  </footer>
+</div>
+
+</body>
+</html>
