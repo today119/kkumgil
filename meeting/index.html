@@ -51,10 +51,13 @@
 
   .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:8px -18px 0;padding:0 18px}
   table{width:100%;min-width:340px;border-collapse:collapse;font-size:14px}
-  th,td{border:1px solid var(--line);padding:9px 9px;text-align:left;vertical-align:top}
+  th,td{border:1px solid var(--line);padding:9px 9px;text-align:center;vertical-align:middle}
   th{background:var(--mist);color:var(--sea);font-weight:800;white-space:nowrap}
   td.t{white-space:nowrap;font-weight:700;color:var(--deep);font-variant-numeric:tabular-nums}
-  td.km{white-space:nowrap;text-align:right;color:var(--forest);font-weight:800}
+  td.km{white-space:nowrap;color:var(--forest);font-weight:800}
+  /* ★ 일정표의 「코스 및 내용」만 왼쪽 정렬 — 두세 줄로 접히는 문장을 가운데 맞추면 들쭉날쭉해 읽기 어렵다 */
+  table.sched td:nth-child(2){text-align:left;vertical-align:top}
+  table.sched th:nth-child(2){text-align:left}
   tr.meal td{background:#FFFBF0}
 
   .route{margin:10px 0 2px;padding:12px 14px;background:#F4FAF6;border:1px solid #CFE6D8;border-radius:12px;
@@ -195,7 +198,7 @@
 
     <h3>세부 일정</h3>
     <div class="scroll">
-      <table>
+      <table class="sched">
         <tr><th>시간</th><th>코스 및 내용</th><th>거리</th></tr>
         <tr><td class="t">08:10</td><td>등교 후 담임 출석 확인 <small>(샌드위치·음료·간식)</small></td><td class="km"></td></tr>
         <tr><td class="t">08:10~08:15</td><td>교장 선생님 안전 당부 말씀</td><td class="km"></td></tr>
@@ -247,7 +250,7 @@
 
     <h3>세부 일정</h3>
     <div class="scroll">
-      <table>
+      <table class="sched">
         <tr><th>시간</th><th>내용</th></tr>
         <tr><td class="t">08:40~08:50</td><td>등교 후 담임 출석 확인</td></tr>
         <tr><td class="t">08:50~09:40</td><td>행사 안내 및 안전교육</td></tr>
@@ -301,7 +304,7 @@
 
     <h3>세부 일정</h3>
     <div class="scroll">
-      <table>
+      <table class="sched">
         <tr><th>시간</th><th>코스 및 내용</th><th>거리</th></tr>
         <tr><td class="t">08:10</td><td>등교 후 담임 출석 확인 <small>(샌드위치·음료·간식)</small></td><td class="km"></td></tr>
         <tr><td class="t">08:10~08:20</td><td>출발 준비 (버스 체크)</td><td class="km"></td></tr>
