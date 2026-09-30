@@ -47,7 +47,7 @@ SEGMENTS_DAY2 = [
 # ★ 코스 «전체»를 그린 GPX 가 있으면 그것을 선으로 쓴다.
 #   답사 지점·사진은 그대로 살리고, 새 선 위의 몇 km 지점인지만 다시 계산한다.
 #   (선생님이 gpx.studio 에서 뒷구간을 이어 그려 오시면 이 자리에 넣는다)
-FULL_DAY1 = "data/gpx/day1_full_20260929.gpx"
+FULL_DAY1 = "data/gpx/day1_full_20260930.gpx"
 FULL_DAY2 = None
 
 DAYS = {
