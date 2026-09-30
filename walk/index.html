@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="theme-color" content="#0F172A">
 <title>꿈길 걷기</title>
+<!-- ★ 홈 화면에 추가하면 주소창 없이 «앱처럼» 열린다.
+     길을 잃고 당황해서 꺼내는 화면이라, 브라우저 껍데기가 자리를 먹으면 안 된다. -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="꿈길 걷기">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
 <style>
   :root{
     --bg:#0F172A; --panel:#1E293B; --panel2:#334155;
@@ -143,6 +152,13 @@
   .pick.off{background:var(--panel);color:var(--sub);cursor:default}
   .pick.off .km{font-size:15px}
   #intro .demo{min-height:48px;border-radius:14px;background:var(--panel2);font-size:15px;font-weight:800}
+  /* 홈 화면 설치 · 미리 받기 */
+  #pwa{display:flex;flex-direction:column;gap:8px}
+  #pwa button{min-height:48px;border-radius:14px;background:var(--panel2);font-size:15px;font-weight:800;
+    color:var(--ink);text-align:left;padding:0 14px}
+  #pwa button.ok{background:#064E3B;color:#A7F3D0}
+  #pwa .tip{background:var(--panel);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.75;color:#CBD5E1}
+  #pwa .tip b{color:var(--ink)}
 
   /* 체험 모드 */
   #demo{display:none;flex:0 0 auto;background:#312E81;padding:8px 12px;gap:8px;align-items:center;font-size:13px;font-weight:800}
@@ -203,6 +219,7 @@
   </ul>
   <p style="font-size:14px;color:var(--sub)">화면이 꺼지면 알림도 멈춰요. <b style="color:var(--ink)">갈림길이 많은 산길에서는 「화면 켜두기」</b>를 눌러 두세요.</p>
   <div class="picks" id="picks"></div>
+  <div id="pwa"></div>
   <button class="demo" id="demoBtn">🧪 체험 모드 (코스 밖에서 미리 보기)</button>
 </div>
 
@@ -741,6 +758,69 @@
     });
   }
 
+  /* ══ 홈 화면 설치 · 오프라인 미리 받기 ══
+     ★ 신호가 약한 산에서 «열자마자» 떠야 한다. 코스·사진을 미리 폰에 받아 둔다.
+        아이폰은 «사파리에서만» 홈 화면에 추가된다 — 모르는 학생이 많아 그림으로 알려 준다. */
+  var deferredPrompt = null;
+  window.addEventListener("beforeinstallprompt", function(e){ e.preventDefault(); deferredPrompt = e; paintPwa(); });
+  var standalone = window.navigator.standalone === true ||
+                   window.matchMedia("(display-mode: standalone)").matches;
+
+  function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent); }
+  function isSafari(){ return isIOS() && !/CriOS|FxiOS|EdgiOS|NaverSearch|KAKAOTALK|Instagram|FBAN/i.test(navigator.userAgent); }
+
+  function paintPwa(){
+    var box = $("pwa"); if(!box) return;
+    var h = "";
+    if(!standalone){
+      if(deferredPrompt){
+        h += '<button id="pwaInstall">📲 <b>홈 화면에 추가</b> — 주소창 없이 앱처럼 열려요</button>';
+      }else if(isIOS()){
+        h += isSafari()
+          ? '<div class="tip">📲 <b>홈 화면에 추가하세요</b><br>아래 <b>공유 ⬆︎</b> → 목록을 내려 <b>「홈 화면에 추가」</b> → 오른쪽 위 <b>추가</b><br>그 아이콘으로 열면 주소창 없이 꽉 찹니다.</div>'
+          : '<div class="tip">⚠️ <b>사파리로 열어 주세요</b><br>아이폰은 <b>사파리에서만</b> 홈 화면에 추가할 수 있어요(애플 정책).<br>주소를 복사해 사파리에 붙여넣으세요.</div>';
+      }else{
+        h += '<div class="tip">📲 주소창 옆 <b>⋮</b> → <b>「앱 설치」</b> 또는 <b>「홈 화면에 추가」</b></div>';
+      }
+    }
+    h += '<button id="pwaCache">⬇️ <b>지도 자료 미리 받기</b> — 신호 없어도 열립니다</button>';
+    box.innerHTML = h;
+    var ib = $("pwaInstall");
+    if(ib) ib.onclick = function(){
+      if(!deferredPrompt) return;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(){ deferredPrompt = null; paintPwa(); });
+    };
+    $("pwaCache").onclick = precache;
+  }
+
+  /* 코스에 딸린 사진까지 한 번에 받아 둔다. 행사 전날 와이파이에서 한 번 눌러 두면 좋다. */
+  function precache(){
+    var btn = $("pwaCache");
+    if(!navigator.serviceWorker || !navigator.serviceWorker.controller){
+      btn.textContent = "⚠️ 새로고침 한 번 하고 다시 눌러 주세요"; return;
+    }
+    btn.textContent = "⬇️ 받는 중…";
+    Promise.all((LIST ? LIST.courses : []).filter(function(c){ return c.ready; })
+        .map(function(c){ return fetch(c.file).then(function(r){ return r.json(); }); }))
+      .then(function(all){
+        var urls = [];
+        all.forEach(function(d){ (d.points||[]).forEach(function(p){ (p.photos||[]).forEach(function(f){ urls.push("photos/" + f); }); }); });
+        urls = urls.filter(function(v,i,a){ return a.indexOf(v) === i; });
+        navigator.serviceWorker.controller.postMessage({type:"PRECACHE", urls:urls});
+      });
+  }
+  navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", function(e){
+    if(e.data && e.data.type === "PRECACHE_DONE"){
+      var btn = $("pwaCache");
+      btn.className = "ok";
+      btn.innerHTML = "✅ <b>준비 끝</b> — 사진 " + e.data.done + "장 저장됨. 신호 없어도 열립니다";
+    }
+  });
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  }
+
   fetch("courses.json", {cache:"no-cache"}).then(function(r){ return r.json(); }).then(function(list){
     LIST = list;
     // 각 코스의 «실제 거리»를 미리 읽어 카드에 띄운다(코스 파일이 유일한 출처).
@@ -752,6 +832,7 @@
     }));
   }).then(function(){
     drawPicks();
+    paintPwa();
     /* 주소로 코스를 지정할 수 있다 — QR 을 코스별로 따로 뿌릴 때 쓴다. ?day=1 / ?day=2 */
     var m = location.search.match(/[?&]day=(\d+)/);
     var pick = m ? LIST.courses[+m[1] - 1] : null;

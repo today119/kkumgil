@@ -1,0 +1,17 @@
+{
+  "name": "꿈길 걷기",
+  "short_name": "꿈길 걷기",
+  "description": "정해진 코스를 따라 걸으면 폰이 길을 챙겨 줍니다. 갈림길 미리 알림·코스 이탈 경보·SOS 위치 알리기.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B1220",
+  "theme_color": "#0B1220",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
