@@ -24,14 +24,17 @@
   header h1{margin:10px 0 4px;font-size:22px;font-weight:900;letter-spacing:-.02em;line-height:1.25}
   header p{margin:0;font-size:13px;color:#CFE6F5}
 
-  /* ★ 한 줄로 밀어 보게 했더니 뒤쪽 버튼이 안 보였다 → 줄바꿈해서 전부 보이게 한다 */
-  nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;display:flex;flex-wrap:wrap;gap:5px;
+  /* ★ 버튼은 «세 개»만 둔다. 다섯 개를 한 줄에 넣으면 글자가 11px 아래로 내려가 누르기 어려웠다.
+       회의 중 실제로 오가는 단위가 「1일차냐 2일차냐」 이므로 그 둘 + 인원이면 충분하다. */
+  nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;display:flex;gap:6px;
       padding:9px 12px;background:rgba(255,255,255,.97);border-bottom:1px solid var(--line)}
-  nav a{flex:0 1 auto;font-size:11.5px;font-weight:700;color:var(--sea);text-decoration:none;white-space:nowrap;
-        background:var(--mist);border:1px solid var(--line);padding:6px 10px;border-radius:99px}
+  nav a{flex:1 1 0;min-width:0;text-align:center;font-size:13px;font-weight:800;color:var(--sea);text-decoration:none;
+        white-space:nowrap;background:var(--mist);border:1px solid var(--line);padding:11px 6px;border-radius:10px}
 
   section{padding:22px 18px 4px;border-top:10px solid #F2F6F9}
   section:first-of-type{border-top:0}
+  /* 같은 일차 안의 이어지는 꼭지는 얇은 선으로 — 일차가 바뀔 때만 두꺼운 선 */
+  section.same{border-top:1px solid var(--line);padding-top:18px}
   h2{margin:0 0 4px;font-size:18px;font-weight:900;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
   h2 i{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:7px;
        background:var(--sky);color:#fff;font-style:normal;font-size:12px;font-weight:900;flex:0 0 auto}
@@ -92,9 +95,7 @@
 
   <nav aria-label="바로가기">
     <a href="#p1">참가 인원</a>
-    <a href="#p2">1일차 1학년</a>
-    <a href="#p3">1일차 지도교사</a>
-    <a href="#p4">1일차 2학년</a>
+    <a href="#p2">1일차</a>
     <a href="#p5">2일차</a>
   </nav>
 
@@ -128,10 +129,9 @@
     </details>
 
     <details>
-      <summary>간식·상황실 <em>5명</em></summary>
+      <summary>간식·상황실 <em>4명</em></summary>
       <div class="names">
         <b>상황실 운영 및 간식 분배</b>김정미 · 이세미 · 이슬기 · 전수빈
-        <small>계획서 표에는 4명만 적혀 있습니다 — 1명은 확인이 필요합니다.</small>
       </div>
     </details>
 
@@ -211,8 +211,8 @@
     </ul>
   </section>
 
-  <section id="p3">
-    <h2><i>3</i>1일차 · 도보 지도교사</h2>
+  <section id="p3" class="same">
+    <h2><i>2</i>1일차 · 도보 지도교사</h2>
     <div class="scroll">
       <table>
         <tr><th>그룹</th><th>학급</th><th>제1지도(담임)</th><th>제2지도</th><th>인원</th></tr>
@@ -231,8 +231,8 @@
     <div class="note">당일 상황에 따라 학생 인원·지도교사는 변동될 수 있습니다.</div>
   </section>
 
-  <section id="p4">
-    <h2><i>4</i>1일차 · 2학년 인천바로알기</h2>
+  <section id="p4" class="same">
+    <h2><i>2</i>1일차 · 2학년 인천바로알기</h2>
     <p class="lead">인천길탐방 연계코스 — 학급별 버스 이동</p>
 
     <h3>세부 일정</h3>
@@ -286,7 +286,7 @@
   </section>
 
   <section id="p5">
-    <h2><i>5</i>2일차 · 도보 코스와 지도교사</h2>
+    <h2><i>3</i>2일차 · 도보 코스와 지도교사</h2>
     <p class="lead">과거와 현재가 만나는 인천의 섬 — 총 <b>25km</b> · 1·2학년 희망자</p>
     <div class="route">
       학교 →<b>(버스)</b>→ 무의도 공영주차장 → 잠진도 → <b>마시안해변</b> → 선녀바위 → 을왕 → 왕산 → 용유초 →<b>(버스)</b>→ 학교
