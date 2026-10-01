@@ -233,6 +233,55 @@
   .tile{position:relative;border-radius:20px;overflow:hidden;background:var(--panel);padding:0;
     aspect-ratio:1/1;display:block;box-shadow:0 4px 14px rgba(15,23,42,.10)}
   .tile img{width:100%;height:100%;object-fit:cover;display:block}
+  /* 홈 준비물 카드 */
+  .prepcard img{width:52px;height:52px;border-radius:14px;flex:0 0 auto}
+  .prepcard > span:nth-child(2){flex:1;font-size:18px}
+  .prepcard .go2{font-size:28px;color:var(--sub);font-weight:400}
+  .prepcard.done{background:#DCFCE7}
+  /* 코스 안내 */
+  .ci-top{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  .ci-top span{font-size:14px;font-weight:900;padding:5px 11px;border-radius:999px;background:#E0F2FE;color:#075985}
+  .ci-name{font-size:24px;font-weight:900;letter-spacing:-.04em;margin:6px 0 12px;line-height:1.3}
+  .ci-map{width:100%;border-radius:16px;display:block;border:1px solid var(--line)}
+  .ci-route{display:flex;flex-wrap:wrap;align-items:center;gap:4px 2px;margin:12px 0 4px;font-size:15px;font-weight:800;line-height:1.6}
+  .ci-route i{font-style:normal;color:#94A3B8;margin:0 3px}
+  .ci-route .bus{color:#64748B;font-weight:700}
+  .ci-h{font-size:19px;font-weight:900;margin:22px 0 6px}
+  .sch{display:flex;gap:12px;padding:13px 4px;border-bottom:1px solid var(--line);align-items:flex-start}
+  .sch .tm{flex:0 0 96px;font-size:15px;font-weight:900;font-variant-numeric:tabular-nums;color:#0F172A;padding-top:1px}
+  .sch .tx{flex:1;min-width:0;font-size:16px;font-weight:700;line-height:1.45}
+  .sch .km{display:inline-block;margin-left:6px;font-size:13px;font-weight:900;padding:2px 8px;border-radius:999px;background:#DCFCE7;color:#166534;vertical-align:1px}
+  .sch .km.bus{background:#E2E8F0;color:#334155}
+  .sch .give{display:block;margin-top:3px;font-size:14px;font-weight:800;color:#B45309}
+  .sch.meal{background:#FFF7E6;border-radius:12px;border-bottom-color:transparent}
+  .sch.rest .tx{color:#0F766E}
+  .ci-other{margin-top:18px;border:1px solid var(--line);border-radius:14px;background:#fff}
+  .ci-other summary{padding:14px;font-size:16px;font-weight:900;cursor:pointer}
+  .ci-other .in{padding:0 12px 12px}
+  .ci-other .nt{font-size:14px;color:var(--sub);font-weight:700;margin-top:8px;line-height:1.5}
+  .ci-warn{margin-top:14px;padding:12px 14px;border-radius:14px;background:#FEF3C7;color:#92400E;font-size:15px;font-weight:800;line-height:1.5}
+  .ci-go{position:sticky;bottom:-20px;margin:18px -16px -20px;padding:10px 16px 14px;background:var(--bg);border-top:1px solid var(--line);display:flex;gap:8px}
+  .ci-go .go{margin:0 !important;flex:2 1 0}
+  .ci-go .go.ghost{flex:1 1 0;font-size:16px}
+  .sheet .go.ghost{background:#E2E8F0;color:#0F172A;margin-top:8px}
+  /* 준비물 */
+  .pv-top{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
+  .pv-top b{font-size:34px;font-weight:900}
+  .pv-top span{font-size:16px;font-weight:800;color:var(--sub)}
+  .pv-bar{height:10px;border-radius:5px;background:#E2E8F0;overflow:hidden;margin-bottom:8px}
+  .pv-bar i{display:block;height:100%;background:#22C55E;transition:width .2s}
+  .pv-g{font-size:18px;font-weight:900;margin:20px 0 8px}
+  .pv{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:14px;border-radius:16px;background:#fff;margin-bottom:8px;box-shadow:0 2px 8px rgba(15,23,42,.05)}
+  .pv .bx{flex:0 0 auto;width:30px;height:30px;border-radius:9px;border:3px solid #CBD5E1;display:grid;place-items:center;font-size:18px;font-weight:900;color:#fff}
+  .pv .t{display:block;font-size:17px;font-weight:800;line-height:1.35}
+  .pv .s{display:block;font-size:14px;font-weight:600;color:var(--sub);margin-top:2px;line-height:1.4}
+  .pv .d{display:inline-block;font-size:12px;font-weight:900;padding:2px 7px;border-radius:999px;background:#E0F2FE;color:#075985;margin-left:6px;vertical-align:2px}
+  .pv.on{background:#F0FDF4}
+  .pv.on .bx{background:#22C55E;border-color:#22C55E}
+  .pv.on .t{color:#64748B;text-decoration:line-through}
+  .pv-given{margin-top:20px;padding:14px 16px;border-radius:16px;background:#FFF7E6}
+  .pv-given h3{font-size:17px;font-weight:900;margin-bottom:6px}
+  .pv-given li{font-size:16px;font-weight:700;line-height:1.7;margin-left:20px}
   .work .aw{display:inline-block;background:#FEF3C7;color:#92400E;font-size:13px;font-weight:900;padding:4px 10px;border-radius:999px;margin-bottom:10px}
   .work .wtx{font-size:19px;font-weight:900;line-height:1.55;letter-spacing:-.03em}
   .work .acro{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:800;line-height:1.4;margin:6px 0}
@@ -248,7 +297,7 @@
   .school{text-align:center;font-size:16px;font-weight:800;color:var(--sub);margin-top:10px}
 
   /* 하단 탭 */
-  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:130;display:grid;grid-template-columns:repeat(4,1fr);
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:130;display:grid;grid-template-columns:repeat(5,1fr);
     background:#fff;border-top:1px solid #DBE4EF;padding-bottom:var(--safe-b);box-shadow:0 -4px 14px rgba(15,23,42,.06)}
   .tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
     min-height:64px;background:none;color:#667A91;font-size:14px;font-weight:800}
@@ -352,6 +401,9 @@
 
       <div class="picks" id="picks"></div>
 
+      <button class="book prepcard" id="prepCard"><img src="t-prep.jpg" alt="">
+        <span>🎒 준비물 챙기기<span class="s" id="prepCount">눌러서 하나씩 체크해 보세요</span></span><span class="go2">›</span></button>
+
       <!-- 공모전 미리보기 — 윗줄은 «이미 마감된» 것, 아랫줄은 «행사 당일부터» 하는 것 -->
       <div class="trow">🚩 행사 당일부터</div>
       <div class="tiles">
@@ -396,6 +448,7 @@
 <nav class="tabs" id="tabs">
   <button data-tab="home" class="on"><span class="e">🏠</span>홈</button>
   <button data-tab="course"><span class="e">🗺</span>코스</button>
+  <button data-tab="prep"><span class="e">🎒</span>준비물</button>
   <button data-tab="stamp"><span class="e">🏅</span>스탬프</button>
   <button data-tab="mis"><span class="e">📸</span>미션</button>
 </nav>
@@ -433,6 +486,18 @@
       <button id="scanGo">열기</button>
     </div>
   </div>
+</div>
+
+<!-- ══ 코스 안내 — 1일차/2일차 카드를 누르면 길안내 전에 먼저 본다 ══ -->
+<div class="sheet" id="infoSheet">
+  <div class="sheet-head"><h2 id="infoTitle">코스 안내</h2><button class="x" data-close>×</button></div>
+  <div class="sheet-body" id="infoBody"></div>
+</div>
+
+<!-- ══ 준비물 ══ -->
+<div class="sheet" id="prepSheet">
+  <div class="sheet-head"><h2>🎒 준비물</h2><button class="x" data-close>×</button></div>
+  <div class="sheet-body" id="prepBody"></div>
 </div>
 
 <div class="sheet" id="photoSheet">
@@ -1001,13 +1066,96 @@
       var box = $(id); if(!box) return;
       box.innerHTML = html;
       box.querySelectorAll('[data-pick]').forEach(function(b){
-        b.onclick = function(){
-          var c = LIST.courses[+b.dataset.pick];
-          loadCourse(c.file).then(beginWalk);
-        };
+        b.onclick = function(){ openInfo(+b.dataset.pick); };
       });
     });
   }
+
+
+  /* ══ 코스 안내 ══
+     1일차/2일차 카드를 누르면 길안내로 바로 가지 않고, 먼저 «언제 무엇을 하는지»를 보여 준다.
+     학생이 제일 궁금한 건 「몇 시에 밥 먹지?」 「몇 km 남았지?」 — 그래서 일정표가 맨 위 지도 바로 아래.
+     일정은 courses.json 의 schedule (교직원 회의 안내 일정표에서 옮김, 선생님 이름 제외). */
+  function schRows(list){
+    return list.map(function(s){
+      var k = s.km ? '<span class="km' + (s.kind === "bus" ? ' bus' : '') + '">' + (s.kind === "bus" ? "🚌 " : "👟 ") + esc(s.km) + '</span>' : '';
+      var ico = s.kind === "meal" ? "🍚 " : s.kind === "rest" ? "☕ " : "";
+      return '<div class="sch' + (s.kind ? ' ' + s.kind : '') + '"><div class="tm">' + esc(s.t) + '</div>' +
+             '<div class="tx">' + ico + esc(s.txt) + k + (s.give ? '<span class="give">🎁 ' + esc(s.give) + '</span>' : '') + '</div></div>';
+    }).join("");
+  }
+  function openInfo(i){
+    var c = LIST.courses[i]; if(!c) return;
+    $("infoTitle").textContent = c.label + " 코스 안내";
+    var h = '<div class="ci-top"><span>' + esc(c.date) + '</span><span>' + esc(c.place) + ' ' + esc(c.total || "") + '</span>' +
+            (c.who ? '<span>' + esc(c.who) + '</span>' : '') + '</div>' +
+            '<div class="ci-name">' + esc(c.name || c.label) + '</div>' +
+            (c.map ? '<img class="ci-map" src="' + c.map + '" alt="전체 코스 지도">' : '') +
+            (c.route ? '<div class="ci-route">' + c.route.map(function(r){
+                return /^\(/.test(r) ? '<span class="bus">' + esc(r) + '</span>' : '<span>' + esc(r) + '</span>';
+              }).join('<i>→</i>') + '</div>' : '') +
+            '<div class="ci-h">🕘 일정</div>' + schRows(c.schedule || []);
+    if(c.other){
+      h += '<details class="ci-other"><summary>' + esc(c.other.title) + '</summary><div class="in">' +
+           schRows(c.other.schedule) + (c.other.note ? '<div class="nt">' + esc(c.other.note) + '</div>' : '') + '</div></details>';
+    }
+    if(c.note) h += '<div class="ci-warn">📍 앱 길안내: ' + esc(c.note) + '</div>';
+    var ok = c.ready && c.lengthM;
+    h += '<div class="ci-go">' +
+         (ok ? '<button class="go" id="ciStart">▶ 길안내 시작</button><button class="go ghost" id="ciDemo">🧪 체험</button>'
+             : '<button class="go ghost" disabled>길안내 준비 중이에요</button>') + '</div>';
+    $("infoBody").innerHTML = h;
+    $("infoBody").scrollTop = 0;
+    if(ok){
+      $("ciStart").onclick = function(){ closeSheets(); loadCourse(c.file).then(beginWalk); };
+      $("ciDemo").onclick  = function(){ closeSheets(); loadCourse(c.file).then(function(){ if(C) startDemo(); }); };
+    }
+    $("infoSheet").classList.add("show");
+  }
+
+  /* ══ 준비물 ══
+     기본 목록은 prep.json. 학생이 체크한 것은 폰에만 남는다. 「학교에서 주는 것」도 함께 보여 줘서
+     괜히 무겁게 싸 오지 않게 한다. */
+  var PREP = null, prepKey = "kkumgil.prep";
+  function prepSet(){ try{ return JSON.parse(localStorage.getItem(prepKey) || "[]"); }catch(e){ return []; } }
+  function prepAll(){ var a = []; (PREP ? PREP.groups : []).forEach(function(g){ g.items.forEach(function(x){ a.push(x.id); }); }); return a; }
+  function paintPrepCount(){
+    if(!PREP) return;
+    var all = prepAll(), got = prepSet().filter(function(id){ return all.indexOf(id) >= 0; }).length;
+    $("prepCount").textContent = got ? got + " / " + all.length + " 챙겼어요" : "눌러서 하나씩 체크해 보세요";
+    $("prepCard").classList.toggle("done", got === all.length);
+  }
+  function showPrep(){
+    if(!PREP){ toast("준비물 목록을 불러오는 중이에요"); return; }
+    var on = prepSet(), all = prepAll(), got = on.filter(function(id){ return all.indexOf(id) >= 0; }).length;
+    var h = '<div class="pv-top"><b>' + got + '</b><span>/ ' + all.length + ' 챙겼어요</span></div>' +
+            '<div class="pv-bar"><i style="width:' + (all.length ? got/all.length*100 : 0) + '%"></i></div>';
+    PREP.groups.forEach(function(g){
+      h += '<div class="pv-g">' + esc(g.title) + '</div>';
+      g.items.forEach(function(x){
+        var y = on.indexOf(x.id) >= 0;
+        h += '<button class="pv' + (y ? ' on' : '') + '" data-pv="' + x.id + '"><span class="bx">' + (y ? '✓' : '') + '</span>' +
+             '<span><span class="t">' + esc(x.t) + (x.day ? '<span class="d">' + x.day + '일차</span>' : '') + '</span>' +
+             (x.s ? '<span class="s">' + esc(x.s) + '</span>' : '') + '</span></button>';
+      });
+    });
+    if(PREP.given) h += '<div class="pv-given"><h3>' + esc(PREP.given.title) + '</h3><ul>' +
+                        PREP.given.items.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join("") + '</ul></div>';
+    if(PREP.note) h += '<div class="card" style="margin-top:12px"><div class="body" style="font-size:15px">' + esc(PREP.note) + '</div></div>';
+    $("prepBody").innerHTML = h;
+    $("prepBody").querySelectorAll("[data-pv]").forEach(function(b){
+      b.onclick = function(){
+        var s = prepSet(), id = b.dataset.pv, k = s.indexOf(id);
+        if(k < 0) s.push(id); else s.splice(k, 1);
+        try{ localStorage.setItem(prepKey, JSON.stringify(s)); }catch(e){}
+        var top = $("prepBody").scrollTop; showPrep(); $("prepBody").scrollTop = top;
+        paintPrepCount();
+      };
+    });
+    $("prepSheet").classList.add("show");
+  }
+  $("prepCard").onclick = function(){ closeSheets(); showPrep(); markTab("prep"); };
+  fetch("prep.json", {cache:"no-cache"}).then(function(r){ return r.json(); }).then(function(d){ PREP = d; paintPrepCount(); }).catch(function(){});
 
   /* ══ 홈 화면 탭 — 홈 · 코스 · 스탬프 · 미션 ══
      스탬프·미션은 «화면을 바꾸지 않고» 쓰던 시트를 그대로 연다.
@@ -1043,6 +1191,7 @@
       var t = b.dataset.tab;
       if(t === "stamp"){ closeSheets(); showStampBoard(); markTab("stamp"); return; }
       if(t === "mis"){ closeSheets(); showMissionBoard(); markTab("mis"); return; }
+      if(t === "prep"){ closeSheets(); showPrep(); markTab("prep"); return; }
       if(t === "course" && C){ closeSheets(); $("intro").style.display = "none"; markTab("course"); return; }
       showPane(t);
     };
