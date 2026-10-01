@@ -71,7 +71,8 @@ function checkRoster() {
     try {
       var R = readRoster(d), n = 0;
       var line = R.classes.map(function (c) { n += R.byClass[c].length; return classLabel(c) + ' ' + R.byClass[c].length + '명'; });
-      out.push('【' + d + '일차】 ' + R.classes.length + '개 반 · ' + n + '명\n' + line.join(' / '));
+      out.push('【' + d + '일차】 ' + R.classes.length + '개 반 · ' + n + '명\n' + line.join(' / ') +
+               (R.excluded && R.excluded.length ? '\n뺀 학생 ' + R.excluded.length + '명(자퇴·전출 등): ' + R.excluded.join(', ') : ''));
     } catch (e) { out.push('【' + d + '일차】 ' + e.message); }
   });
   ui.alert('명단 확인', out.join('\n\n') + '\n\n맞으면 「② 폼 만들기」를 누르세요.', ui.ButtonSet.OK);
@@ -108,6 +109,8 @@ function readRoster(day) {
   return parseRoster(sh.getDataRange().getDisplayValues(), day);
 }
 function parseRoster(grid, day) {
+  var M = parseMyeongryeol(grid);          // 학교 「학생명렬표」를 통째로 붙여넣은 경우
+  if (M) return M;
   var head = (grid[0] || []).map(function (v) { return String(v).trim(); });
   var blocks = [];
   head.forEach(function (v, c) {
@@ -138,6 +141,39 @@ function parseRoster(grid, day) {
   classes.forEach(function (c) { byClass[c].sort(function (a, b) { return a.no - b.no; }); });
   return { classes: classes, byClass: byClass };
 }
+/* 학교 「학생명렬표」 모양 그대로 읽기
+     반 | | 1-1 | | 1-2 | …        ← 「반」 줄: 학급 이름이 두 칸마다
+     번 호 | | 성 명 | 성별 | 성 명 | 성별 …
+     1 | | 김다은 | 여 | 강율 | 남 …
+   ★ 성별 칸이 「남·여」가 아닌 학생(자퇴·전출·공석 등)은 지금 학교에 없으므로 뺀다.
+   ★ 아래 「남·여·계」 합계 줄은 번호가 아니라서 저절로 건너뛴다. */
+function parseMyeongryeol(grid) {
+  var T = function (v) { return String(v == null ? '' : v).replace(/\s+/g, ''); };
+  var hr = -1;
+  for (var i = 0; i < Math.min(grid.length, 10); i++) {
+    var row = grid[i].map(T);
+    if (row.indexOf('반') >= 0 && row.some(function (v) { return /^\d+-\d+$/.test(v); })) { hr = i; break; }
+  }
+  if (hr < 0) return null;
+  var cols = [];
+  grid[hr].forEach(function (v, c) { var t = T(v); if (/^\d+-\d+$/.test(t)) cols.push({ c: c, cls: t }); });
+  var classes = [], byClass = {}, excluded = [];
+  grid.slice(hr + 1).forEach(function (r) {
+    var no = T(r[0]);
+    if (!/^\d+$/.test(no)) return;
+    cols.forEach(function (k) {
+      var nm = String(r[k.c] == null ? '' : r[k.c]).trim(), sx = T(r[k.c + 1]);
+      if (!nm) return;
+      if (sx !== '남' && sx !== '여') { excluded.push(k.cls + ' ' + no + '번 ' + nm + '(' + (sx || '?') + ')'); return; }
+      if (!byClass[k.cls]) { byClass[k.cls] = []; classes.push(k.cls); }
+      byClass[k.cls].push({ no: Number(no), name: nm });
+    });
+  });
+  if (!classes.length) return null;
+  classes.sort(classOrder);
+  return { classes: classes, byClass: byClass, excluded: excluded };
+}
+
 /* 「2」 < 「10」, 「1-3」 < 「2-1」 — 글자 순이 아니라 숫자 순으로 */
 function classOrder(a, b) {
   var pa = a.split('-').map(Number), pb = b.split('-').map(Number);
