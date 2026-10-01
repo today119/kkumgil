@@ -462,20 +462,26 @@ function getStatus(day, pin) {
            places: DAYS[day].places.filter(function (p) { return p !== '출발 전'; }) };
 }
 
-/* 현황판에서 학생 한 명의 상황을 기록한다 → 「기록_N일차」 탭에 한 줄 */
-function record(day, pin, cls, name, status, reason, place) {
+/* 현황판에서 학생(여러 명 가능)의 상황을 기록한다 → 「기록_N일차」 탭에 한 줄 */
+function record(day, pin, cls, names, status, reason, place) {
+  names = [].concat(names).map(String).filter(Boolean);
   var real = PropertiesService.getScriptProperties().getProperty('pin');
   if (real && String(pin || '') !== real) return { ok: false, need: 'pin', msg: checkPin_(pin) || '비번을 다시 넣어 주세요.' };
   day = Number(day) === 2 ? 2 : 1;
   if (STATUS.indexOf(status) < 0) return { ok: false, msg: '알 수 없는 상황이에요.' };
   var R = readRoster(day), list = R.byClass[cls];
-  if (!list || !list.some(function (s) { return choiceLabel(list, s) === name; })) return { ok: false, msg: '명단에 없는 학생이에요.' };
+  if (!list) return { ok: false, msg: '명단에 없는 반이에요.' };
+  var labels = list.map(function (s) { return choiceLabel(list, s); });
+  var bad = names.filter(function (n) { return labels.indexOf(n) < 0; });
+  if (!names.length || bad.length) return { ok: false, msg: '명단에 없는 학생이에요: ' + bad.join(', ') };
   var who = '';
   try { who = Session.getActiveUser().getEmail(); } catch (e) {}
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
-    logSheet(day, true).appendRow([new Date(), cls, name, status, reason || '', place || '', who]);
+    var sh = logSheet(day, true), now = new Date();
+    var rows = names.map(function (n) { return [now, cls, n, status, reason || '', place || '', who]; });
+    sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
     SpreadsheetApp.flush();
   } finally { lock.releaseLock(); }
   try { refresh(day); } catch (e) {}
@@ -539,6 +545,11 @@ button{font-family:inherit;cursor:pointer}
 .nb.absent{background:#F1F5F9;color:#94A3B8;border-color:#E2E8F0}
 .nb.drop{background:#FEE2E2;border-color:#FCA5A5;color:#991B1B}
 .nb.drop small{color:#B91C1C}
+.nb.on{background:#DBEAFE;border-color:#2563EB;color:#1D4ED8;box-shadow:0 0 0 2px #2563EB inset}
+.bar{display:none;position:sticky;bottom:-26px;margin:14px -14px -26px;padding:12px 14px 18px;background:#fff;border-top:1px solid #E2E8F0;box-shadow:0 -6px 16px rgba(15,23,42,.08)}
+.bar .bt{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:16px}
+.bar .clr{border:0;background:#F1F5F9;border-radius:999px;padding:6px 12px;font-weight:800;color:#475569}
+.acts.three{grid-template-columns:1fr 1fr 1fr}
 .q{font-size:15px;font-weight:900;margin:14px 2px 8px;color:#334155}
 .acts{display:grid;gap:8px}
 .acts.two{grid-template-columns:1fr 1fr}
@@ -609,71 +620,80 @@ function draw(R){
   if(openCls !== null && $('sh').classList.contains('show') && $('pn').dataset.mode === 'class') openClass(openCls, true);
 }
 
-/* ── 반 화면: 학생 이름 버튼 ── */
+/* ── 반 화면: 학생 이름 버튼 — 눌러서 «여러 명 선택» → 아래 줄에서 한꺼번에 처리 ── */
+var sel = {};
 function clsByKey(k){ for(var i = 0; i < S.classes.length; i++) if(S.classes[i].cls === k) return i; return -1; }
+function selNames(){ return Object.keys(sel).filter(function(k){ return sel[k]; }); }
+function who(c, names){ return esc(c.label) + ' ' + esc(names[0]) + (names.length > 1 ? ' 외 ' + (names.length - 1) + '명' : ''); }
 function openClass(i, keep){
-  var c = S.classes[i]; openCls = i;
+  var c = S.classes[i];
+  if(openCls !== i || !keep) sel = {};
+  openCls = i;
   var h = '<div class="top"><h2>' + esc(c.label) + '</h2><button class="x" data-x>×</button></div>' +
-          '<div class="sub">걷는 중 ' + c.walk + ' · 불참 ' + c.absent + ' · 포기 ' + c.drop + ' — 이름을 누르세요</div><div class="names">' +
+          '<div class="sub">걷는 중 ' + c.walk + ' · 불참 ' + c.absent + ' · 포기 ' + c.drop + ' — 학생을 골라 주세요(여러 명 가능)</div><div class="names">' +
           c.students.map(function(s){
             var k = s.st === '불참' ? 'absent' : s.st === '중도포기' ? 'drop' : '';
-            return '<button class="nb ' + k + '" data-nm="' + esc(s.name) + '">' + esc(s.name) + (k ? '<small>' + esc(s.st) + '</small>' : '') + '</button>';
-          }).join('') + '</div>';
+            return '<button class="nb ' + k + (sel[s.name] ? ' on' : '') + '" data-nm="' + esc(s.name) + '">' + (sel[s.name] ? '✓ ' : '') + esc(s.name) +
+                   (k ? '<small>' + esc(s.st) + '</small>' : '') + '</button>';
+          }).join('') + '</div><div class="bar" id="bar"></div>';
   show(h, 'class');
-  $('pn').querySelectorAll('[data-nm]').forEach(function(b){ b.onclick = function(){ openStudent(c.cls, b.dataset.nm); }; });
+  $('pn').querySelectorAll('[data-nm]').forEach(function(b){
+    b.onclick = function(){ sel[b.dataset.nm] = !sel[b.dataset.nm]; openClass(i, true); };
+  });
+  paintBar(c);
 }
-
-/* ── 학생 화면: 상황 → (중도포기면) 이유 → 어디쯤 ── */
-function openStudent(cls, name){
-  var i = clsByKey(cls); if(i < 0) return;
-  var c = S.classes[i], s = c.students.filter(function(x){ return x.name === name; })[0]; if(!s) return;
-  openCls = i;
-  var h = '<div class="top"><h2>' + esc(c.label) + ' ' + esc(name) + '</h2><button class="x" data-back>‹</button></div>' +
-          '<div class="sub">지금: <b>' + esc(s.st) + '</b></div><div class="acts">';
-  if(s.st !== '중도포기') h += '<button class="ab red" data-st="중도포기">🚑 중도포기</button>';
-  if(s.st !== '불참')     h += '<button class="ab gray" data-st="불참">🚫 불참 (출발 전)</button>';
-  if(s.st !== '걷는 중')  h += '<button class="ab green" data-st="다시 합류">↩ 다시 걷는 중</button>';
-  h += '</div>';
-  show(h, 'student');
-  $('pn').querySelector('[data-back]').onclick = function(){ openClass(i); };
-  $('pn').querySelectorAll('[data-st]').forEach(function(b){
+function paintBar(c){
+  var n = selNames(), bar = $('bar'); if(!bar) return;
+  if(!n.length){ bar.style.display = 'none'; return; }
+  bar.style.display = 'block';
+  bar.innerHTML = '<div class="bt"><b>' + n.length + '명 선택</b><button class="clr" id="clr">선택 해제</button></div>' +
+    '<div class="acts three"><button class="ab red sm" data-st="중도포기">🚑 중도포기</button>' +
+    '<button class="ab gray sm" data-st="불참">🚫 불참</button><button class="ab green sm" data-st="다시 합류">↩ 걷는 중</button></div>';
+  $('clr').onclick = function(){ sel = {}; openClass(openCls, true); };
+  bar.querySelectorAll('[data-st]').forEach(function(b){
     b.onclick = function(){
-      var st = b.dataset.st;
-      if(st === '중도포기') askReason(c, name);
-      else save(c, name, st, '', st === '불참' ? '출발 전' : '');
+      var st = b.dataset.st, names = selNames();
+      if(st === '중도포기') askReason(c, names);
+      else save(c, names, st, '', st === '불참' ? '출발 전' : '');
     };
   });
 }
-function askReason(c, name){
-  var h = '<div class="top"><h2>' + esc(c.label) + ' ' + esc(name) + '</h2><button class="x" data-back>‹</button></div>' +
+/* 빠진 학생 목록에서 이름을 누르면 → 그 반 화면에서 그 학생이 골라진 채로 */
+function openStudent(cls, name){
+  var i = clsByKey(cls); if(i < 0) return;
+  openCls = i; sel = {}; sel[name] = true;
+  openClass(i, true);
+}
+function askReason(c, names){
+  var h = '<div class="top"><h2>' + who(c, names) + '</h2><button class="x" data-back>‹</button></div>' +
           '<div class="q">🚑 중도포기 이유</div><div class="acts two">' +
           S.reasons.map(function(r){ return '<button class="ab sm" data-r="' + esc(r) + '">' + esc(r) + '</button>'; }).join('') + '</div>';
   show(h, 'student');
-  $('pn').querySelector('[data-back]').onclick = function(){ openStudent(c.cls, name); };
-  $('pn').querySelectorAll('[data-r]').forEach(function(b){ b.onclick = function(){ askPlace(c, name, b.dataset.r); }; });
+  $('pn').querySelector('[data-back]').onclick = function(){ openClass(openCls, true); };
+  $('pn').querySelectorAll('[data-r]').forEach(function(b){ b.onclick = function(){ askPlace(c, names, b.dataset.r); }; });
 }
-function askPlace(c, name, reason){
-  var h = '<div class="top"><h2>' + esc(c.label) + ' ' + esc(name) + '</h2><button class="x" data-back>‹</button></div>' +
+function askPlace(c, names, reason){
+  var h = '<div class="top"><h2>' + who(c, names) + '</h2><button class="x" data-back>‹</button></div>' +
           '<div class="sub">이유: ' + esc(reason) + '</div><div class="q">📍 어디쯤인가요?</div><div class="acts two">' +
           S.places.map(function(p){ return '<button class="ab sm" data-p="' + esc(p) + '">' + esc(p) + '</button>'; }).join('') + '</div>';
   show(h, 'student');
-  $('pn').querySelector('[data-back]').onclick = function(){ askReason(c, name); };
-  $('pn').querySelectorAll('[data-p]').forEach(function(b){ b.onclick = function(){ save(c, name, '중도포기', reason, b.dataset.p); }; });
+  $('pn').querySelector('[data-back]').onclick = function(){ askReason(c, names); };
+  $('pn').querySelectorAll('[data-p]').forEach(function(b){ b.onclick = function(){ save(c, names, '중도포기', reason, b.dataset.p); }; });
 }
-function save(c, name, st, reason, place){
+function save(c, names, st, reason, place){
   busy = true;
   $('pn').innerHTML = '<div class="empty">저장하는 중…</div>';
   google.script.run.withSuccessHandler(function(R){
     busy = false;
     if(R && R.need === 'pin'){ hide(); askPin(R.msg); return; }
-    if(!R || !R.ok){ toast((R && R.msg) || '저장하지 못했어요'); return; }
-    toast('✅ ' + c.label + ' ' + name + ' — ' + (st === '다시 합류' ? '걷는 중' : st));
-    var i = clsByKey(c.cls);
+    if(!R || !R.ok){ toast((R && R.msg) || '저장하지 못했어요'); openClass(openCls, true); return; }
+    toast('✅ ' + c.label + ' ' + names.length + '명 — ' + (st === '다시 합류' ? '걷는 중' : st));
+    sel = {};
     draw(R.status);
-    openClass(clsByKey(c.cls) >= 0 ? clsByKey(c.cls) : i);
+    var i = clsByKey(c.cls); if(i >= 0) openClass(i, true);
   }).withFailureHandler(function(e){
-    busy = false; toast('저장하지 못했어요: ' + e.message); openStudent(c.cls, name);
-  }).record(day, pin, c.cls, name, st, reason, place);
+    busy = false; toast('저장하지 못했어요: ' + e.message); openClass(openCls, true);
+  }).record(day, pin, c.cls, names, st, reason, place);
 }
 
 function show(h, mode){ $('pn').innerHTML = h; $('pn').dataset.mode = mode; $('sh').classList.add('show');
