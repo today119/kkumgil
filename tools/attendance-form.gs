@@ -351,6 +351,6 @@ function refresh(day) {
   sh.getRange(r, 1, log.length, h3.length).setValues(log);
   sh.getRange(r, 1, 1, h3.length).setFontWeight('bold').setBackground('#F1F5F9');
   sh.setFrozenRows(0);
-  sh.autoResizeColumns(1, 7);
+  sh.setColumnWidths(1, 7, 100);   // 열 넓이 100 고정(자동 맞춤은 빈 열을 좁게 접어 버렸다)
 }
 function fmt(d) { return Utilities.formatDate(new Date(d), 'Asia/Seoul', 'HH:mm'); }
