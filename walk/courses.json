@@ -205,6 +205,6 @@
   ],
   "teacher": {
     "_": "선생님 현황판(구글 Apps Script 웹앱, 학교 계정 로그인) 주소. 비어 있으면 버튼이 안 보인다. 학생 이름은 앱에 넣지 않는다.",
-    "url": ""
+    "url": "https://script.google.com/a/macros/yeongjong.icehs.kr/s/AKfycbxECmgM0La6te2FQYOd2KIBiCzq9jJRPt4UV3mmACh8b_0R8UKAx1rCNg9f-zkdM7Ho/exec"
   }
 }
