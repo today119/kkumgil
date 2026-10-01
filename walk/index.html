@@ -229,6 +229,11 @@
   .tile{position:relative;border-radius:18px;overflow:hidden;background:var(--panel);padding:0;
     aspect-ratio:1/1;display:block;box-shadow:0 4px 14px rgba(15,23,42,.10)}
   .tile img{width:100%;height:100%;object-fit:cover;display:block}
+  .work .aw{display:inline-block;background:#FEF3C7;color:#92400E;font-size:13px;font-weight:900;padding:4px 10px;border-radius:999px;margin-bottom:10px}
+  .work .wtx{font-size:19px;font-weight:900;line-height:1.55;letter-spacing:-.03em}
+  .work .acro{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:800;line-height:1.4;margin:6px 0}
+  .work .acro span{flex:0 0 auto;width:34px;height:34px;border-radius:10px;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:19px}
+  .work .by{margin-top:10px;font-size:13px;color:var(--sub);font-weight:700;text-align:right}
   .tile .soon{position:absolute;right:6px;top:6px;background:rgba(2,6,23,.78);color:#E2E8F0;
     font-size:11px;font-weight:900;padding:3px 7px;border-radius:999px}
   .book{display:flex;align-items:center;gap:12px;text-align:left;padding:15px 16px;border-radius:18px;
@@ -353,8 +358,8 @@
 
       <div class="trow">📣 공모전 결과 (마감)</div>
       <div class="tiles">
-        <button class="tile" data-tile="poem"><img src="t-poem.jpg" alt="4행시 공모전 최우수작"><span class="soon">곧</span></button>
-        <button class="tile" data-tile="catch"><img src="t-catch.jpg" alt="캐치프레이즈 선정작"></button>
+        <button class="tile" data-tile="poem"><img src="t-poem.jpg" alt="4행시 공모전 결과"><span class="soon">곧</span></button>
+        <button class="tile" data-tile="catch"><img src="t-catch.jpg" alt="캐치프레이즈 공모전 결과"></button>
         <button class="tile" data-tile="shirt"><img src="t-shirt.jpg" alt="티셔츠 공모전"><span class="soon">곧</span></button>
       </div>
 
@@ -1007,9 +1012,14 @@
      ★ 글·사진이 오면 TILES 의 body 만 채우면 된다. 화면은 그대로 둔다. */
   var TILES = {
     /* ── 이미 마감된 공모전 — 수상작이 오면 body 를 채운다 ── */
-    poem:  { emoji:"👣", title:"4행시 공모전 최우수작", img:"t-poem.jpg" },
-    catch: { emoji:"✨", title:"캐치프레이즈 선정작",   img:"t-catch.jpg",
-             body:"<b style='font-size:20px;line-height:1.5'>꿈은 바라보는 것이 아니라,<br>걸어가는 것이다</b><br><br>2026 제10회 꿈길 걷기의 캐치프레이즈입니다." },
+    /* works — 작품을 여러 개 올린다. 위에서부터 순서대로 보인다.
+         { award:"최우수", text:"한 줄\n한 줄", by:"1학년 ○반 ○○○" }   (by 는 비워도 된다)
+       acro:true 면 줄마다 첫 글자를 색 배지로 세운다(4행시). */
+    poem:  { emoji:"👣", title:"4행시 공모전 결과", img:"t-poem.jpg", acro:true,
+             body:"「꿈·길·걷·기」 네 글자로 지은 4행시입니다.", works:[] },
+    catch: { emoji:"✨", title:"캐치프레이즈 공모전 결과", img:"t-catch.jpg",
+             body:"2026 제10회 꿈길 걷기를 한 문장으로 담은 작품들입니다.",
+             works:[ { award:"선정작", text:"꿈은 바라보는 것이 아니라,\n걸어가는 것이다", by:"" } ] },
     shirt: { emoji:"👕", title:"티셔츠 공모전",         img:"t-shirt.jpg" },
     /* ── 행사 당일부터 ── */
     photo: { emoji:"🌅", title:"사진전",   img:"t-photo.jpg",
@@ -1021,6 +1031,21 @@
     book:  { emoji:"📖", title:"학생 작품집",
              body:"걸으며 쓴 글과 사진을 모은 책이에요." }
   };
+  var ACRO_COLORS = ["#E8735A", "#E9A23B", "#4C9A6A", "#3B82C4"];
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+  function worksHtml(t){
+    return (t.works || []).map(function(w){
+      var lines = String(w.text || "").split("\n");
+      var txt = t.acro
+        ? lines.map(function(l, i){
+            var c = l.trim();
+            return '<div class="acro"><span style="background:' + ACRO_COLORS[i % 4] + '">' + esc(c.charAt(0)) + '</span>' + esc(c.slice(1)) + '</div>';
+          }).join("")
+        : '<div class="wtx">' + lines.map(esc).join("<br>") + '</div>';
+      return '<div class="card work">' + (w.award ? '<span class="aw">🏆 ' + esc(w.award) + '</span>' : '') + txt +
+             (w.by ? '<div class="by">' + esc(w.by) + '</div>' : '') + '</div>';
+    }).join("");
+  }
   function openTile(k){
     var t = TILES[k]; if(!t) return;
     $("stampTitle").textContent = t.emoji + " " + t.title;
@@ -1028,7 +1053,8 @@
       (t.img ? '<img src="' + t.img + '" alt="" style="width:100%;border-radius:16px;margin-bottom:12px">' : '') +
       '<div class="card"><div class="body">' +
         (t.body || "아직 올라오지 않았어요.<br>공모전이 끝나면 여기에서 바로 볼 수 있어요.") +
-      '</div></div>' +
+        (t.works && !t.works.length ? "<br><br>작품은 곧 올라와요." : "") +
+      '</div></div>' + worksHtml(t) +
       (t.mis ? '<button class="go" style="width:100%" id="tileMis">📸 미션 보러 가기</button>' : '');
     if(t.mis) $("tileMis").onclick = showMissionBoard;
     $("stampSheet").classList.add("show");
