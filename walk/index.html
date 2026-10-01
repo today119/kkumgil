@@ -239,6 +239,9 @@
   .prepcard .go2{font-size:28px;color:var(--sub);font-weight:400}
   .prepcard.done{background:#DCFCE7}
   /* 코스 안내 */
+  .seg{display:flex;gap:4px;padding:4px;border-radius:16px;background:#E2E8F0;margin-bottom:16px}
+  .seg button{flex:1;min-height:48px;border-radius:12px;font-size:16px;font-weight:900;color:#475569}
+  .seg button.on{background:#fff;color:#0284C7;box-shadow:0 2px 6px rgba(15,23,42,.12)}
   .ci-top{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
   .ci-top span{font-size:14px;font-weight:900;padding:5px 11px;border-radius:999px;background:#E0F2FE;color:#075985}
   .ci-name{font-size:24px;font-weight:900;letter-spacing:-.04em;margin:6px 0 12px;line-height:1.3}
@@ -1084,10 +1087,28 @@
              '<div class="tx">' + ico + esc(s.txt) + k + (s.give ? '<span class="give">🎁 ' + esc(s.give) + '</span>' : '') + '</div></div>';
     }).join("");
   }
+  /* 1일차는 학년마다 하는 일이 다르다(1학년 도보 / 2학년 버스 탐방) → 위에 학년 토글. 고른 학년은 기억한다. */
+  var gradeKey = "kkumgil.grade";
+  function getGrade(){ try{ return localStorage.getItem(gradeKey) || "1"; }catch(e){ return "1"; } }
   function openInfo(i){
     var c = LIST.courses[i]; if(!c) return;
     $("infoTitle").textContent = c.label + " 코스 안내";
-    var h = '<div class="ci-top"><span>' + esc(c.date) + '</span><span>' + esc(c.place) + ' ' + esc(c.total || "") + '</span>' +
+    var g = c.other ? getGrade() : "1";
+    var tog = c.other ? '<div class="seg"><button data-g="1"' + (g === "1" ? ' class="on"' : '') + '>1학년 · 도보</button>' +
+                        '<button data-g="2"' + (g === "2" ? ' class="on"' : '') + '>2학년 · ' + esc(c.other.short || "버스 탐방") + '</button></div>' : '';
+    if(g === "2"){
+      $("infoBody").innerHTML = tog +
+        '<div class="ci-top"><span>' + esc(c.date) + '</span><span>2학년</span><span>학급별 버스</span></div>' +
+        '<div class="ci-name">' + esc(c.other.title) + '</div>' +
+        '<div class="ci-h">🕘 일정</div>' + schRows(c.other.schedule) +
+        (c.other.note ? '<div class="ci-warn" style="background:#E0F2FE;color:#075985">🚌 ' + esc(c.other.note) + '</div>' : '') +
+        '<div class="ci-warn">2학년은 버스로 이동해서 앱 길안내는 쓰지 않아요. 담임 선생님 안내를 따르세요.</div>';
+      bindSeg(i);
+      $("infoBody").scrollTop = 0;
+      $("infoSheet").classList.add("show");
+      return;
+    }
+    var h = tog + '<div class="ci-top"><span>' + esc(c.date) + '</span><span>' + esc(c.place) + ' ' + esc(c.total || "") + '</span>' +
             (c.who ? '<span>' + esc(c.who) + '</span>' : '') + '</div>' +
             '<div class="ci-name">' + esc(c.name || c.label) + '</div>' +
             (c.map ? '<img class="ci-map" src="' + c.map + '" alt="전체 코스 지도">' : '') +
@@ -1095,22 +1116,25 @@
                 return /^\(/.test(r) ? '<span class="bus">' + esc(r) + '</span>' : '<span>' + esc(r) + '</span>';
               }).join('<i>→</i>') + '</div>' : '') +
             '<div class="ci-h">🕘 일정</div>' + schRows(c.schedule || []);
-    if(c.other){
-      h += '<details class="ci-other"><summary>' + esc(c.other.title) + '</summary><div class="in">' +
-           schRows(c.other.schedule) + (c.other.note ? '<div class="nt">' + esc(c.other.note) + '</div>' : '') + '</div></details>';
-    }
     if(c.note) h += '<div class="ci-warn">📍 앱 길안내: ' + esc(c.note) + '</div>';
     var ok = c.ready && c.lengthM;
     h += '<div class="ci-go">' +
          (ok ? '<button class="go" id="ciStart">▶ 길안내 시작</button><button class="go ghost" id="ciDemo">🧪 체험</button>'
              : '<button class="go ghost" disabled>길안내 준비 중이에요</button>') + '</div>';
     $("infoBody").innerHTML = h;
+    bindSeg(i);
     $("infoBody").scrollTop = 0;
     if(ok){
       $("ciStart").onclick = function(){ closeSheets(); loadCourse(c.file).then(beginWalk); };
       $("ciDemo").onclick  = function(){ closeSheets(); loadCourse(c.file).then(function(){ if(C) startDemo(); }); };
     }
     $("infoSheet").classList.add("show");
+  }
+
+  function bindSeg(i){
+    $("infoBody").querySelectorAll("[data-g]").forEach(function(b){
+      b.onclick = function(){ try{ localStorage.setItem(gradeKey, b.dataset.g); }catch(e){} openInfo(i); };
+    });
   }
 
   /* ══ 준비물 ══
