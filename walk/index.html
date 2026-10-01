@@ -230,16 +230,19 @@
   #intro li b{display:block;font-size:16px}
   #intro .go{min-height:60px;border-radius:16px;background:var(--route);color:#04263A;font-size:19px;font-weight:900;margin-top:8px}
   /* 코스 고르기 — 이틀을 각각 다른 날 걷는다. 첫 화면에서 «오늘 걸을 코스»를 고른다. */
-  .picks{display:flex;flex-direction:column;gap:10px;margin-top:0}
-  .pick{display:flex;align-items:center;gap:14px;text-align:left;padding:16px;border-radius:16px;
-    background:var(--route);color:#04263A;font-weight:900}
+  .picks{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:0}
+  .pick{display:flex;align-items:center;gap:11px;text-align:left;padding:13px 12px;border-radius:20px;
+    background:#fff;color:#0F172A;font-weight:900;min-height:74px;box-shadow:0 6px 18px rgba(2,6,23,.35)}
+  .pick .ic{flex:0 0 auto;width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center}
+  .pick .ic svg{width:23px;height:23px}
   .pick .d{flex:1;min-width:0}
-  .pick .t{font-size:20px;letter-spacing:-.02em}
-  .pick .s{font-size:14px;font-weight:800;opacity:.72;margin-top:3px}
-  .pick .km{font-size:24px;font-weight:900;white-space:nowrap}
-  .pick .km small{font-size:13px;font-weight:800;opacity:.7}
-  .pick.off{background:var(--panel);color:var(--sub);cursor:default}
-  .pick.off .km{font-size:15px}
+  .pick .t{display:block;font-size:18px;letter-spacing:-.03em}
+  .pick .s{display:block;font-size:12px;font-weight:800;color:#64748B;margin-top:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pick .dt{display:block;font-size:11px;font-weight:800;color:#94A3B8;margin-top:1px}
+  .pick.off{background:var(--panel);color:var(--sub);box-shadow:none;cursor:default}
+  .pick.off .s{color:var(--sub)}
+  .pick.off .dt{color:#64748B}
   #intro .demo{min-height:48px;border-radius:14px;background:var(--panel2);font-size:15px;font-weight:800}
   /* 홈 화면 설치 · 미리 받기 */
   #pwa{display:flex;flex-direction:column;gap:8px}
@@ -317,18 +320,18 @@
       <div class="picks" id="picks"></div>
 
       <!-- 공모전 미리보기 — 윗줄은 «이미 마감된» 것, 아랫줄은 «행사 당일부터» 하는 것 -->
-      <div class="trow">📣 공모전 결과</div>
-      <div class="tiles">
-        <button class="tile" data-tile="poem"><img src="t-poem.jpg" alt="4행시 공모전 최우수작"><span class="soon">곧</span></button>
-        <button class="tile" data-tile="catch"><img src="t-catch.jpg" alt="캐치프레이즈 선정작"><span class="soon">곧</span></button>
-        <button class="tile" data-tile="shirt"><img src="t-shirt.jpg" alt="티셔츠 공모전"><span class="soon">곧</span></button>
-      </div>
-
       <div class="trow">🚩 행사 당일부터</div>
       <div class="tiles">
         <button class="tile" data-tile="photo"><img src="t-photo.jpg" alt="사진전"></button>
         <button class="tile" data-tile="reels"><img src="t-reels.jpg" alt="릴스전"></button>
         <button class="tile" data-tile="report"><img src="t-report.jpg" alt="보고서"><span class="soon">곧</span></button>
+      </div>
+
+      <div class="trow">📣 공모전 결과 (마감)</div>
+      <div class="tiles">
+        <button class="tile" data-tile="poem"><img src="t-poem.jpg" alt="4행시 공모전 최우수작"><span class="soon">곧</span></button>
+        <button class="tile" data-tile="catch"><img src="t-catch.jpg" alt="캐치프레이즈 선정작"><span class="soon">곧</span></button>
+        <button class="tile" data-tile="shirt"><img src="t-shirt.jpg" alt="티셔츠 공모전"><span class="soon">곧</span></button>
       </div>
 
       <button class="book" data-tile="book"><span class="e">📖</span>
@@ -892,15 +895,25 @@
      이틀을 각각 다른 날 걷는다. 어느 코스인지 앱이 알아야 이탈 판정이 맞는다.
      ★ 거리는 «코스 파일에서 읽어» 보여 준다. 손으로 적어 두면 코스를 고칠 때마다 어긋난다. */
   var LIST = null;
+  /* 코스 카드 두 장 — 시안대로 «흰 카드 가로 2장». 색은 날짜별로 다르게 둬서
+     학생이 글자를 읽기 전에 색으로 1일차/2일차를 구분하게 한다. */
+  var PICK_SKIN = [{bg:"#FDE7E0", ink:"#D96A4A"}, {bg:"#DCF2E8", ink:"#2F855A"}];
+  var PIN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+                'stroke-linecap="round" stroke-linejoin="round">' +
+                '<path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg>';
   function drawPicks(){
     var html = LIST.courses.map(function(c, i){
       var km = c.lengthM ? (c.lengthM/1000).toFixed(1) : null;
       var on = c.ready && km;
+      var sk = PICK_SKIN[i % PICK_SKIN.length];
       return '<button class="pick' + (on ? '' : ' off') + '" data-pick="' + i + '"' +
              (on ? '' : ' disabled') + '>' +
-             '<div class="d"><div class="t">' + c.label + ' · ' + c.place + '</div>' +
-             '<div class="s">' + c.date + (on ? ' · 눌러서 길안내 시작' : ' · ' + (c.note || '준비 중')) + '</div></div>' +
-             '<div class="km">' + (on ? km + '<small>km</small>' : '🔒') + '</div></button>';
+             '<span class="ic" style="background:' + (on ? sk.bg : "#334155") + ';color:' + (on ? sk.ink : "#94A3B8") + '">' +
+               (on ? PIN_SVG : '🔒') + '</span>' +
+             '<span class="d"><span class="t">' + c.label + '</span>' +
+               '<span class="s">' + c.place + (on ? ' ' + km + 'km' : '') + '</span>' +
+               '<span class="dt">' + (on ? c.date : (c.note || "준비 중")) + '</span></span>' +
+             '</button>';
     }).join('');
     ["picks","picks2"].forEach(function(id){
       var box = $(id); if(!box) return;
