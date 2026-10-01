@@ -58,6 +58,7 @@ function showHelp() {
     '<div class="k">반 고르기 → <b>그 반 명단</b>(여러 명 체크 가능) → 상황[불참/중도포기/다시 합류] → 이유 → 어디쯤 → 제출<br>' +
     '시각과 입력한 선생님은 자동 기록 · 학교 계정만 열림</div>' +
     '폼 주소와 QR 은 <b>「안내」 탭</b>에 생겨요. 교직원 단톡방에 올리면 끝. <b>배포는 필요 없어요.</b>' +
+    '<h3>📱 현황판 (선생님 폰)</h3>꿈길 앱 홈의 「선생님용 · 학생 확인」 → 반 카드 → <b>학생 이름 버튼</b> → 중도포기·불참·다시 걷는 중. 폼 없이 여기서 바로 기록돼요(「기록_1일차」 탭).' +
     '<h3>집계 (자동)</h3>폼이 제출될 때마다 <b>집계_1일차</b> 탭이 새로 고쳐져요.' +
     '<div class="k">반별: 명단 · 불참 · 참가 · 중도포기 · <b>지금 걷는 인원</b><br>빠진 학생 목록(시각·어디쯤·이유) · 전체 기록</div>' +
     '한 학생의 <b>마지막 기록</b>이 지금 상태예요. 중도포기했다가 다시 걸으면 「다시 합류」를 누르면 돼요.' +
@@ -272,11 +273,44 @@ function writeGuide(day, form) {
 
 /* ── 집계 ── */
 function onSubmit() { refreshAll(); }
-function refreshAll() { [1, 2].forEach(function (d) { if (PropertiesService.getDocumentProperties().getProperty('form' + d)) refresh(d); }); }
+function refreshAll() {
+  [1, 2].forEach(function (d) {
+    var has = PropertiesService.getDocumentProperties().getProperty('form' + d) || logSheet(d, false);
+    if (has) { try { refresh(d); } catch (e) {} }
+  });
+}
 
 function readEvents(day) {
+  return readFormEvents(day).concat(readLog(day));
+}
+/* 현황판에서 누른 기록 — 「기록_N일차」 탭 */
+var LOG_HEAD = ['시각', '반', '이름', '상황', '이유', '어디쯤', '입력한 선생님'];
+function logSheet(day, make) {
+  var ss = SpreadsheetApp.getActive(), name = '기록_' + day + '일차';
+  var sh = ss.getSheetByName(name);
+  if (!sh && make) {
+    sh = ss.insertSheet(name);
+    sh.getRange(1, 1, 1, LOG_HEAD.length).setValues([LOG_HEAD]).setFontWeight('bold').setBackground('#E0F2FE');
+    sh.setFrozenRows(1);
+    sh.getRange('B:C').setNumberFormat('@');
+  }
+  return sh;
+}
+function readLog(day) {
+  var sh = logSheet(day, false);
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, LOG_HEAD.length).getValues()
+    .filter(function (r) { return r[0] && r[1] && r[2]; })
+    .map(function (r) {
+      return { time: new Date(r[0]), cls: String(r[1]), names: [String(r[2])], status: String(r[3]),
+               reason: String(r[4] || ''), place: String(r[5] || ''), by: String(r[6] || '') };
+    });
+}
+function readFormEvents(day) {
   var id = PropertiesService.getDocumentProperties().getProperty('form' + day);
-  var form = FormApp.openById(id);
+  if (!id) return [];
+  var form;
+  try { form = FormApp.openById(id); } catch (e) { return []; }
   return form.getResponses().map(function (r) {
     var e = { time: r.getTimestamp(), by: '', cls: '', names: [], status: '', reason: '', place: '' };
     try { e.by = r.getRespondentEmail(); } catch (x) {}
@@ -307,7 +341,7 @@ function computeStatus(R, events) {
       var st = !e ? '걷는 중' : e.status === '불참' ? '불참' : e.status === '중도포기' ? '중도포기' : '걷는 중';
       if (st === '불참') absent++;
       if (st === '중도포기') drop++;
-      people.push([classLabel(c), s.no, s.name, st, e ? e.time : '', e ? e.place : '', e ? e.reason : '']);
+      people.push([classLabel(c), s.no, s.name, st, e ? e.time : '', e ? e.place : '', e ? e.reason : '', c, lab, e ? e.by : '']);
     });
     var go = list.length - absent;
     table.push([classLabel(c), list.length, absent, go, drop, go - drop]);
@@ -399,27 +433,53 @@ function checkPin_(pin) {
   return '비번이 맞지 않아요.';
 }
 
-/* 현황판이 1분마다 부른다 */
+/* 현황판이 1분마다 부른다 — 폼이 없어도 명단만 있으면 된다 */
 function getStatus(day, pin) {
   var bad = checkPin_(pin);
   var real = PropertiesService.getScriptProperties().getProperty('pin');
   if (real && (bad || String(pin || '') !== real)) return { ok: false, need: 'pin', msg: bad };
   day = Number(day) === 2 ? 2 : 1;
-  var id = PropertiesService.getDocumentProperties().getProperty('form' + day);
-  if (!id) return { ok: false, msg: day + '일차 폼이 아직 없어요. (시트에서 「② ' + day + '일차 폼 만들기」를 먼저 해 주세요)' };
-  var R = readRoster(day), S = computeStatus(R, readEvents(day));
+  var R;
+  try { R = readRoster(day); } catch (e) { return { ok: false, msg: e.message }; }
+  var S = computeStatus(R, readEvents(day));
   var tot = { list: 0, absent: 0, go: 0, drop: 0, walk: 0 };
-  var classes = S.table.map(function (t) {
+  var byCls = {};
+  S.people.forEach(function (p) { (byCls[p[7]] = byCls[p[7]] || []).push({ name: p[8], st: p[3] }); });
+  var classes = S.table.map(function (t, i) {
     tot.list += t[1]; tot.absent += t[2]; tot.go += t[3]; tot.drop += t[4]; tot.walk += t[5];
-    return { label: t[0], list: t[1], absent: t[2], go: t[3], drop: t[4], walk: t[5] };
+    var c = R.classes[i];
+    return { cls: c, label: t[0], list: t[1], absent: t[2], go: t[3], drop: t[4], walk: t[5], students: byCls[c] || [] };
   });
   var out = S.people.filter(function (p) { return p[3] !== '걷는 중'; })
     .sort(function (a, b) { return (b[4] || 0) - (a[4] || 0); })
-    .map(function (p) { return { label: p[0], no: p[1], name: p[2], st: p[3], time: p[4] ? fmt(p[4]) : '', place: p[5], reason: p[6] }; });
-  var formUrl = '';
-  try { formUrl = FormApp.openById(id).getPublishedUrl(); } catch (e) {}
+    .map(function (p) {
+      return { cls: p[7], label: p[0], name: p[8], st: p[3], time: p[4] ? fmt(p[4]) : '', place: p[5], reason: p[6],
+               by: String(p[9] || '').split('@')[0] };
+    });
   return { ok: true, title: DAYS[day].title, time: Utilities.formatDate(new Date(), 'Asia/Seoul', 'HH:mm'),
-           total: tot, classes: classes, out: out, formUrl: formUrl };
+           total: tot, classes: classes, out: out,
+           reasons: REASONS.filter(function (r) { return r !== '결석·개인 사정'; }),
+           places: DAYS[day].places.filter(function (p) { return p !== '출발 전'; }) };
+}
+
+/* 현황판에서 학생 한 명의 상황을 기록한다 → 「기록_N일차」 탭에 한 줄 */
+function record(day, pin, cls, name, status, reason, place) {
+  var real = PropertiesService.getScriptProperties().getProperty('pin');
+  if (real && String(pin || '') !== real) return { ok: false, need: 'pin', msg: checkPin_(pin) || '비번을 다시 넣어 주세요.' };
+  day = Number(day) === 2 ? 2 : 1;
+  if (STATUS.indexOf(status) < 0) return { ok: false, msg: '알 수 없는 상황이에요.' };
+  var R = readRoster(day), list = R.byClass[cls];
+  if (!list || !list.some(function (s) { return choiceLabel(list, s) === name; })) return { ok: false, msg: '명단에 없는 학생이에요.' };
+  var who = '';
+  try { who = Session.getActiveUser().getEmail(); } catch (e) {}
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    logSheet(day, true).appendRow([new Date(), cls, name, status, reason || '', place || '', who]);
+    SpreadsheetApp.flush();
+  } finally { lock.releaseLock(); }
+  try { refresh(day); } catch (e) {}
+  return { ok: true, status: getStatus(day, pin) };
 }
 
 function showDashUrl() {
@@ -435,92 +495,195 @@ var DASH_HTML = `<!doctype html><html><head><meta charset="utf-8"><meta name="vi
 <style>
 *{box-sizing:border-box;margin:0}
 body{font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#F1F5FA;color:#0F172A;-webkit-text-size-adjust:100%}
+button{font-family:inherit;cursor:pointer}
 .hd{position:sticky;top:0;z-index:5;background:#0B4F82;color:#fff;padding:14px 16px 12px}
 .hd h1{font-size:19px;font-weight:900}
 .hd .t{font-size:13px;opacity:.85;margin-top:2px}
 .seg{display:flex;gap:4px;background:rgba(255,255,255,.18);border-radius:12px;padding:3px;margin-top:10px}
 .seg button{flex:1;border:0;background:none;color:#fff;font-size:15px;font-weight:800;padding:9px;border-radius:9px}
 .seg button.on{background:#fff;color:#0B4F82}
-.wrap{padding:14px 14px 90px}
+.rf{border:0;background:rgba(255,255,255,.18);color:#fff;font-size:13px;font-weight:800;padding:5px 10px;border-radius:999px;float:right}
+.wrap{padding:14px 14px 40px}
 .big{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .big div{background:#fff;border-radius:16px;padding:12px 6px;text-align:center;box-shadow:0 2px 8px rgba(15,23,42,.06)}
 .big b{display:block;font-size:30px;font-weight:900;line-height:1.15}
 .big span{font-size:13px;font-weight:800;color:#64748B}
 .big .walk b{color:#15803D}.big .drop b{color:#B91C1C}
-.h{font-size:16px;font-weight:900;margin:20px 2px 8px}
+.h{font-size:16px;font-weight:900;margin:20px 2px 8px;display:flex;justify-content:space-between;align-items:baseline}
+.h small{font-size:13px;color:#0284C7;font-weight:800}
 .cls{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.c{background:#fff;border-radius:14px;padding:10px 12px;box-shadow:0 2px 8px rgba(15,23,42,.05)}
+.c{border:0;text-align:left;background:#fff;border-radius:14px;padding:10px 12px;box-shadow:0 2px 8px rgba(15,23,42,.05);color:inherit}
 .c .n{font-size:16px;font-weight:900;display:flex;justify-content:space-between;align-items:baseline}
 .c .n em{font-style:normal;font-size:20px;color:#15803D}
 .c .s{font-size:13px;color:#64748B;font-weight:700;margin-top:2px}
 .c .s i{font-style:normal;color:#B91C1C}
 .c.alert{outline:2px solid #FCA5A5}
-.p{background:#fff;border-radius:14px;padding:11px 13px;margin-bottom:7px;display:flex;gap:10px;align-items:center;box-shadow:0 2px 8px rgba(15,23,42,.05)}
-.p .tg{flex:0 0 auto;font-size:12px;font-weight:900;padding:4px 8px;border-radius:999px}
-.p .tg.d{background:#FEE2E2;color:#B91C1C}.p .tg.a{background:#E2E8F0;color:#334155}
+.p{border:0;width:100%;text-align:left;background:#fff;border-radius:14px;padding:11px 13px;margin-bottom:7px;display:flex;gap:10px;align-items:center;box-shadow:0 2px 8px rgba(15,23,42,.05);color:inherit}
+.tg{flex:0 0 auto;font-size:12px;font-weight:900;padding:4px 8px;border-radius:999px}
+.tg.d{background:#FEE2E2;color:#B91C1C}.tg.a{background:#E2E8F0;color:#334155}
 .p .nm{font-size:16px;font-weight:900}
 .p .mt{font-size:13px;color:#64748B;font-weight:700;margin-top:1px}
 .empty{background:#fff;border-radius:14px;padding:16px;text-align:center;color:#64748B;font-weight:700}
-.go{position:fixed;left:14px;right:14px;bottom:14px;display:block;text-align:center;background:#0284C7;color:#fff;font-size:18px;font-weight:900;padding:16px;border-radius:16px;text-decoration:none;box-shadow:0 8px 20px rgba(2,132,199,.35)}
 .err{background:#FEF3C7;color:#92400E;border-radius:14px;padding:14px;font-weight:700;line-height:1.6}
+/* 반 화면 · 학생 화면 (아래에서 올라오는 판) */
+.sh{position:fixed;inset:0;z-index:20;background:rgba(15,23,42,.45);display:none;align-items:flex-end}
+.sh.show{display:flex}
+.pn{width:100%;max-height:92vh;overflow:auto;background:#F8FAFC;border-radius:22px 22px 0 0;padding:16px 14px 26px}
+.pn .top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.pn .top h2{font-size:20px;font-weight:900;flex:1}
+.pn .top .x{border:0;background:#E2E8F0;width:40px;height:40px;border-radius:12px;font-size:22px}
+.pn .sub{font-size:14px;color:#64748B;font-weight:700;margin:-6px 0 12px}
+.names{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.nb{border:2px solid #E2E8F0;background:#fff;border-radius:14px;padding:12px 4px;font-size:16px;font-weight:800;color:#0F172A;line-height:1.2}
+.nb small{display:block;font-size:11px;font-weight:800;margin-top:3px;color:#94A3B8}
+.nb.absent{background:#F1F5F9;color:#94A3B8;border-color:#E2E8F0}
+.nb.drop{background:#FEE2E2;border-color:#FCA5A5;color:#991B1B}
+.nb.drop small{color:#B91C1C}
+.q{font-size:15px;font-weight:900;margin:14px 2px 8px;color:#334155}
+.acts{display:grid;gap:8px}
+.acts.two{grid-template-columns:1fr 1fr}
+.ab{border:0;border-radius:16px;padding:16px 10px;font-size:18px;font-weight:900;background:#fff;color:#0F172A;box-shadow:0 2px 8px rgba(15,23,42,.08)}
+.ab.red{background:#DC2626;color:#fff}.ab.gray{background:#475569;color:#fff}.ab.green{background:#16A34A;color:#fff}
+.ab.sm{font-size:16px;padding:14px 8px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0F172A;color:#fff;font-weight:800;padding:12px 18px;border-radius:999px;z-index:40;display:none}
 .pin{max-width:340px;margin:40px auto 0;background:#fff;border-radius:20px;padding:24px 20px;text-align:center;box-shadow:0 6px 20px rgba(15,23,42,.08)}
 .pin h2{font-size:20px;font-weight:900;margin-bottom:6px}.pin p{font-size:14px;color:#64748B;font-weight:700;line-height:1.5}
 .pin input{width:100%;margin-top:16px;font-size:30px;font-weight:900;letter-spacing:.4em;text-align:center;padding:12px;border:2px solid #CBD5E1;border-radius:14px}
 .pin button{width:100%;margin-top:10px;font-size:18px;font-weight:900;padding:14px;border:0;border-radius:14px;background:#0B4F82;color:#fff}
 .pin .m{margin-top:10px;color:#B91C1C;font-weight:800;font-size:14px;min-height:20px}
-.rf{border:0;background:rgba(255,255,255,.18);color:#fff;font-size:13px;font-weight:800;padding:5px 10px;border-radius:999px;float:right}
 </style></head><body>
 <div class="hd"><button class="rf" id="rf">↻ 새로고침</button><h1>🚶 꿈길 걷기 현황판</h1><div class="t" id="tm">불러오는 중…</div>
 <div class="seg"><button data-d="1" class="on">1일차</button><button data-d="2">2일차</button></div></div>
 <div class="wrap" id="w"></div>
-<a class="go" id="go" href="#" target="_blank" style="display:none">✍️ 불참·중도포기 기록하기</a>
+<div class="sh" id="sh"><div class="pn" id="pn"></div></div>
+<div class="toast" id="toast"></div>
 <script>
-var day = 1, pin = '';
+var day = 1, pin = '', S = null, openCls = null, busy = false;
 try { pin = localStorage.getItem('kk_pin') || ''; } catch (e) {}
+function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function toast(m){ var t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.k); toast.k = setTimeout(function(){ t.style.display = 'none'; }, 2200); }
+
 function load(){
-  document.getElementById('tm').textContent = '불러오는 중…';
+  if(busy) return;
+  $('tm').textContent = '불러오는 중…';
   google.script.run.withSuccessHandler(draw).withFailureHandler(function(e){
-    document.getElementById('w').innerHTML = '<div class="err">불러오지 못했어요: ' + esc(e.message) + '</div>';
+    $('w').innerHTML = '<div class="err">불러오지 못했어요: ' + esc(e.message) + '</div>';
   }).getStatus(day, pin);
 }
-function draw(S){
-  var w = document.getElementById('w'), g = document.getElementById('go');
-  if(S.need === 'pin'){ askPin(S.msg); return; }
-  if(!S.ok){ w.innerHTML = '<div class="err">' + esc(S.msg) + '</div>'; document.getElementById('tm').textContent = ''; g.style.display = 'none'; return; }
-  document.getElementById('tm').textContent = S.title + ' · ' + S.time + ' 기준 · 1분마다 갱신';
+function draw(R){
+  if(R.need === 'pin'){ askPin(R.msg); return; }
+  if(!R.ok){ $('w').innerHTML = '<div class="err">' + esc(R.msg) + '</div>'; $('tm').textContent = ''; return; }
+  S = R;
+  $('tm').textContent = S.title + ' · ' + S.time + ' 기준 · 1분마다 갱신';
   var T = S.total, h = '';
   h += '<div class="big"><div><b>' + T.go + '</b><span>참가</span></div>' +
        '<div class="drop"><b>' + T.drop + '</b><span>중도포기</span></div>' +
        '<div class="walk"><b>' + T.walk + '</b><span>지금 걷는 중</span></div></div>';
-  h += '<div class="h">반별</div><div class="cls">' + S.classes.map(function(c){
-    return '<div class="c' + (c.drop ? ' alert' : '') + '"><div class="n">' + esc(c.label) + '<em>' + c.walk + '</em></div>' +
-           '<div class="s">명단 ' + c.list + ' · 불참 ' + c.absent + ' · <i>포기 ' + c.drop + '</i></div></div>';
+  h += '<div class="h">반별 <small>반을 누르면 기록할 수 있어요</small></div><div class="cls">' + S.classes.map(function(c, i){
+    return '<button class="c' + (c.drop ? ' alert' : '') + '" data-ci="' + i + '"><div class="n">' + esc(c.label) + '<em>' + c.walk + '</em></div>' +
+           '<div class="s">명단 ' + c.list + ' · 불참 ' + c.absent + ' · <i>포기 ' + c.drop + '</i></div></button>';
   }).join('') + '</div>';
   h += '<div class="h">빠진 학생 ' + S.out.length + '명</div>';
   h += S.out.length ? S.out.map(function(p){
-    return '<div class="p"><span class="tg ' + (p.st === '중도포기' ? 'd' : 'a') + '">' + esc(p.st) + '</span><div><div class="nm">' +
-           esc(p.label) + ' ' + esc(p.name) + '</div><div class="mt">' + [p.time, p.place, p.reason].filter(Boolean).map(esc).join(' · ') + '</div></div></div>';
+    return '<button class="p" data-who="' + esc(p.cls) + '|' + esc(p.name) + '"><span class="tg ' + (p.st === '중도포기' ? 'd' : 'a') + '">' + esc(p.st) + '</span><div><div class="nm">' +
+           esc(p.label) + ' ' + esc(p.name) + '</div><div class="mt">' + [p.time, p.place, p.reason, p.by].filter(Boolean).map(esc).join(' · ') + '</div></div></button>';
   }).join('') : '<div class="empty">아직 없어요 👍</div>';
-  w.innerHTML = h;
-  if(S.formUrl){ g.href = S.formUrl; g.style.display = 'block'; }
+  $('w').innerHTML = h;
+  $('w').querySelectorAll('[data-ci]').forEach(function(b){ b.onclick = function(){ openClass(+b.dataset.ci); }; });
+  $('w').querySelectorAll('[data-who]').forEach(function(b){
+    b.onclick = function(){ var k = b.dataset.who.split('|'); openStudent(k[0], k[1]); };
+  });
+  if(openCls !== null && $('sh').classList.contains('show') && $('pn').dataset.mode === 'class') openClass(openCls, true);
+}
+
+/* ── 반 화면: 학생 이름 버튼 ── */
+function clsByKey(k){ for(var i = 0; i < S.classes.length; i++) if(S.classes[i].cls === k) return i; return -1; }
+function openClass(i, keep){
+  var c = S.classes[i]; openCls = i;
+  var h = '<div class="top"><h2>' + esc(c.label) + '</h2><button class="x" data-x>×</button></div>' +
+          '<div class="sub">걷는 중 ' + c.walk + ' · 불참 ' + c.absent + ' · 포기 ' + c.drop + ' — 이름을 누르세요</div><div class="names">' +
+          c.students.map(function(s){
+            var k = s.st === '불참' ? 'absent' : s.st === '중도포기' ? 'drop' : '';
+            return '<button class="nb ' + k + '" data-nm="' + esc(s.name) + '">' + esc(s.name) + (k ? '<small>' + esc(s.st) + '</small>' : '') + '</button>';
+          }).join('') + '</div>';
+  show(h, 'class');
+  $('pn').querySelectorAll('[data-nm]').forEach(function(b){ b.onclick = function(){ openStudent(c.cls, b.dataset.nm); }; });
+}
+
+/* ── 학생 화면: 상황 → (중도포기면) 이유 → 어디쯤 ── */
+function openStudent(cls, name){
+  var i = clsByKey(cls); if(i < 0) return;
+  var c = S.classes[i], s = c.students.filter(function(x){ return x.name === name; })[0]; if(!s) return;
+  openCls = i;
+  var h = '<div class="top"><h2>' + esc(c.label) + ' ' + esc(name) + '</h2><button class="x" data-back>‹</button></div>' +
+          '<div class="sub">지금: <b>' + esc(s.st) + '</b></div><div class="acts">';
+  if(s.st !== '중도포기') h += '<button class="ab red" data-st="중도포기">🚑 중도포기</button>';
+  if(s.st !== '불참')     h += '<button class="ab gray" data-st="불참">🚫 불참 (출발 전)</button>';
+  if(s.st !== '걷는 중')  h += '<button class="ab green" data-st="다시 합류">↩ 다시 걷는 중</button>';
+  h += '</div>';
+  show(h, 'student');
+  $('pn').querySelector('[data-back]').onclick = function(){ openClass(i); };
+  $('pn').querySelectorAll('[data-st]').forEach(function(b){
+    b.onclick = function(){
+      var st = b.dataset.st;
+      if(st === '중도포기') askReason(c, name);
+      else save(c, name, st, '', st === '불참' ? '출발 전' : '');
+    };
+  });
+}
+function askReason(c, name){
+  var h = '<div class="top"><h2>' + esc(c.label) + ' ' + esc(name) + '</h2><button class="x" data-back>‹</button></div>' +
+          '<div class="q">🚑 중도포기 이유</div><div class="acts two">' +
+          S.reasons.map(function(r){ return '<button class="ab sm" data-r="' + esc(r) + '">' + esc(r) + '</button>'; }).join('') + '</div>';
+  show(h, 'student');
+  $('pn').querySelector('[data-back]').onclick = function(){ openStudent(c.cls, name); };
+  $('pn').querySelectorAll('[data-r]').forEach(function(b){ b.onclick = function(){ askPlace(c, name, b.dataset.r); }; });
+}
+function askPlace(c, name, reason){
+  var h = '<div class="top"><h2>' + esc(c.label) + ' ' + esc(name) + '</h2><button class="x" data-back>‹</button></div>' +
+          '<div class="sub">이유: ' + esc(reason) + '</div><div class="q">📍 어디쯤인가요?</div><div class="acts two">' +
+          S.places.map(function(p){ return '<button class="ab sm" data-p="' + esc(p) + '">' + esc(p) + '</button>'; }).join('') + '</div>';
+  show(h, 'student');
+  $('pn').querySelector('[data-back]').onclick = function(){ askReason(c, name); };
+  $('pn').querySelectorAll('[data-p]').forEach(function(b){ b.onclick = function(){ save(c, name, '중도포기', reason, b.dataset.p); }; });
+}
+function save(c, name, st, reason, place){
+  busy = true;
+  $('pn').innerHTML = '<div class="empty">저장하는 중…</div>';
+  google.script.run.withSuccessHandler(function(R){
+    busy = false;
+    if(R && R.need === 'pin'){ hide(); askPin(R.msg); return; }
+    if(!R || !R.ok){ toast((R && R.msg) || '저장하지 못했어요'); return; }
+    toast('✅ ' + c.label + ' ' + name + ' — ' + (st === '다시 합류' ? '걷는 중' : st));
+    var i = clsByKey(c.cls);
+    draw(R.status);
+    openClass(clsByKey(c.cls) >= 0 ? clsByKey(c.cls) : i);
+  }).withFailureHandler(function(e){
+    busy = false; toast('저장하지 못했어요: ' + e.message); openStudent(c.cls, name);
+  }).record(day, pin, c.cls, name, st, reason, place);
+}
+
+function show(h, mode){ $('pn').innerHTML = h; $('pn').dataset.mode = mode; $('sh').classList.add('show');
+  var x = $('pn').querySelector('[data-x]'); if(x) x.onclick = hide; }
+function hide(){ $('sh').classList.remove('show'); openCls = null; }
+$('sh').onclick = function(e){ if(e.target === $('sh')) hide(); };
+
+/* 비번 — 확인은 구글 서버에서 한다. 맞으면 이 폰에 기억 */
+function askPin(msg){
+  $('tm').textContent = '';
+  $('w').innerHTML = '<div class="pin"><h2>🔒 선생님 확인</h2><p>선생님들이 같이 쓰는 비밀번호를 넣어 주세요.</p>' +
+    '<input id="pi" type="password" inputmode="numeric" autocomplete="off" maxlength="12"><button id="pb">확인</button><div class="m">' + esc(msg || '') + '</div></div>';
+  var go = function(){ pin = $('pi').value.trim(); try { localStorage.setItem('kk_pin', pin); } catch (e) {} load(); };
+  $('pb').onclick = go;
+  $('pi').onkeydown = function(e){ if(e.key === 'Enter') go(); };
+  $('pi').focus();
 }
 document.querySelectorAll('[data-d]').forEach(function(b){
-  b.onclick = function(){ day = +b.dataset.d; document.querySelectorAll('[data-d]').forEach(function(x){ x.className = x === b ? 'on' : ''; }); load(); };
+  b.onclick = function(){ day = +b.dataset.d; hide(); document.querySelectorAll('[data-d]').forEach(function(x){ x.className = x === b ? 'on' : ''; }); load(); };
 });
-document.getElementById('rf').onclick = load;
-/* 비번 — 확인은 구글 서버(getStatus)에서 한다. 맞으면 이 폰에 기억 */
-function askPin(msg){
-  document.getElementById('tm').textContent = '';
-  document.getElementById('go').style.display = 'none';
-  document.getElementById('w').innerHTML = '<div class="pin"><h2>🔒 선생님 확인</h2><p>선생님들이 같이 쓰는 비밀번호를 넣어 주세요.</p>' +
-    '<input id="pi" type="password" inputmode="numeric" autocomplete="off" maxlength="12"><button id="pb">확인</button><div class="m">' + esc(msg || '') + '</div></div>';
-  var go = function(){ pin = document.getElementById('pi').value.trim(); try { localStorage.setItem('kk_pin', pin); } catch (e) {} load(); };
-  document.getElementById('pb').onclick = go;
-  document.getElementById('pi').onkeydown = function(e){ if(e.key === 'Enter') go(); };
-  document.getElementById('pi').focus();
-}
-setInterval(load, 60000);
+$('rf').onclick = load;
+setInterval(function(){ if(!$('sh').classList.contains('show') || $('pn').dataset.mode === 'class') load(); }, 60000);
 load();
 </script></body></html>
 `;
