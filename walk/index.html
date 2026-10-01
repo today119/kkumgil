@@ -32,7 +32,8 @@
     -webkit-user-select:none;user-select:none;word-break:keep-all;
   }
   button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer}
-  #app{height:100%;display:flex;flex-direction:column}
+  :root{--tab-h:calc(64px + env(safe-area-inset-bottom,0px))}
+  #app{height:100%;display:flex;flex-direction:column;padding-bottom:var(--tab-h)}
 
   /* 상단 */
   .top{
@@ -89,7 +90,7 @@
   /* 하단 카드 */
   .card{
     flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line);
-    padding:12px 12px calc(12px + var(--safe-b));
+    padding:12px;
   }
   .next{display:flex;gap:12px;align-items:stretch;min-height:112px}
   .next .ph{flex:0 0 auto;width:112px;border-radius:14px;overflow:hidden;background:#0B1220;position:relative}
@@ -114,7 +115,7 @@
 
   /* 시트 — 홈과 같은 밝은 톤 */
   .sheet{--bg:#F1F5FA; --panel:#FFFFFF; --panel2:#E9EFF7; --ink:#0F172A; --sub:#667A91; --line:#DBE4EF;
-    position:fixed;inset:0;z-index:100;background:var(--bg);color:var(--ink);display:none;flex-direction:column}
+    position:fixed;inset:0 0 var(--tab-h) 0;z-index:100;background:var(--bg);color:var(--ink);display:none;flex-direction:column}
   /* 시트 안의 큰 버튼 (스탬프판 보기 등) — 이게 없어서 그동안 «민짜 글씨»로 보였다 */
   .sheet .go{display:block;width:100%;min-height:56px;border-radius:16px;background:#0284C7;color:#fff;
     font-size:17px;font-weight:900;margin-top:4px}
@@ -123,7 +124,7 @@
     padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 14px;border-bottom:1px solid var(--line)}
   .sheet-head h2{font-size:20px;font-weight:900}
   .sheet-head .x{margin-left:auto;font-size:26px;width:44px;height:44px;border-radius:12px;background:var(--panel2)}
-  .sheet-body{flex:1 1 auto;overflow:auto;padding:16px 16px calc(20px + var(--safe-b))}
+  .sheet-body{flex:1 1 auto;overflow:auto;padding:16px 16px 20px}
   /* ── 스탬프 ── */
   .stamps{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:10px}
   .st{background:var(--panel);border-radius:18px;padding:14px 8px;text-align:center;border:2px solid transparent}
@@ -202,7 +203,7 @@
        (걷는 중 지도·스탬프 창은 아직 어두운 톤 — 한꺼번에 바꾸면 검증할 곳이 너무 많아 나눠 간다)
        변수만 다시 정의하면 안쪽 요소는 그대로 따라온다. */
   #intro{--bg:#F1F5FA; --panel:#FFFFFF; --panel2:#E9EFF7; --ink:#0F172A; --sub:#667A91; --line:#DBE4EF;
-    position:fixed;inset:0;z-index:90;background:var(--bg);color:var(--ink);display:flex;flex-direction:column}
+    position:fixed;inset:0 0 var(--tab-h) 0;z-index:90;background:var(--bg);color:var(--ink);display:flex;flex-direction:column}
   #introScroll{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .pane{padding:0 20px 28px;display:flex;flex-direction:column;gap:18px}
   .pane[hidden]{display:none}
@@ -247,10 +248,10 @@
   .school{text-align:center;font-size:16px;font-weight:800;color:var(--sub);margin-top:10px}
 
   /* 하단 탭 */
-  .tabs{flex:0 0 auto;display:grid;grid-template-columns:repeat(4,1fr);
-    background:#fff;border-top:1px solid var(--line);padding-bottom:var(--safe-b)}
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:130;display:grid;grid-template-columns:repeat(4,1fr);
+    background:#fff;border-top:1px solid #DBE4EF;padding-bottom:var(--safe-b);box-shadow:0 -4px 14px rgba(15,23,42,.06)}
   .tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-    min-height:64px;background:none;color:var(--sub);font-size:14px;font-weight:800}
+    min-height:64px;background:none;color:#667A91;font-size:14px;font-weight:800}
   .tabs button .e{font-size:22px;line-height:1}
   .tabs button.on{color:#0284C7}
 
@@ -389,13 +390,15 @@
 
   </div>
 
-  <nav class="tabs" id="tabs">
-    <button data-tab="home" class="on"><span class="e">🏠</span>홈</button>
-    <button data-tab="course"><span class="e">🗺</span>코스</button>
-    <button data-tab="stamp"><span class="e">🏅</span>스탬프</button>
-    <button data-tab="mis"><span class="e">📸</span>미션</button>
-  </nav>
 </div>
+
+<!-- 하단 탭 — «모든 화면»에 고정. 걷는 중·시트 안에서도 언제든 홈으로 나올 수 있게 -->
+<nav class="tabs" id="tabs">
+  <button data-tab="home" class="on"><span class="e">🏠</span>홈</button>
+  <button data-tab="course"><span class="e">🗺</span>코스</button>
+  <button data-tab="stamp"><span class="e">🏅</span>스탬프</button>
+  <button data-tab="mis"><span class="e">📸</span>미션</button>
+</nav>
 
 <div class="sheet" id="sosSheet">
   <div class="sheet-head"><h2>🆘 내 위치 알리기</h2><button class="x" data-close>×</button></div>
@@ -690,7 +693,10 @@
       var p = C.points.filter(function(x){ return String(x.m) === ph.dataset.pm; })[0];
       if(p) openPhotos(p);
     }
-    if(e.target.closest("[data-close]")) document.querySelectorAll(".sheet").forEach(function(s){ s.classList.remove("show"); });
+    if(e.target.closest("[data-close]")){
+      document.querySelectorAll(".sheet").forEach(function(s){ s.classList.remove("show"); });
+      markTab(underTab());
+    }
   });
   function openPhotos(p){
     $("photoTitle").textContent = TYPES[p.type].ico + " " + (p.type === "fork" ? (DIRS[p.dir] || "") + " · " + p.name : p.name);
@@ -765,6 +771,7 @@
     kakao.maps.load(function(){
       try{
         clearTimeout(mapTimer);
+        mapReady = false; meMarker = null; meCircle = null; $("map").innerHTML = "";
         var path = C.course.map(function(p){ return new kakao.maps.LatLng(p[0], p[1]); });
         map = new kakao.maps.Map($("map"), {center:path[0], level:4});
         kakao.maps.event.addListener(map, "dragstart", function(){ follow = false; });
@@ -884,6 +891,7 @@
     demo = true; stopWatch();
     state.progress = null;
     $("intro").style.display = "none";
+    markTab("course");
     $("demo").classList.add("show");
     unlockAudio();
     demoMove();
@@ -922,6 +930,7 @@
   function beginWalk(){
     unlockAudio();
     $("intro").style.display = "none";
+    markTab("course");
     startWatch();
   }
   $("demoBtn").onclick = function(){
@@ -940,7 +949,10 @@
   /* 코스 하나를 실제로 불러와 길안내를 준비한다. */
   function loadCourse(file){
     return fetch(file, {cache:"no-cache"}).then(function(r){ return r.json(); }).then(function(d){
+      /* 홈 탭으로 나갔다가 다른 날 코스를 고를 수 있다 — 앞 코스의 진행 위치·지도를 비우고 새로 시작 */
       C = d; prepCourse();
+      state.progress = null; state.off = 0; state.offCount = 0; state.isOff = false; state.snap = null; shown = "";
+      if(state.pos) state.snap = project(state.pos.lat, state.pos.lng);
       $("progAll").textContent = (C.lengthM/1000).toFixed(1);
       paint(); initMap();
       /* ?demo=3000&off — 체험 모드를 코스 3000m 지점(코스 밖 60m)에서 바로 연다. 링크로 특정 장면을 보여줄 때 */
@@ -994,19 +1006,38 @@
   /* ══ 홈 화면 탭 — 홈 · 코스 · 스탬프 · 미션 ══
      스탬프·미션은 «화면을 바꾸지 않고» 쓰던 시트를 그대로 연다.
      걷는 중에도 같은 시트가 뜨므로 학생이 두 가지 조작을 배울 일이 없다. */
+  /* 하단 탭 — 어느 화면에서든 같은 자리에 있다.
+       홈  : 홈 화면. 걷는 중이어도 길안내(GPS·이탈 경보)는 뒤에서 계속 돈다
+       코스: 길안내를 시작했으면 지도로 돌아가고, 아니면 코스 고르기
+       스탬프·미션: 시트를 연다 */
+  var onTab = "home";
+  function markTab(t){
+    onTab = t;
+    $("tabs").querySelectorAll("[data-tab]").forEach(function(b){ b.className = (b.dataset.tab === t) ? "on" : ""; });
+  }
+  function closeSheets(){
+    if(typeof closeScanner === "function" && scanStream) closeScanner();
+    document.querySelectorAll(".sheet").forEach(function(s){ s.classList.remove("show"); });
+  }
+  /* 시트를 닫았을 때 밑에 있는 화면에 맞춰 탭 불을 다시 켠다 */
+  function underTab(){
+    if($("intro").style.display === "none") return "course";
+    return $("paneHome").hidden ? "course" : "home";
+  }
   function showPane(which){
+    closeSheets();
+    $("intro").style.display = "";
     $("paneHome").hidden   = (which !== "home");
     $("paneCourse").hidden = (which !== "course");
     $("introScroll").scrollTop = 0;
-    $("tabs").querySelectorAll("[data-tab]").forEach(function(b){
-      b.className = (b.dataset.tab === which) ? "on" : "";
-    });
+    markTab(which);
   }
   $("tabs").querySelectorAll("[data-tab]").forEach(function(b){
     b.onclick = function(){
       var t = b.dataset.tab;
-      if(t === "stamp"){ showStampBoard(); return; }
-      if(t === "mis"){ showMissionBoard(); return; }
+      if(t === "stamp"){ closeSheets(); showStampBoard(); markTab("stamp"); return; }
+      if(t === "mis"){ closeSheets(); showMissionBoard(); markTab("mis"); return; }
+      if(t === "course" && C){ closeSheets(); $("intro").style.display = "none"; markTab("course"); return; }
       showPane(t);
     };
   });
