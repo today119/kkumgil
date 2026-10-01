@@ -229,7 +229,7 @@
   .tile{position:relative;border-radius:18px;overflow:hidden;background:var(--panel);padding:0;
     aspect-ratio:1/1;display:block;box-shadow:0 4px 14px rgba(15,23,42,.10)}
   .tile img{width:100%;height:100%;object-fit:cover;display:block}
-  .tile .soon{position:absolute;left:6px;bottom:6px;background:rgba(2,6,23,.78);color:#E2E8F0;
+  .tile .soon{position:absolute;right:6px;top:6px;background:rgba(2,6,23,.78);color:#E2E8F0;
     font-size:11px;font-weight:900;padding:3px 7px;border-radius:999px}
   .book{display:flex;align-items:center;gap:12px;text-align:left;padding:15px 16px;border-radius:18px;
     background:var(--panel);color:var(--ink);font-size:16px;font-weight:900;
@@ -354,7 +354,7 @@
       <div class="trow">📣 공모전 결과 (마감)</div>
       <div class="tiles">
         <button class="tile" data-tile="poem"><img src="t-poem.jpg" alt="4행시 공모전 최우수작"><span class="soon">곧</span></button>
-        <button class="tile" data-tile="catch"><img src="t-catch.jpg" alt="캐치프레이즈 선정작"><span class="soon">곧</span></button>
+        <button class="tile" data-tile="catch"><img src="t-catch.jpg" alt="캐치프레이즈 선정작"></button>
         <button class="tile" data-tile="shirt"><img src="t-shirt.jpg" alt="티셔츠 공모전"><span class="soon">곧</span></button>
       </div>
 
@@ -1008,7 +1008,8 @@
   var TILES = {
     /* ── 이미 마감된 공모전 — 수상작이 오면 body 를 채운다 ── */
     poem:  { emoji:"👣", title:"4행시 공모전 최우수작", img:"t-poem.jpg" },
-    catch: { emoji:"✨", title:"캐치프레이즈 선정작",   img:"t-catch.jpg" },
+    catch: { emoji:"✨", title:"캐치프레이즈 선정작",   img:"t-catch.jpg",
+             body:"<b style='font-size:20px;line-height:1.5'>꿈은 바라보는 것이 아니라,<br>걸어가는 것이다</b><br><br>2026 제10회 꿈길 걷기의 캐치프레이즈입니다." },
     shirt: { emoji:"👕", title:"티셔츠 공모전",         img:"t-shirt.jpg" },
     /* ── 행사 당일부터 ── */
     photo: { emoji:"🌅", title:"사진전",   img:"t-photo.jpg",
