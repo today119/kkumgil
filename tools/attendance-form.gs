@@ -38,6 +38,9 @@ function onOpen() {
     .addItem('집계 새로 고치기', 'refreshAll')
     .addItem('명단 확인하기', 'checkRoster')
     .addSeparator()
+    .addItem('🔑 현황판 비번 정하기', 'setPin')
+    .addItem('📱 현황판 주소 보기', 'showDashUrl')
+    .addSeparator()
     .addItem('❓ 사용법', 'showHelp')
     .addToUi();
 }
@@ -354,3 +357,170 @@ function refresh(day) {
   sh.setColumnWidths(1, 7, 100);   // 열 넓이 100 고정(자동 맞춤은 빈 열을 좁게 접어 버렸다)
 }
 function fmt(d) { return Utilities.formatDate(new Date(d), 'Asia/Seoul', 'HH:mm'); }
+
+/* ══════════════════════════════════════════════════════════════
+   📱 선생님 현황판 (웹앱)
+   ★ 단톡방에 「몇 명 빠졌어요」를 계속 올리지 않아도, 아무 선생님이나 폰으로 지금 상태를 본다.
+   ★ 기본 잠금 = 학교 계정 로그인(배포 때 「학교 도메인 내 모든 사용자」). 학생 이름은 구글 안에서만 보인다.
+     꿈길 앱(공개 웹)에는 이 현황판으로 가는 «버튼»만 둔다.
+   ★ 비번은 «선택» — 🔑 메뉴로 정하면 로그인에 더해 비번도 묻는다(코드엔 안 쓰고 스크립트 속성에 둔다).
+     4자리라 막 눌러 맞히지 못하게 10분 안에 10번 틀리면 10분 동안 잠근다.
+   배포(한 번만): Apps Script 오른쪽 위 「배포 → 새 배포 → ⚙ 웹 앱」
+       실행 계정: 나 / 액세스 권한: 「(학교 도메인) 내 모든 사용자」 → 배포 → 웹 앱 URL 복사
+   코드를 고친 뒤엔: 「배포 → 배포 관리 → ✏️ → 버전: 새 버전 → 배포」 (주소는 그대로)
+   ══════════════════════════════════════════════════════════════ */
+function doGet() {
+  return HtmlService.createHtmlOutput(DASH_HTML)
+    .setTitle('꿈길 걷기 현황판')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+function setPin() {
+  var ui = SpreadsheetApp.getUi();
+  var r = ui.prompt('🔑 현황판 비번 (선택)', '선생님들이 같이 쓸 비밀번호(숫자 4자리 이상).\n비워 두고 확인하면 비번 없이 학교 계정 로그인만으로 열려요.', ui.ButtonSet.OK_CANCEL);
+  if (r.getSelectedButton() !== ui.Button.OK) return;
+  var p = r.getResponseText().trim();
+  if (!p) { PropertiesService.getScriptProperties().deleteProperty('pin'); ui.alert('비번을 껐어요. 학교 계정 로그인만으로 열려요.'); return; }
+  if (p.length < 4) { ui.alert('4자리 이상으로 넣어 주세요.'); return; }
+  PropertiesService.getScriptProperties().setProperty('pin', p);
+  ui.alert('비번을 저장했어요. 현황판을 열면 이 비번을 물어요.');
+}
+
+function checkPin_(pin) {
+  var real = PropertiesService.getScriptProperties().getProperty('pin');
+  if (!real) return '';                                     // 비번을 안 정했으면 학교 계정 로그인만으로 연다
+  var cache = CacheService.getScriptCache();
+  if (cache.get('pinlock')) return '비번을 여러 번 틀려서 잠겼어요. 10분 뒤에 다시 해 주세요.';
+  if (String(pin || '') === real) return '';
+  if (!pin) return '';                                     // 처음 열 때(비번 칸 보여 주기)
+  var n = Number(cache.get('pinfail') || 0) + 1;
+  cache.put('pinfail', String(n), 600);
+  if (n >= 10) { cache.put('pinlock', '1', 600); cache.remove('pinfail'); }
+  return '비번이 맞지 않아요.';
+}
+
+/* 현황판이 1분마다 부른다 */
+function getStatus(day, pin) {
+  var bad = checkPin_(pin);
+  var real = PropertiesService.getScriptProperties().getProperty('pin');
+  if (real && (bad || String(pin || '') !== real)) return { ok: false, need: 'pin', msg: bad };
+  day = Number(day) === 2 ? 2 : 1;
+  var id = PropertiesService.getDocumentProperties().getProperty('form' + day);
+  if (!id) return { ok: false, msg: day + '일차 폼이 아직 없어요. (시트에서 「② ' + day + '일차 폼 만들기」를 먼저 해 주세요)' };
+  var R = readRoster(day), S = computeStatus(R, readEvents(day));
+  var tot = { list: 0, absent: 0, go: 0, drop: 0, walk: 0 };
+  var classes = S.table.map(function (t) {
+    tot.list += t[1]; tot.absent += t[2]; tot.go += t[3]; tot.drop += t[4]; tot.walk += t[5];
+    return { label: t[0], list: t[1], absent: t[2], go: t[3], drop: t[4], walk: t[5] };
+  });
+  var out = S.people.filter(function (p) { return p[3] !== '걷는 중'; })
+    .sort(function (a, b) { return (b[4] || 0) - (a[4] || 0); })
+    .map(function (p) { return { label: p[0], no: p[1], name: p[2], st: p[3], time: p[4] ? fmt(p[4]) : '', place: p[5], reason: p[6] }; });
+  var formUrl = '';
+  try { formUrl = FormApp.openById(id).getPublishedUrl(); } catch (e) {}
+  return { ok: true, title: DAYS[day].title, time: Utilities.formatDate(new Date(), 'Asia/Seoul', 'HH:mm'),
+           total: tot, classes: classes, out: out, formUrl: formUrl };
+}
+
+function showDashUrl() {
+  var u = '';
+  try { u = ScriptApp.getService().getUrl(); } catch (e) {}
+  SpreadsheetApp.getUi().alert('📱 현황판 주소',
+    u ? u + '\n\n이 주소를 꿈길 앱 담당 선생님께 보내 주세요. 앱의 「👩‍🏫 학생 확인」 버튼에 연결됩니다.'
+      : '아직 배포하지 않았어요.\n\nApps Script 오른쪽 위 「배포 → 새 배포 → ⚙ 웹 앱」\n실행 계정: 나 / 액세스 권한: (학교 도메인) 내 모든 사용자 → 배포',
+    SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+var DASH_HTML = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#F1F5FA;color:#0F172A;-webkit-text-size-adjust:100%}
+.hd{position:sticky;top:0;z-index:5;background:#0B4F82;color:#fff;padding:14px 16px 12px}
+.hd h1{font-size:19px;font-weight:900}
+.hd .t{font-size:13px;opacity:.85;margin-top:2px}
+.seg{display:flex;gap:4px;background:rgba(255,255,255,.18);border-radius:12px;padding:3px;margin-top:10px}
+.seg button{flex:1;border:0;background:none;color:#fff;font-size:15px;font-weight:800;padding:9px;border-radius:9px}
+.seg button.on{background:#fff;color:#0B4F82}
+.wrap{padding:14px 14px 90px}
+.big{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.big div{background:#fff;border-radius:16px;padding:12px 6px;text-align:center;box-shadow:0 2px 8px rgba(15,23,42,.06)}
+.big b{display:block;font-size:30px;font-weight:900;line-height:1.15}
+.big span{font-size:13px;font-weight:800;color:#64748B}
+.big .walk b{color:#15803D}.big .drop b{color:#B91C1C}
+.h{font-size:16px;font-weight:900;margin:20px 2px 8px}
+.cls{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.c{background:#fff;border-radius:14px;padding:10px 12px;box-shadow:0 2px 8px rgba(15,23,42,.05)}
+.c .n{font-size:16px;font-weight:900;display:flex;justify-content:space-between;align-items:baseline}
+.c .n em{font-style:normal;font-size:20px;color:#15803D}
+.c .s{font-size:13px;color:#64748B;font-weight:700;margin-top:2px}
+.c .s i{font-style:normal;color:#B91C1C}
+.c.alert{outline:2px solid #FCA5A5}
+.p{background:#fff;border-radius:14px;padding:11px 13px;margin-bottom:7px;display:flex;gap:10px;align-items:center;box-shadow:0 2px 8px rgba(15,23,42,.05)}
+.p .tg{flex:0 0 auto;font-size:12px;font-weight:900;padding:4px 8px;border-radius:999px}
+.p .tg.d{background:#FEE2E2;color:#B91C1C}.p .tg.a{background:#E2E8F0;color:#334155}
+.p .nm{font-size:16px;font-weight:900}
+.p .mt{font-size:13px;color:#64748B;font-weight:700;margin-top:1px}
+.empty{background:#fff;border-radius:14px;padding:16px;text-align:center;color:#64748B;font-weight:700}
+.go{position:fixed;left:14px;right:14px;bottom:14px;display:block;text-align:center;background:#0284C7;color:#fff;font-size:18px;font-weight:900;padding:16px;border-radius:16px;text-decoration:none;box-shadow:0 8px 20px rgba(2,132,199,.35)}
+.err{background:#FEF3C7;color:#92400E;border-radius:14px;padding:14px;font-weight:700;line-height:1.6}
+.pin{max-width:340px;margin:40px auto 0;background:#fff;border-radius:20px;padding:24px 20px;text-align:center;box-shadow:0 6px 20px rgba(15,23,42,.08)}
+.pin h2{font-size:20px;font-weight:900;margin-bottom:6px}.pin p{font-size:14px;color:#64748B;font-weight:700;line-height:1.5}
+.pin input{width:100%;margin-top:16px;font-size:30px;font-weight:900;letter-spacing:.4em;text-align:center;padding:12px;border:2px solid #CBD5E1;border-radius:14px}
+.pin button{width:100%;margin-top:10px;font-size:18px;font-weight:900;padding:14px;border:0;border-radius:14px;background:#0B4F82;color:#fff}
+.pin .m{margin-top:10px;color:#B91C1C;font-weight:800;font-size:14px;min-height:20px}
+.rf{border:0;background:rgba(255,255,255,.18);color:#fff;font-size:13px;font-weight:800;padding:5px 10px;border-radius:999px;float:right}
+</style></head><body>
+<div class="hd"><button class="rf" id="rf">↻ 새로고침</button><h1>🚶 꿈길 걷기 현황판</h1><div class="t" id="tm">불러오는 중…</div>
+<div class="seg"><button data-d="1" class="on">1일차</button><button data-d="2">2일차</button></div></div>
+<div class="wrap" id="w"></div>
+<a class="go" id="go" href="#" target="_blank" style="display:none">✍️ 불참·중도포기 기록하기</a>
+<script>
+var day = 1, pin = '';
+try { pin = localStorage.getItem('kk_pin') || ''; } catch (e) {}
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function load(){
+  document.getElementById('tm').textContent = '불러오는 중…';
+  google.script.run.withSuccessHandler(draw).withFailureHandler(function(e){
+    document.getElementById('w').innerHTML = '<div class="err">불러오지 못했어요: ' + esc(e.message) + '</div>';
+  }).getStatus(day, pin);
+}
+function draw(S){
+  var w = document.getElementById('w'), g = document.getElementById('go');
+  if(S.need === 'pin'){ askPin(S.msg); return; }
+  if(!S.ok){ w.innerHTML = '<div class="err">' + esc(S.msg) + '</div>'; document.getElementById('tm').textContent = ''; g.style.display = 'none'; return; }
+  document.getElementById('tm').textContent = S.title + ' · ' + S.time + ' 기준 · 1분마다 갱신';
+  var T = S.total, h = '';
+  h += '<div class="big"><div><b>' + T.go + '</b><span>참가</span></div>' +
+       '<div class="drop"><b>' + T.drop + '</b><span>중도포기</span></div>' +
+       '<div class="walk"><b>' + T.walk + '</b><span>지금 걷는 중</span></div></div>';
+  h += '<div class="h">반별</div><div class="cls">' + S.classes.map(function(c){
+    return '<div class="c' + (c.drop ? ' alert' : '') + '"><div class="n">' + esc(c.label) + '<em>' + c.walk + '</em></div>' +
+           '<div class="s">명단 ' + c.list + ' · 불참 ' + c.absent + ' · <i>포기 ' + c.drop + '</i></div></div>';
+  }).join('') + '</div>';
+  h += '<div class="h">빠진 학생 ' + S.out.length + '명</div>';
+  h += S.out.length ? S.out.map(function(p){
+    return '<div class="p"><span class="tg ' + (p.st === '중도포기' ? 'd' : 'a') + '">' + esc(p.st) + '</span><div><div class="nm">' +
+           esc(p.label) + ' ' + esc(p.name) + '</div><div class="mt">' + [p.time, p.place, p.reason].filter(Boolean).map(esc).join(' · ') + '</div></div></div>';
+  }).join('') : '<div class="empty">아직 없어요 👍</div>';
+  w.innerHTML = h;
+  if(S.formUrl){ g.href = S.formUrl; g.style.display = 'block'; }
+}
+document.querySelectorAll('[data-d]').forEach(function(b){
+  b.onclick = function(){ day = +b.dataset.d; document.querySelectorAll('[data-d]').forEach(function(x){ x.className = x === b ? 'on' : ''; }); load(); };
+});
+document.getElementById('rf').onclick = load;
+/* 비번 — 확인은 구글 서버(getStatus)에서 한다. 맞으면 이 폰에 기억 */
+function askPin(msg){
+  document.getElementById('tm').textContent = '';
+  document.getElementById('go').style.display = 'none';
+  document.getElementById('w').innerHTML = '<div class="pin"><h2>🔒 선생님 확인</h2><p>선생님들이 같이 쓰는 비밀번호를 넣어 주세요.</p>' +
+    '<input id="pi" type="password" inputmode="numeric" autocomplete="off" maxlength="12"><button id="pb">확인</button><div class="m">' + esc(msg || '') + '</div></div>';
+  var go = function(){ pin = document.getElementById('pi').value.trim(); try { localStorage.setItem('kk_pin', pin); } catch (e) {} load(); };
+  document.getElementById('pb').onclick = go;
+  document.getElementById('pi').onkeydown = function(e){ if(e.key === 'Enter') go(); };
+  document.getElementById('pi').focus();
+}
+setInterval(load, 60000);
+load();
+</script></body></html>
+`;
