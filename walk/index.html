@@ -224,9 +224,12 @@
   .hero + .picks{position:relative;z-index:2;margin-top:-78px}
 
   /* 공모전 미리보기 — 그림처럼 썸네일 버튼 3개 */
-  .trow{font-size:14px;font-weight:900;color:var(--sub);margin:4px 0 -8px 4px}
-  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:0 10px}
-  .tile{position:relative;border-radius:18px;overflow:hidden;background:var(--panel);padding:0;
+  .trow{font-size:17px;font-weight:900;color:var(--ink);margin:6px 0 -6px 4px}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 14px;padding:0 4px}
+  /* 타일 이름은 그림 밖, 아래에 «같은 크기»로 — 그림에 박으면 타일마다 크기가 달라 읽기 어렵다 */
+  .tilebtn{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:0}
+  .tcap{font-size:17px;font-weight:900;color:var(--ink);text-align:center;letter-spacing:-.03em;line-height:1.2}
+  .tile{position:relative;border-radius:20px;overflow:hidden;background:var(--panel);padding:0;
     aspect-ratio:1/1;display:block;box-shadow:0 4px 14px rgba(15,23,42,.10)}
   .tile img{width:100%;height:100%;object-fit:cover;display:block}
   .work .aw{display:inline-block;background:#FEF3C7;color:#92400E;font-size:13px;font-weight:900;padding:4px 10px;border-radius:999px;margin-bottom:10px}
@@ -235,20 +238,20 @@
   .work .acro span{flex:0 0 auto;width:34px;height:34px;border-radius:10px;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:19px}
   .work .by{margin-top:10px;font-size:13px;color:var(--sub);font-weight:700;text-align:right}
   .tile .soon{position:absolute;right:6px;top:6px;background:rgba(2,6,23,.78);color:#E2E8F0;
-    font-size:11px;font-weight:900;padding:3px 7px;border-radius:999px}
+    font-size:13px;font-weight:900;padding:3px 8px;border-radius:999px}
   .book{display:flex;align-items:center;gap:12px;text-align:left;padding:15px 16px;border-radius:18px;
     background:var(--panel);color:var(--ink);font-size:16px;font-weight:900;
     box-shadow:0 4px 14px rgba(15,23,42,.08)}
   .book .e{font-size:24px}
-  .book .s{display:block;font-size:13px;font-weight:700;color:var(--sub);margin-top:2px}
-  .school{text-align:center;font-size:14px;font-weight:800;color:var(--sub);margin-top:10px}
+  .book .s{display:block;font-size:15px;font-weight:700;color:var(--sub);margin-top:2px}
+  .school{text-align:center;font-size:16px;font-weight:800;color:var(--sub);margin-top:10px}
 
   /* 하단 탭 */
   .tabs{flex:0 0 auto;display:grid;grid-template-columns:repeat(4,1fr);
     background:#fff;border-top:1px solid var(--line);padding-bottom:var(--safe-b)}
   .tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-    min-height:62px;background:none;color:var(--sub);font-size:12px;font-weight:800}
-  .tabs button .e{font-size:20px;line-height:1}
+    min-height:64px;background:none;color:var(--sub);font-size:14px;font-weight:800}
+  .tabs button .e{font-size:22px;line-height:1}
   .tabs button.on{color:#0284C7}
 
   #intro h1{font-size:34px;font-weight:900;letter-spacing:-.04em}
@@ -266,9 +269,9 @@
   .pick .ic svg{width:23px;height:23px}
   .pick .d{flex:1;min-width:0}
   .pick .t{display:block;font-size:18px;letter-spacing:-.03em}
-  .pick .s{display:block;font-size:12px;font-weight:800;color:#64748B;margin-top:2px;
+  .pick .s{display:block;font-size:15px;font-weight:800;color:#64748B;margin-top:2px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .pick .dt{display:block;font-size:11px;font-weight:800;color:#94A3B8;margin-top:1px}
+  .pick .dt{display:block;font-size:14px;font-weight:800;color:#94A3B8;margin-top:1px}
   .pick.off{background:var(--panel);color:var(--sub);box-shadow:none;cursor:default}
   .pick.off .s{color:var(--sub)}
   .pick.off .dt{color:#64748B}
@@ -351,16 +354,16 @@
       <!-- 공모전 미리보기 — 윗줄은 «이미 마감된» 것, 아랫줄은 «행사 당일부터» 하는 것 -->
       <div class="trow">🚩 행사 당일부터</div>
       <div class="tiles">
-        <button class="tile" data-tile="photo"><img src="t-photo.jpg" alt="사진전"></button>
-        <button class="tile" data-tile="reels"><img src="t-reels.jpg" alt="릴스전"></button>
-        <button class="tile" data-tile="report"><img src="t-report.jpg" alt="보고서"><span class="soon">곧</span></button>
+        <button class="tilebtn" data-tile="photo"><span class="tile"><img src="t-photo.jpg" alt=""></span><span class="tcap">사진전</span></button>
+        <button class="tilebtn" data-tile="reels"><span class="tile"><img src="t-reels.jpg" alt=""></span><span class="tcap">릴스전</span></button>
+        <button class="tilebtn" data-tile="report"><span class="tile"><img src="t-report.jpg" alt=""><span class="soon">곧</span></span><span class="tcap">보고서</span></button>
       </div>
 
       <div class="trow">📣 공모전 결과 (마감)</div>
       <div class="tiles">
-        <button class="tile" data-tile="poem"><img src="t-poem.jpg" alt="4행시 공모전 결과"><span class="soon">곧</span></button>
-        <button class="tile" data-tile="catch"><img src="t-catch.jpg" alt="캐치프레이즈 공모전 결과"></button>
-        <button class="tile" data-tile="shirt"><img src="t-shirt.jpg" alt="티셔츠 공모전"><span class="soon">곧</span></button>
+        <button class="tilebtn" data-tile="poem"><span class="tile"><img src="t-poem.jpg" alt=""><span class="soon">곧</span></span><span class="tcap">4행시</span></button>
+        <button class="tilebtn" data-tile="catch"><span class="tile"><img src="t-catch.jpg" alt=""></span><span class="tcap">캐치프레이즈</span></button>
+        <button class="tilebtn" data-tile="shirt"><span class="tile"><img src="t-shirt.jpg" alt=""><span class="soon">곧</span></span><span class="tcap">티셔츠</span></button>
       </div>
 
       <button class="book" data-tile="book"><span class="e">📖</span>
