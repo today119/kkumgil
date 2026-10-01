@@ -1184,7 +1184,12 @@
     $("prepSheet").classList.add("show");
   }
   $("prepCard").onclick = function(){ closeSheets(); showPrep(); markTab("prep"); };
-  fetch("prep.json", {cache:"no-cache"}).then(function(r){ return r.json(); }).then(function(d){ PREP = d; paintPrepCount(); }).catch(function(){});
+  /* ?tab=course / prep / stamp / mis — 다른 화면(선생님 현황판 등)의 바로가기로 들어올 때 그 탭을 바로 연다 */
+  var wantTab = (location.search.match(/[?&]tab=(\w+)/) || [])[1] || "";
+  fetch("prep.json", {cache:"no-cache"}).then(function(r){ return r.json(); }).then(function(d){
+    PREP = d; paintPrepCount();
+    if(wantTab === "prep"){ showPrep(); markTab("prep"); }
+  }).catch(function(){});
 
   /* ══ 홈 화면 탭 — 홈 · 코스 · 스탬프 · 미션 ══
      스탬프·미션은 «화면을 바꾸지 않고» 쓰던 시트를 그대로 연다.
@@ -1542,6 +1547,8 @@
 
   fetch("stamps.json", {cache:"no-cache"}).then(function(r){ return r.json(); }).then(function(d){
     STAMPS = d; paintStampCount();
+    if(wantTab === "stamp"){ showStampBoard(); markTab("stamp"); }
+    if(wantTab === "mis"){ showMissionBoard(); markTab("mis"); }
     /* QR 로 들어온 경우 — ?stamp=baegunsan */
     var q = location.search.match(/[?&]stamp=([\w-]+)/);
     if(q){
@@ -1626,6 +1633,7 @@
   }).then(function(){
     drawPicks();
     paintPwa();
+    if(wantTab === "course") showPane("course");
     if(LIST.teacher && LIST.teacher.url){ $("teacherBtn").href = LIST.teacher.url; $("teacherBtn").hidden = false; }
     /* 주소로 코스를 지정할 수 있다 — QR 을 코스별로 따로 뿌릴 때 쓴다. ?day=1 / ?day=2 */
     var m = location.search.match(/[?&]day=(\d+)/);

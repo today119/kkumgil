@@ -503,7 +503,7 @@ button{font-family:inherit;cursor:pointer}
 .seg button{flex:1;border:0;background:none;color:#fff;font-size:15px;font-weight:800;padding:9px;border-radius:9px}
 .seg button.on{background:#fff;color:#0B4F82}
 .rf{border:0;background:rgba(255,255,255,.18);color:#fff;font-size:13px;font-weight:800;padding:5px 10px;border-radius:999px;float:right}
-.wrap{padding:14px 14px 40px}
+.wrap{padding:14px 14px 100px}
 .big{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .big div{background:#fff;border-radius:16px;padding:12px 6px;text-align:center;box-shadow:0 2px 8px rgba(15,23,42,.06)}
 .big b{display:block;font-size:30px;font-weight:900;line-height:1.15}
@@ -545,7 +545,12 @@ button{font-family:inherit;cursor:pointer}
 .ab{border:0;border-radius:16px;padding:16px 10px;font-size:18px;font-weight:900;background:#fff;color:#0F172A;box-shadow:0 2px 8px rgba(15,23,42,.08)}
 .ab.red{background:#DC2626;color:#fff}.ab.gray{background:#475569;color:#fff}.ab.green{background:#16A34A;color:#fff}
 .ab.sm{font-size:16px;padding:14px 8px}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0F172A;color:#fff;font-weight:800;padding:12px 18px;border-radius:999px;z-index:40;display:none}
+/* 아래 바로가기 — 꿈길 앱의 하단 탭과 같은 모양. 현황판은 구글 쪽 화면이라 «앱 주소로» 이동한다 */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-top:1px solid #DBE4EF;box-shadow:0 -4px 14px rgba(15,23,42,.06);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:64px;color:#667A91;font-size:14px;font-weight:800;text-decoration:none}
+.tabs a .e{font-size:22px;line-height:1}
+.tabs a.on{color:#0284C7}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#0F172A;color:#fff;font-weight:800;padding:12px 18px;border-radius:999px;z-index:40;display:none}
 .pin{max-width:340px;margin:40px auto 0;background:#fff;border-radius:20px;padding:24px 20px;text-align:center;box-shadow:0 6px 20px rgba(15,23,42,.08)}
 .pin h2{font-size:20px;font-weight:900;margin-bottom:6px}.pin p{font-size:14px;color:#64748B;font-weight:700;line-height:1.5}
 .pin input{width:100%;margin-top:16px;font-size:30px;font-weight:900;letter-spacing:.4em;text-align:center;padding:12px;border:2px solid #CBD5E1;border-radius:14px}
@@ -555,6 +560,13 @@ button{font-family:inherit;cursor:pointer}
 <div class="hd"><button class="rf" id="rf">↻ 새로고침</button><h1>🚶 꿈길 걷기 현황판</h1><div class="t" id="tm">불러오는 중…</div>
 <div class="seg"><button data-d="1" class="on">1일차</button><button data-d="2">2일차</button></div></div>
 <div class="wrap" id="w"></div>
+<nav class="tabs">
+  <a href="https://today119.github.io/kkumgil/walk/" target="_top"><span class="e">🏠</span>홈</a>
+  <a href="https://today119.github.io/kkumgil/walk/?tab=course" target="_top"><span class="e">🗺</span>코스</a>
+  <a href="https://today119.github.io/kkumgil/walk/?tab=prep" target="_top"><span class="e">🎒</span>준비물</a>
+  <a href="https://today119.github.io/kkumgil/walk/?tab=stamp" target="_top"><span class="e">🏅</span>스탬프</a>
+  <a class="on" href="#" onclick="load();return false"><span class="e">👩‍🏫</span>현황판</a>
+</nav>
 <div class="sh" id="sh"><div class="pn" id="pn"></div></div>
 <div class="toast" id="toast"></div>
 <script>
