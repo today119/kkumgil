@@ -143,6 +143,26 @@
   .got-big .em{font-size:84px;animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
   .got-big .t{font-size:24px;font-weight:900;margin-top:8px}
   @keyframes pop{0%{transform:scale(.2) rotate(-20deg);opacity:0}70%{transform:scale(1.15) rotate(6deg)}100%{transform:scale(1) rotate(0);opacity:1}}
+  /* ── 미션(사진·릴스) — 스탬프와 «따로» 간다 ── */
+  .mis{background:#1E1B4B;border:2px solid #4338CA;border-radius:18px;padding:16px;margin-bottom:12px}
+  .mis h3{font-size:18px;font-weight:900;margin-bottom:6px}
+  .mis .who{display:inline-block;font-size:12px;font-weight:900;padding:3px 9px;border-radius:999px;
+    background:#4338CA;color:#E0E7FF;margin-left:6px;vertical-align:middle}
+  .mis .body{font-size:15px;line-height:1.75;color:#C7D2FE;margin-bottom:10px}
+  .mis button{width:100%;min-height:52px;border-radius:14px;background:#6366F1;color:#fff;
+    font-size:16px;font-weight:900}
+  .mis.done{background:#064E3B;border-color:#10B981}
+  .mis.done button{background:#065F46;color:#A7F3D0}
+  .mis input[type=file]{display:none}
+  .misrow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+    background:#1E1B4B;border:1px solid #312E81;border-radius:14px;padding:12px 14px;margin-bottom:8px;
+    color:#E0E7FF;font-size:15px;font-weight:800;min-height:52px}
+  .misrow .e{font-size:20px}
+  .misrow .k{flex:1}
+  .misrow .k small{display:block;font-size:12px;font-weight:700;color:#A5B4FC;margin-top:2px}
+  .misrow .c{font-size:18px}
+  .misrow.done{background:#064E3B;border-color:#10B981;color:#A7F3D0}
+
   .hintbox{background:#422006;color:#FED7AA;border-radius:14px;padding:12px 14px;margin-top:10px;font-size:14px;line-height:1.6}
   .stamp-btn{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 96px);z-index:20;
     min-width:52px;height:52px;border-radius:26px;background:var(--panel2);font-size:20px;font-weight:900;
@@ -759,7 +779,8 @@
   // 검증 스크립트용 — 화면 밖에서 상태를 들여다볼 수 있게 열어 둔다
   window.__kkumgil = {onPosition:onPosition, state:state, placeText:placeText,
                       stamps:function(){ return STAMPS; }, got:gotSet,
-                      openStamp:openStamp, board:showStampBoard, near:checkStampNear};
+                      openStamp:openStamp, board:showStampBoard, near:checkStampNear,
+                      mis:function(){ return misSet(); }, misAdd:function(i){ return misAdd(i); }};
 
   /* 코스 하나를 실제로 불러와 길안내를 준비한다. */
   function loadCourse(file){
@@ -842,10 +863,26 @@
       (got.length === STAMPS.stamps.length
         ? '<div class="card" style="margin-top:14px;background:#064E3B"><h3>🎉 다 모았습니다!</h3>' +
           '<div class="body">이 화면을 캡처해서 선생님께 보여 주세요.</div></div>'
-        : '<div class="card" style="margin-top:14px"><div class="body">명소에 붙은 <b>QR 을 찍거나</b>, 그 자리에 가까이 가면 문제가 열려요.</div></div>');
+        : '<div class="card" style="margin-top:14px"><div class="body">명소에 붙은 <b>QR 을 찍거나</b>, 그 자리에 가까이 가면 문제가 열려요.</div></div>') +
+      '<div style="margin-top:18px"><div class="stamp-top"><b>📸</b><span>미션 ' +
+        (misSet().length) + ' / ' + (STAMPS.stamps.filter(function(x){return x.mission;}).length + (STAMPS.missions_free||[]).length) +
+        ' 개 — 스탬프와는 별개예요</span></div>' +
+        STAMPS.stamps.filter(function(x){ return x.mission; }).map(function(x){
+          var d = misSet().indexOf(x.id) >= 0;
+          return '<button class="misrow' + (d ? ' done' : '') + '" data-misgo="' + x.id + '">' +
+            '<span class="e">' + x.mission.emoji + '</span>' +
+            '<span class="k">' + x.mission.title + '<small>' + x.name + ' · ' + x.mission.who + '</small></span>' +
+            '<span class="c">' + (d ? '✅' : '⬜') + '</span></button>';
+        }).join('') +
+        (STAMPS.missions_free||[]).map(function(m){ return misCard(m.id, m); }).join('') +
+        '<div class="card"><div class="body" style="font-size:14px">' + (STAMPS.mission_note || '') + '</div></div></div>';
     $("stampBody").querySelectorAll("[data-st]").forEach(function(b){
       b.onclick = function(){ openStamp(b.dataset.st, true); };
     });
+    $("stampBody").querySelectorAll("[data-misgo]").forEach(function(b){
+      b.onclick = function(){ openStamp(b.dataset.misgo, true); };
+    });
+    bindMis($("stampBody"));
     $("stampSheet").classList.add("show");
   }
 
@@ -869,9 +906,11 @@
              return '<button data-ch="' + i + '">' + String.fromCharCode(9312+i) + ' ' + c + '</button>';
            }).join('') + '<div id="hint"></div></div>';
     }
+    if(s.mission) h += misCard(s.id, s.mission);
     h += '<button class="go" style="width:100%;margin-top:6px" id="toBoard">🏅 스탬프판 보기</button>';
     $("stampBody").innerHTML = h;
     $("toBoard").onclick = showStampBoard;
+    bindMis($("stampBody"));
     if(!got){
       $("stampBody").querySelectorAll("[data-ch]").forEach(function(b){
         b.onclick = function(){
@@ -885,8 +924,10 @@
               '<div class="got-big"><div class="em">' + s.emoji + '</div>' +
               '<div class="t">스탬프 획득!</div></div>' +
               '<div class="card"><div class="body">' + (s.quiz.after || "잘했어요!") + '</div></div>' +
+              (s.mission ? misCard(s.id, s.mission) : '') +
               '<button class="go" style="width:100%" id="toBoard2">🏅 스탬프판 보기 (' + gotSet().length + '/' + STAMPS.stamps.length + ')</button>';
             $("toBoard2").onclick = showStampBoard;
+            bindMis($("stampBody"));
           }else{
             b.className = "wrong";
             $("hint").innerHTML = '<div class="hintbox">💡 ' + (s.quiz.hint || "해설을 다시 읽어 보세요.") + '<br>다시 골라 보세요 — 몇 번이든 괜찮아요.</div>';
@@ -896,6 +937,40 @@
       });
     }
     $("stampSheet").classList.add("show");
+  }
+
+  /* ── 미션 ──
+     ★ 스탬프와 «따로» 간다. 단체사진은 한 사람만 찍으면 되므로,
+       미션을 스탬프 조건으로 걸면 나머지가 스탬프를 못 받는다.
+     ★ 앱은 «카메라를 열어 줄 뿐» 사진을 갖고 있지 않는다. 사진은 폰 갤러리에 남는다. */
+  var misKey = "kkumgil.missions";
+  function misSet(){ try{ return JSON.parse(localStorage.getItem(misKey) || "[]"); }catch(e){ return []; } }
+  function misAdd(id){
+    var g = misSet();
+    if(g.indexOf(id) < 0){ g.push(id); try{ localStorage.setItem(misKey, JSON.stringify(g)); }catch(e){} }
+  }
+  function misCard(id, m){
+    var done = misSet().indexOf(id) >= 0;
+    return '<div class="mis' + (done ? ' done' : '') + '" id="mis_' + id + '">' +
+      '<h3>' + m.emoji + ' ' + m.title + '<span class="who">' + m.who + '</span></h3>' +
+      '<div class="body">' + m.desc + '</div>' +
+      '<input type="file" accept="image/*,video/*" capture="environment" id="cam_' + id + '">' +
+      '<button data-mis="' + id + '">' + (done ? '✅ 찍었어요 — 다시 찍기' : '📷 카메라 열기') + '</button></div>';
+  }
+  function bindMis(root){
+    root.querySelectorAll("[data-mis]").forEach(function(b){
+      var id = b.dataset.mis;
+      b.onclick = function(){ $("cam_" + id).click(); };
+      $("cam_" + id).onchange = function(){
+        if(!this.files || !this.files.length) return;
+        misAdd(id);
+        var box = $("mis_" + id);
+        box.className = "mis done";
+        box.querySelector("button").textContent = "✅ 찍었어요 — 다시 찍기";
+        try{ navigator.vibrate && navigator.vibrate(40); }catch(e){}
+        toast("📸 찍었어요! 사진은 폰 갤러리에 저장됩니다", 3500);
+      };
+    });
   }
 
   /* 걷다가 명소 가까이 오면 한 번만 알려 준다(QR 을 못 봤을 때의 예비) */
