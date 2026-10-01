@@ -36,7 +36,45 @@ function onOpen() {
     .addItem('② 2일차 폼 만들기', 'makeForm2')
     .addSeparator()
     .addItem('집계 새로 고치기', 'refreshAll')
+    .addItem('명단 확인하기', 'checkRoster')
+    .addSeparator()
+    .addItem('❓ 사용법', 'showHelp')
     .addToUi();
+}
+
+/* ❓ 사용법 — 메뉴마다 무엇을 하는지 팝업으로 */
+function showHelp() {
+  var html = HtmlService.createHtmlOutput(
+    '<style>body{font-family:sans-serif;font-size:14px;line-height:1.65;color:#0F172A;padding:4px 10px}' +
+    'h3{margin:14px 0 4px;font-size:15px;color:#0369A1}b{color:#B45309}.k{background:#F1F5F9;border-radius:8px;padding:8px 10px;margin:6px 0}</style>' +
+    '<p>이 시트는 <b>꿈길 걷기 당일 인원 체크</b>용이에요. 선생님들은 <b>폼에서 누르기만</b> 하고, 집계는 시트가 알아서 해요.</p>' +
+    '<h3>① 명단 탭 만들기</h3>명단_1일차 · 명단_2일차 탭을 만들어요. 첫 줄 머리글은 <b>반 · 번호 · 이름</b>.' +
+    '<div class="k">10개 반을 <b>옆으로 나란히</b>(반·번호·이름 묶음을 반마다) 붙여도, <b>세로로 이어</b> 붙여도 돼요.<br>반 칸은 그 반 첫 줄에만 적어도 돼요.</div>' +
+    '<h3>명단 확인하기</h3>시트가 명단을 <b>어떻게 읽었는지</b> 반별 인원으로 보여 줘요. 폼 만들기 전에 한 번 눌러 보세요.' +
+    '<h3>② 1일차 / 2일차 폼 만들기</h3>명단으로 <b>구글 폼을 자동으로</b> 만들어요.' +
+    '<div class="k">반 고르기 → <b>그 반 명단</b>(여러 명 체크 가능) → 상황[불참/중도포기/다시 합류] → 이유 → 어디쯤 → 제출<br>' +
+    '시각과 입력한 선생님은 자동 기록 · 학교 계정만 열림</div>' +
+    '폼 주소와 QR 은 <b>「안내」 탭</b>에 생겨요. 교직원 단톡방에 올리면 끝. <b>배포는 필요 없어요.</b>' +
+    '<h3>집계 (자동)</h3>폼이 제출될 때마다 <b>집계_1일차</b> 탭이 새로 고쳐져요.' +
+    '<div class="k">반별: 명단 · 불참 · 참가 · 중도포기 · <b>지금 걷는 인원</b><br>빠진 학생 목록(시각·어디쯤·이유) · 전체 기록</div>' +
+    '한 학생의 <b>마지막 기록</b>이 지금 상태예요. 중도포기했다가 다시 걸으면 「다시 합류」를 누르면 돼요.' +
+    '<h3>집계 새로 고치기</h3>자동 갱신이 늦을 때 손으로 다시 계산해요.' +
+    '<h3>⚠️ 알아 둘 것</h3>폼을 만든 뒤 <b>명단을 고치면 ② 를 다시</b> 눌러 폼을 새로 만들어야 해요.'
+  ).setWidth(520).setHeight(620);
+  SpreadsheetApp.getUi().showModalDialog(html, '🚶 꿈길 걷기 인원 체크 — 사용법');
+}
+
+/* 명단 확인하기 — 폼 만들기 전에 «어떻게 읽었는지» 보여 준다 */
+function checkRoster() {
+  var ui = SpreadsheetApp.getUi(), out = [];
+  [1, 2].forEach(function (d) {
+    try {
+      var R = readRoster(d), n = 0;
+      var line = R.classes.map(function (c) { n += R.byClass[c].length; return classLabel(c) + ' ' + R.byClass[c].length + '명'; });
+      out.push('【' + d + '일차】 ' + R.classes.length + '개 반 · ' + n + '명\n' + line.join(' / '));
+    } catch (e) { out.push('【' + d + '일차】 ' + e.message); }
+  });
+  ui.alert('명단 확인', out.join('\n\n') + '\n\n맞으면 「② 폼 만들기」를 누르세요.', ui.ButtonSet.OK);
 }
 
 /* ── ① 명단 탭 ── */
@@ -51,21 +89,51 @@ function makeRosterTabs() {
     sh.setFrozenRows(1);
     sh.getRange('A:A').setNumberFormat('@');   // 「1-3」이 날짜로 바뀌지 않게
   });
-  SpreadsheetApp.getUi().alert('명단_1일차 / 명단_2일차 탭을 만들었어요.\n반 · 번호 · 이름 순서로 붙여넣으세요.\n(2일차는 학년이 섞이니 반을 「1-3」, 「2-5」처럼 적어 주세요)');
+  SpreadsheetApp.getUi().alert('명단 탭을 만들었어요',
+    '명단_1일차 / 명단_2일차 탭에 반 · 번호 · 이름을 붙여넣으세요.\n\n' +
+    '· 10개 반을 옆으로 나란히(반·번호·이름 묶음을 반마다) 붙여도, 세로로 이어 붙여도 돼요.\n' +
+    '· 반 칸은 그 반 첫 줄에만 적어도 돼요.\n' +
+    '· 2일차는 학년이 섞이니 반을 「1-3」, 「2-5」처럼 적어 주세요.\n\n' +
+    '다 붙였으면 「명단 확인하기」 → 「② 폼 만들기」 순서로 누르세요.', SpreadsheetApp.getUi().ButtonSet.OK);
 }
 
+/* 명단 읽기 — 붙이는 모양을 가리지 않는다
+     · 옆으로 나란히: [반|번호|이름] [반|번호|이름] … 묶음 여러 개
+     · 세로로 이어서: 한 묶음 아래로 반마다 쭉
+     · 반 칸이 그 반 첫 줄에만 있고 아래가 비어 있어도 위의 반을 이어받는다
+     · 중간에 다시 나온 「반·번호·이름」 머리줄, 빈 줄, 예시 줄은 건너뛴다 */
 function readRoster(day) {
   var sh = SpreadsheetApp.getActive().getSheetByName('명단_' + day + '일차');
   if (!sh) throw new Error('명단_' + day + '일차 탭이 없어요. 「① 명단 탭 만들기」부터 해 주세요.');
-  var rows = sh.getDataRange().getDisplayValues().slice(1)
-    .filter(function (r) { return r[0] && r[2] && r[2].indexOf('예시') < 0; });
-  if (!rows.length) throw new Error('명단_' + day + '일차 탭에 학생이 없어요.');
-  var classes = [], byClass = {};
-  rows.forEach(function (r) {
-    var c = String(r[0]).trim(), nm = String(r[2]).trim();
-    if (!byClass[c]) { byClass[c] = []; classes.push(c); }
-    byClass[c].push({ no: Number(r[1]) || 0, name: nm });
+  return parseRoster(sh.getDataRange().getDisplayValues(), day);
+}
+function parseRoster(grid, day) {
+  var head = (grid[0] || []).map(function (v) { return String(v).trim(); });
+  var blocks = [];
+  head.forEach(function (v, c) {
+    if (v !== '반') return;
+    var nx = head.indexOf('반', c + 1); if (nx < 0) nx = head.length;
+    var no = -1, nm = -1;
+    for (var k = c + 1; k < nx; k++) { if (no < 0 && head[k] === '번호') no = k; if (nm < 0 && head[k] === '이름') nm = k; }
+    if (nm >= 0) blocks.push({ c: c, no: no, nm: nm });
   });
+  if (!blocks.length) throw new Error('명단_' + day + '일차 탭 첫 줄에 「반」「번호」「이름」 머리줄이 없어요.');
+  var classes = [], byClass = {}, seen = {};
+  blocks.forEach(function (b) {
+    var cur = '';
+    grid.slice(1).forEach(function (r) {
+      var cls = String(r[b.c] || '').trim().replace(/반$/, ''), name = String(r[b.nm] || '').trim();
+      if (cls === '반' || name === '이름') { cur = ''; return; }          // 중간 머리줄
+      if (cls) cur = cls;
+      if (!name || name.indexOf('예시') >= 0 || !cur) return;
+      var no = b.no >= 0 ? Number(r[b.no]) || 0 : 0;
+      var key = cur + '|' + no + '|' + name;
+      if (seen[key]) return; seen[key] = 1;
+      if (!byClass[cur]) { byClass[cur] = []; classes.push(cur); }
+      byClass[cur].push({ no: no, name: name });
+    });
+  });
+  if (!classes.length) throw new Error('명단_' + day + '일차 탭에 학생이 없어요.');
   classes.sort(classOrder);
   classes.forEach(function (c) { byClass[c].sort(function (a, b) { return a.no - b.no; }); });
   return { classes: classes, byClass: byClass };
@@ -143,7 +211,11 @@ function makeForm(day) {
 
   writeGuide(day, form);
   refresh(day);
-  ui.alert(day + '일차 폼을 만들었어요.\n「안내」 탭에 주소와 QR 이 있어요.');
+  ui.alert(day + '일차 폼을 만들었어요 ✅',
+    '· 「안내」 탭에 폼 주소와 QR 이 있어요 → 교직원 단톡방에 올려 주세요.\n' +
+    '· 응답은 「응답_' + day + '일차」 탭, 집계는 「집계_' + day + '일차」 탭에 저절로 쌓여요.\n' +
+    '· 시험 삼아 한 번 제출해 보고, 집계에 뜨는지 확인해 보세요(시험 응답은 폼 → 응답 탭에서 지울 수 있어요).',
+    ui.ButtonSet.OK);
 }
 
 function writeGuide(day, form) {
