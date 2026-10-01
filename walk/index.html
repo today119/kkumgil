@@ -760,13 +760,17 @@
 
   /* ---------- 지도 ---------- */
   var map = null, mapReady = false, meMarker = null, meCircle = null, doneLine = null, snapLine = null, follow = true;
-  var mapTimer = setTimeout(failMap, 8000);
+  /* ★ 8초 타이머는 «코스를 고른 순간»부터 센다. 예전엔 앱을 연 순간부터 세서,
+       홈 화면을 8초 넘게 보다가 코스를 누르면 지도가 멀쩡해도 「못 불러왔어요」가 떴다(10/2 아이폰에서 발견). */
+  var mapTimer = null;
   function failMap(){
     if(mapReady) return;
     $("map").style.display = "none";
     $("mapFallback").style.display = "flex";
   }
   function initMap(){
+    $("map").style.display = ""; $("mapFallback").style.display = "none";
+    clearTimeout(mapTimer); mapTimer = setTimeout(failMap, 8000);
     if(!(window.kakao && kakao.maps)){ failMap(); return; }
     kakao.maps.load(function(){
       try{
@@ -790,6 +794,8 @@
         path.forEach(function(ll){ bounds.extend(ll); });
         map.setBounds(bounds);
         mapReady = true;
+        $("map").style.display = ""; $("mapFallback").style.display = "none";   // 느린 망에서 8초 넘겨 늦게 떠도 되살린다
+        map.relayout();
         drawMe();
       }catch(e){ failMap(); }
     });
