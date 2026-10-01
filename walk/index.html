@@ -170,6 +170,13 @@
   .misrow .c{font-size:18px}
   .misrow.done{background:#DCFCE7;border-color:#86EFAC;color:#14532D}
 
+  .lock{border:2px dashed #94A3B8}
+  .scanbox{position:relative;border-radius:18px;overflow:hidden;background:#000;aspect-ratio:1/1}
+  .scanbox video{width:100%;height:100%;object-fit:cover;display:block}
+  .scanbox .frame{position:absolute;inset:18%;border:4px solid #fff;border-radius:16px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
+  .codeRow{display:flex;gap:8px;margin-top:6px}
+  .codeRow input{flex:1;min-width:0;font-size:22px;font-weight:800;letter-spacing:.3em;text-align:center;padding:12px;border-radius:14px;border:2px solid #CBD5E1}
+  .codeRow button{flex:0 0 auto;padding:0 22px;border-radius:14px;font-weight:800;font-size:17px;background:#0EA5E9;color:#fff;border:0}
   .hintbox{background:#FEF3C7;color:#92400E;border-radius:14px;padding:12px 14px;margin-top:10px;font-size:14px;line-height:1.6}
   .stamp-btn{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 96px);z-index:20;
     min-width:52px;height:52px;border-radius:26px;background:var(--panel2);font-size:20px;font-weight:900;
@@ -399,6 +406,19 @@
   <div class="sheet-body" id="stampBody"></div>
 </div>
 
+<!-- ══ QR 찍기 ══ -->
+<div class="sheet" id="scanSheet">
+  <div class="sheet-head"><h2>📷 QR 찍기</h2><button class="x" id="scanClose">×</button></div>
+  <div class="sheet-body">
+    <div class="scanbox"><video id="scanVideo" playsinline muted></video><div class="frame"></div></div>
+    <p class="hint" id="scanMsg"></p>
+    <div class="row codeRow">
+      <input id="scanCode" inputmode="numeric" maxlength="4" placeholder="숫자 4자리" autocomplete="off">
+      <button id="scanGo">열기</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet" id="photoSheet">
   <div class="sheet-head"><h2 id="photoTitle"></h2><button class="x" data-close>×</button></div>
   <div class="sheet-body">
@@ -497,7 +517,6 @@
 
   /* ---------- 위치가 들어올 때마다 ---------- */
   function onPosition(lat, lng, acc){
-    checkStampNear(lat, lng);          // 명소 가까이 오면 알려 준다(QR 을 못 봤을 때의 예비)
     var r = project(lat, lng);
     state.pos = {lat:lat, lng:lng, acc:acc};
     state.lastFix = Date.now();
@@ -683,6 +702,21 @@
       g.gain.setValueAtTime(0, audio.currentTime + t + 0.22);
       o.connect(g); g.connect(audio.destination);
       o.start(audio.currentTime + t); o.stop(audio.currentTime + t + 0.25);
+    });
+  }
+
+  /* 스탬프 성공음 — 경보(삑삑삑 네모파)와 헷갈리지 않게 부드럽게 올라가는 「딩동댕」 */
+  function chime(){
+    unlockAudio();
+    if(!audio) return;
+    [[523, 0], [659, 0.15], [784, 0.3]].forEach(function(n){
+      var o = audio.createOscillator(), g = audio.createGain(), t = audio.currentTime + n[1];
+      o.type = "sine"; o.frequency.value = n[0];
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      o.connect(g); g.connect(audio.destination);
+      o.start(t); o.stop(t + 0.55);
     });
   }
 
@@ -877,12 +911,17 @@
     $("intro").style.display = "none";
     startWatch();
   }
-  $("demoBtn").onclick = startDemo;
+  $("demoBtn").onclick = function(){
+    if(C){ startDemo(); return; }
+    var d0 = LIST && LIST.courses.filter(function(c){ return c.ready; })[0];
+    if(!d0){ toast("코스를 불러오는 중이에요. 잠깐 뒤에 다시 눌러 주세요"); return; }
+    loadCourse(d0.file).then(function(){ if(C) startDemo(); });
+  };
 
   // 검증 스크립트용 — 화면 밖에서 상태를 들여다볼 수 있게 열어 둔다
   window.__kkumgil = {onPosition:onPosition, state:state, placeText:placeText,
                       stamps:function(){ return STAMPS; }, got:gotSet,
-                      openStamp:openStamp, board:showStampBoard, near:checkStampNear,
+                      openStamp:openStamp, board:showStampBoard, code:handleCode, opened:openSet,
                       mis:function(){ return misSet(); }, misAdd:function(i){ return misAdd(i); }};
 
   /* 코스 하나를 실제로 불러와 길안내를 준비한다. */
@@ -994,14 +1033,17 @@
 
   /* ══════════════════════════════════════════════════════
      스탬프 투어
-       · 여는 방법 두 가지 — QR(?stamp=id) 이 기본, 그 자리 가까이 가면(GPS) 예비
-         안내판이 떨어지거나 누가 떼어가도 스탬프를 못 찍는 일이 없게 둘 다 둔다.
+       · 퀴즈는 «QR 을 찍어야만» 열린다(사용자 결정 10/1). 그 자리에 가야 풀 수 있게.
+         GPS 로 자동으로 여는 기능은 뺐다 — 걷는 중에 창이 불쑥 뜨고, 좌표가 틀리면 엉뚱한 곳에서 떴다.
+       · QR 을 찍는 길 둘: ① 폰 기본 카메라(주소 ?stamp=id&k=코드) ② 앱 안 「QR 찍기」.
+         ★ 아이폰은 홈 화면 앱과 사파리의 저장 공간이 따로다. 기본 카메라로 찍으면 사파리에 쌓여
+           앱 스탬프판엔 안 보인다 → 앱 안 스캐너가 기본, 카메라가 안 되면 QR 아래 4자리 숫자 입력.
        · 기록은 «폰 안에만» 남는다(localStorage). 서버도 이름도 없다.
        · 틀려도 다시 풀 수 있다. 시험이 아니라 읽게 만드는 게 목적이다.
      ══════════════════════════════════════════════════════ */
   var STAMPS = null;
-  var NEAR_M = 60;               // 이 거리 안에 들어오면 «여기 스탬프 있어요» 알림
   var gotKey = "kkumgil.stamps";
+  var openKey = "kkumgil.unlocked";   // QR 을 찍어 퀴즈가 열린 명소
 
   function gotSet(){
     try { return JSON.parse(localStorage.getItem(gotKey) || "[]"); } catch(e){ return []; }
@@ -1010,6 +1052,17 @@
     var g = gotSet();
     if(g.indexOf(id) < 0){ g.push(id); try{ localStorage.setItem(gotKey, JSON.stringify(g)); }catch(e){} }
     paintStampCount();
+  }
+  function openSet(){
+    try { return JSON.parse(localStorage.getItem(openKey) || "[]"); } catch(e){ return []; }
+  }
+  function unlock(id){
+    var g = openSet();
+    if(g.indexOf(id) < 0){ g.push(id); try{ localStorage.setItem(openKey, JSON.stringify(g)); }catch(e){} }
+  }
+  /* 코드로 명소 찾기 — QR 안의 k, 또는 손으로 친 4자리 */
+  function stampByCode(code){
+    return STAMPS.stamps.filter(function(x){ return x.code === String(code).trim(); })[0] || null;
   }
   function paintStampCount(){
     if(!STAMPS) return;
@@ -1033,11 +1086,13 @@
       (got.length === STAMPS.stamps.length
         ? '<div class="card" style="margin-top:14px;background:#064E3B"><h3>🎉 다 모았습니다!</h3>' +
           '<div class="body">이 화면을 캡처해서 선생님께 보여 주세요.</div></div>'
-        : '<div class="card" style="margin-top:14px"><div class="body">명소에 붙은 <b>QR 을 찍거나</b>, 그 자리에 가까이 가면 문제가 열려요.</div></div>') +
+        : '<div class="card" style="margin-top:14px"><div class="body">명소에 붙은 <b>QR 을 찍으면</b> 문제가 열려요.</div>' +
+          '<button class="go" style="width:100%;margin-top:10px" data-scan>📷 QR 찍기</button></div>') +
       '<div style="margin-top:18px">' + misBlock() + '</div>';
     $("stampBody").querySelectorAll("[data-st]").forEach(function(b){
       b.onclick = function(){ openStamp(b.dataset.st, true); };
     });
+    bindScan($("stampBody"));
     bindMisBlock($("stampBody"));
     $("stampSheet").classList.add("show");
   }
@@ -1048,6 +1103,7 @@
     var s = STAMPS.stamps.filter(function(x){ return x.id === id; })[0];
     if(!s) return;
     var got = gotSet().indexOf(id) >= 0;
+    var opened = openSet().indexOf(id) >= 0;
     $("stampTitle").textContent = s.emoji + " " + s.name;
     var h = '';
     if(got){
@@ -1056,7 +1112,12 @@
     h += '<div class="card"><h3>' + s.emoji + ' ' + s.name + '</h3>' +
          (s.photo ? '<img src="photos/' + s.photo + '" style="width:100%;border-radius:14px;margin:4px 0 10px">' : '') +
          '<div class="body">' + s.desc + '</div></div>';
-    if(!got){
+    if(!got && !opened){
+      h += '<div class="card lock"><h3>🔒 문제는 이곳 QR 을 찍으면 열려요</h3>' +
+           '<div class="body">' + s.name + '에 붙은 QR 안내판을 찾아 보세요.</div>' +
+           '<button class="go" style="width:100%;margin-top:10px" data-scan>📷 QR 찍기</button></div>';
+    }
+    if(!got && opened){
       h += '<div class="card quiz" id="quizBox"><h3>❓ ' + s.quiz.q + '</h3>' +
            s.quiz.choices.map(function(c,i){
              return '<button data-ch="' + i + '">' + String.fromCharCode(9312+i) + ' ' + c + '</button>';
@@ -1066,15 +1127,16 @@
     h += '<button class="go" style="width:100%;margin-top:6px" id="toBoard">🏅 스탬프판 보기</button>';
     $("stampBody").innerHTML = h;
     $("toBoard").onclick = showStampBoard;
+    bindScan($("stampBody"));
     bindMis($("stampBody"));
-    if(!got){
+    if(!got && opened){
       $("stampBody").querySelectorAll("[data-ch]").forEach(function(b){
         b.onclick = function(){
           var ok = (+b.dataset.ch === s.quiz.answer);
           if(ok){
             b.className = "right";
             try{ navigator.vibrate && navigator.vibrate([40,60,120]); }catch(e){}
-            ring();
+            chime();
             gotAdd(s.id);
             $("stampBody").innerHTML =
               '<div class="got-big"><div class="em">' + s.emoji + '</div>' +
@@ -1159,22 +1221,72 @@
     });
   }
 
-  /* 걷다가 명소 가까이 오면 한 번만 알려 준다(QR 을 못 봤을 때의 예비) */
-  var stampTold = {};
-  function checkStampNear(lat, lng){
-    if(!STAMPS) return;
-    var got = gotSet();
-    STAMPS.stamps.forEach(function(s){
-      if(got.indexOf(s.id) >= 0 || stampTold[s.id]) return;
-      var a = toXY(lat, lng), b = toXY(s.lat, s.lng);
-      if(Math.hypot(a[0]-b[0], a[1]-b[1]) <= NEAR_M){
-        stampTold[s.id] = 1;
-        try{ navigator.vibrate && navigator.vibrate([60,80,60]); }catch(e){}
-        toast("🏅 " + s.name + " — 스탬프가 있어요! 눌러서 도전하세요", 6000);
-        openStamp(s.id);
-      }
+  /* ══ QR 찍기 — 앱 안 스캐너 ══
+     BarcodeDetector 가 있으면(안드로이드 크롬) 그걸 쓰고, 없으면(아이폰) jsqr.min.js 로 읽는다.
+     jsqr 는 저장소에 넣어 두었다 — 오프라인 저장(sw.js)에 함께 담긴다. */
+  var scanStream = null, scanLoop = null;
+  function bindScan(root){
+    root.querySelectorAll("[data-scan]").forEach(function(b){ b.onclick = openScanner; });
+  }
+  function handleCode(text){
+    var m = String(text).match(/[?&]k=(\d{4})/), code = m ? m[1] : String(text).trim();
+    var s = /^\d{4}$/.test(code) ? stampByCode(code) : null;
+    if(!s) return false;
+    closeScanner();
+    unlock(s.id);
+    try{ navigator.vibrate && navigator.vibrate([40,60,40]); }catch(e){}
+    openStamp(s.id);
+    return true;
+  }
+  function openScanner(){
+    $("scanMsg").textContent = "명소 안내판의 QR 을 네모 안에 맞춰 주세요";
+    $("scanCode").value = "";
+    $("scanSheet").classList.add("show");
+    if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){
+      $("scanMsg").textContent = "이 폰은 카메라를 열 수 없어요. QR 아래 숫자 4자리를 입력해 주세요"; return;
+    }
+    var detector = ("BarcodeDetector" in window) ? new BarcodeDetector({formats:["qr_code"]}) : null;
+    var ready = detector ? Promise.resolve() : loadJsQR();
+    navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}, audio:false}).then(function(st){
+      scanStream = st;
+      var v = $("scanVideo"); v.srcObject = st; v.play();
+      return ready.then(function(){
+        var cv = document.createElement("canvas"), cx = cv.getContext("2d", {willReadFrequently:true});
+        scanLoop = setInterval(function(){
+          if(!v.videoWidth) return;
+          if(detector){
+            detector.detect(v).then(function(r){ if(r.length) tryText(r[0].rawValue); }).catch(function(){});
+          }else if(window.jsQR){
+            var w = 480, hh = Math.round(v.videoHeight * w / v.videoWidth);
+            cv.width = w; cv.height = hh; cx.drawImage(v, 0, 0, w, hh);
+            var r = jsQR(cx.getImageData(0, 0, w, hh).data, w, hh);
+            if(r) tryText(r.data);
+          }
+        }, 250);
+      });
+    }).catch(function(){
+      $("scanMsg").textContent = "카메라 권한이 꺼져 있어요. QR 아래 숫자 4자리를 입력해 주세요";
     });
   }
+  function tryText(t){
+    if(!handleCode(t)) $("scanMsg").textContent = "꿈길 스탬프 QR 이 아니에요. 명소 안내판의 QR 을 찍어 주세요";
+  }
+  function closeScanner(){
+    clearInterval(scanLoop); scanLoop = null;
+    if(scanStream){ scanStream.getTracks().forEach(function(t){ t.stop(); }); scanStream = null; }
+    $("scanSheet").classList.remove("show");
+  }
+  var jsqrP = null;
+  function loadJsQR(){
+    return jsqrP = jsqrP || new Promise(function(ok, no){
+      var sc = document.createElement("script"); sc.src = "jsqr.min.js"; sc.onload = ok; sc.onerror = no;
+      document.head.appendChild(sc);
+    });
+  }
+  $("scanGo").onclick = function(){
+    if(!handleCode($("scanCode").value)) $("scanMsg").textContent = "숫자가 맞지 않아요. QR 아래 4자리를 다시 확인해 주세요";
+  };
+  $("scanClose").onclick = closeScanner;
 
   $("stampBtn").onclick = showStampBoard;
 
@@ -1182,7 +1294,11 @@
     STAMPS = d; paintStampCount();
     /* QR 로 들어온 경우 — ?stamp=baegunsan */
     var q = location.search.match(/[?&]stamp=([\w-]+)/);
-    if(q){ $("intro").style.display = "none"; openStamp(q[1]); }
+    if(q){
+      var s = stampByCode((location.search.match(/[?&]k=(\d{4})/) || [])[1] || "");
+      if(s && s.id === q[1]) unlock(s.id);       // 코드 없이 주소만 고쳐 친 건 열지 않는다
+      openStamp(q[1]);
+    }
   }).catch(function(){ var b=$("stampBtn"); if(b) b.style.display="none"; });
 
   /* ══ 홈 화면 설치 · 오프라인 미리 받기 ══
