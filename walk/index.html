@@ -22,6 +22,7 @@
     --fork:#EF4444; --spot:#A855F7; --wc:#0EA5E9; --rest:#14B8A6; --risk:#F97316; --car:#22C55E;
     --route:#38BDF8;
     --safe-b:env(safe-area-inset-bottom,0px);
+    --safe-t:env(safe-area-inset-top,0px);
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;height:100dvh}
@@ -112,7 +113,7 @@
   .chip.risk{border-color:#F97316;color:#FED7AA}
 
   /* 시트 */
-  .sheet{position:fixed;inset:0;z-index:70;background:rgba(15,23,42,.97);display:none;flex-direction:column}
+  .sheet{position:fixed;inset:0;z-index:100;background:rgba(15,23,42,.97);display:none;flex-direction:column}
   .sheet.show{display:flex}
   .sheet-head{flex:0 0 auto;display:flex;align-items:center;gap:12px;
     padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 14px;border-bottom:1px solid var(--line)}
@@ -181,9 +182,47 @@
   .gallery img{width:100%;border-radius:14px;display:block;margin-bottom:10px;background:#0B1220}
   .desc{font-size:16px;line-height:1.7;color:#E2E8F0;margin-bottom:14px;white-space:pre-wrap}
 
-  /* 시작 화면 */
-  #intro{position:fixed;inset:0;z-index:90;background:var(--bg);display:flex;flex-direction:column;
-    justify-content:center;padding:28px 24px calc(28px + var(--safe-b));gap:14px}
+  /* ══ 시작 화면 — 포스터형 홈 + 하단 탭 ══
+     탭 4개(홈·코스·스탬프·미션). 홈은 «대회 포스터», 코스는 «오늘 걸을 길 고르기».
+     스탬프·미션은 원래 쓰던 시트를 그대로 연다. */
+  #intro{position:fixed;inset:0;z-index:90;background:var(--bg);display:flex;flex-direction:column}
+  #introScroll{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .pane{padding:0 20px 24px;display:flex;flex-direction:column;gap:14px}
+  .pane[hidden]{display:none}
+
+  .hero{position:relative;margin:0 -20px 2px}
+  .hero img{width:100%;display:block;aspect-ratio:504/269;object-fit:cover;background:#1E293B}
+  .hero .sh{position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(2,6,23,.80) 0%,rgba(2,6,23,.25) 42%,rgba(2,6,23,.55) 74%,var(--bg) 100%)}
+  .hero .tx{position:absolute;left:20px;right:20px;top:calc(16px + var(--safe-t));text-align:center}
+  .hero .ed{font-size:15px;font-weight:900;color:#BAE6FD;letter-spacing:.02em}
+  .hero h1{font-size:30px;font-weight:900;letter-spacing:-.04em;margin-top:2px;
+    text-shadow:0 2px 14px rgba(2,6,23,.85)}
+  .hero .sl{font-size:14px;font-weight:800;line-height:1.6;color:#E2E8F0;margin-top:8px;
+    text-shadow:0 2px 10px rgba(2,6,23,.9)}
+
+  /* 공모전 미리보기 — 그림처럼 썸네일 버튼 3개 */
+  .trow{font-size:14px;font-weight:900;color:var(--sub);margin:6px 0 -6px 2px}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .tile{position:relative;border-radius:16px;overflow:hidden;background:var(--panel);padding:0;
+    aspect-ratio:1/1.03;display:block}
+  .tile img{width:100%;height:100%;object-fit:cover;display:block}
+  .tile .soon{position:absolute;left:6px;bottom:6px;background:rgba(2,6,23,.78);color:#E2E8F0;
+    font-size:11px;font-weight:900;padding:3px 7px;border-radius:999px}
+  .book{display:flex;align-items:center;gap:12px;text-align:left;padding:14px;border-radius:16px;
+    background:var(--panel2);color:var(--ink);font-size:16px;font-weight:900}
+  .book .e{font-size:24px}
+  .book .s{display:block;font-size:13px;font-weight:700;color:var(--sub);margin-top:2px}
+  .school{text-align:center;font-size:14px;font-weight:800;color:var(--sub);margin-top:4px}
+
+  /* 하단 탭 */
+  .tabs{flex:0 0 auto;display:grid;grid-template-columns:repeat(4,1fr);
+    background:#0B1220;border-top:1px solid #1E293B;padding-bottom:var(--safe-b)}
+  .tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    min-height:60px;background:none;color:var(--sub);font-size:12px;font-weight:800}
+  .tabs button .e{font-size:20px;line-height:1}
+  .tabs button.on{color:var(--route)}
+
   #intro h1{font-size:34px;font-weight:900;letter-spacing:-.04em}
   #intro p{font-size:16px;line-height:1.7;color:#CBD5E1}
   #intro ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin:6px 0}
@@ -191,7 +230,7 @@
   #intro li b{display:block;font-size:16px}
   #intro .go{min-height:60px;border-radius:16px;background:var(--route);color:#04263A;font-size:19px;font-weight:900;margin-top:8px}
   /* 코스 고르기 — 이틀을 각각 다른 날 걷는다. 첫 화면에서 «오늘 걸을 코스»를 고른다. */
-  .picks{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+  .picks{display:flex;flex-direction:column;gap:10px;margin-top:0}
   .pick{display:flex;align-items:center;gap:14px;text-align:left;padding:16px;border-radius:16px;
     background:var(--route);color:#04263A;font-weight:900}
   .pick .d{flex:1;min-width:0}
@@ -217,7 +256,7 @@
   #demo button{padding:8px 10px;border-radius:9px;background:rgba(255,255,255,.15);font-size:13px;font-weight:800;white-space:nowrap}
   #demo button.on{background:#B91C1C}
 
-  #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(170px + var(--safe-b));z-index:95;
+  #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(170px + var(--safe-b));z-index:110;
     background:#F8FAFC;color:#0F172A;padding:12px 18px;border-radius:14px;font-size:16px;font-weight:800;
     display:none;text-align:center;max-width:88vw;box-shadow:0 10px 30px rgba(0,0,0,.5)}
   #toast.show{display:block}
@@ -261,17 +300,66 @@
 </div>
 
 <div id="intro">
-  <h1>꿈길 걷기</h1>
-  <p>정해진 코스를 따라 걸으면 폰이 길을 챙겨 줄게요.</p>
-  <ul>
-    <li><b>📍 갈림길 미리 알림</b>갈림길 가까이 가면 사진과 방향을 보여 줘요.</li>
-    <li><b>⚠️ 코스 이탈 경보</b>길을 벗어나면 진동과 소리로 알려 줘요.</li>
-    <li><b>🆘 내 위치 알리기</b>무전으로 읽어 줄 위치 문장을 크게 보여 줘요.</li>
-  </ul>
-  <p style="font-size:14px;color:var(--sub)">화면이 꺼지면 알림도 멈춰요. <b style="color:var(--ink)">갈림길이 많은 산길에서는 「화면 켜두기」</b>를 눌러 두세요.</p>
-  <div class="picks" id="picks"></div>
-  <div id="pwa"></div>
-  <button class="demo" id="demoBtn">🧪 체험 모드 (코스 밖에서 미리 보기)</button>
+  <div id="introScroll">
+
+    <!-- ══ 홈 — 대회 포스터 ══ -->
+    <div class="pane" id="paneHome">
+      <div class="hero">
+        <img src="hero.jpg" alt="바닷가 길을 걷는 학생들">
+        <div class="sh"></div>
+        <div class="tx">
+          <div class="ed">2026 제10회</div>
+          <h1>꿈길 걷기 프로젝트</h1>
+          <div class="sl">꿈은 바라보는 것이 아니라,<br>걸어가는 것이다</div>
+        </div>
+      </div>
+
+      <div class="picks" id="picks"></div>
+
+      <!-- 공모전 미리보기 — 윗줄은 «이미 마감된» 것, 아랫줄은 «행사 당일부터» 하는 것 -->
+      <div class="trow">📣 공모전 결과</div>
+      <div class="tiles">
+        <button class="tile" data-tile="poem"><img src="t-poem.jpg" alt="4행시 공모전 최우수작"><span class="soon">곧</span></button>
+        <button class="tile" data-tile="catch"><img src="t-catch.jpg" alt="캐치프레이즈 선정작"><span class="soon">곧</span></button>
+        <button class="tile" data-tile="shirt"><img src="t-shirt.jpg" alt="티셔츠 공모전"><span class="soon">곧</span></button>
+      </div>
+
+      <div class="trow">🚩 행사 당일부터</div>
+      <div class="tiles">
+        <button class="tile" data-tile="photo"><img src="t-photo.jpg" alt="사진전"></button>
+        <button class="tile" data-tile="reels"><img src="t-reels.jpg" alt="릴스전"></button>
+        <button class="tile" data-tile="report"><img src="t-report.jpg" alt="보고서"><span class="soon">곧</span></button>
+      </div>
+
+      <button class="book" data-tile="book"><span class="e">📖</span>
+        <span>학생 작품집<span class="s">걸으며 쓴 글과 사진을 모은 책</span></span></button>
+
+      <div class="school">인천영종고등학교</div>
+    </div>
+
+    <!-- ══ 코스 — 오늘 걸을 길 고르기 ══ -->
+    <div class="pane" id="paneCourse" hidden>
+      <h1 style="font-size:26px;font-weight:900;letter-spacing:-.03em;margin-top:18px">오늘 걸을 코스</h1>
+      <p style="font-size:15px;line-height:1.7;color:#CBD5E1">정해진 코스를 따라 걸으면 폰이 길을 챙겨 줄게요.</p>
+      <div class="picks" id="picks2"></div>
+      <ul>
+        <li><b>📍 갈림길 미리 알림</b>갈림길 가까이 가면 사진과 방향을 보여 줘요.</li>
+        <li><b>⚠️ 코스 이탈 경보</b>길을 벗어나면 진동과 소리로 알려 줘요.</li>
+        <li><b>🆘 내 위치 알리기</b>무전으로 읽어 줄 위치 문장을 크게 보여 줘요.</li>
+      </ul>
+      <p style="font-size:14px;color:var(--sub)">화면이 꺼지면 알림도 멈춰요. <b style="color:var(--ink)">갈림길이 많은 산길에서는 「화면 켜두기」</b>를 눌러 두세요.</p>
+      <div id="pwa"></div>
+      <button class="demo" id="demoBtn">🧪 체험 모드 (코스 밖에서 미리 보기)</button>
+    </div>
+
+  </div>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="home" class="on"><span class="e">🏠</span>홈</button>
+    <button data-tab="course"><span class="e">🗺</span>코스</button>
+    <button data-tab="stamp"><span class="e">🏅</span>스탬프</button>
+    <button data-tab="mis"><span class="e">📸</span>미션</button>
+  </nav>
 </div>
 
 <div class="sheet" id="sosSheet">
@@ -805,7 +893,7 @@
      ★ 거리는 «코스 파일에서 읽어» 보여 준다. 손으로 적어 두면 코스를 고칠 때마다 어긋난다. */
   var LIST = null;
   function drawPicks(){
-    $("picks").innerHTML = LIST.courses.map(function(c, i){
+    var html = LIST.courses.map(function(c, i){
       var km = c.lengthM ? (c.lengthM/1000).toFixed(1) : null;
       var on = c.ready && km;
       return '<button class="pick' + (on ? '' : ' off') + '" data-pick="' + i + '"' +
@@ -814,13 +902,70 @@
              '<div class="s">' + c.date + (on ? ' · 눌러서 길안내 시작' : ' · ' + (c.note || '준비 중')) + '</div></div>' +
              '<div class="km">' + (on ? km + '<small>km</small>' : '🔒') + '</div></button>';
     }).join('');
-    $("picks").querySelectorAll('[data-pick]').forEach(function(b){
-      b.onclick = function(){
-        var c = LIST.courses[+b.dataset.pick];
-        loadCourse(c.file).then(beginWalk);
-      };
+    ["picks","picks2"].forEach(function(id){
+      var box = $(id); if(!box) return;
+      box.innerHTML = html;
+      box.querySelectorAll('[data-pick]').forEach(function(b){
+        b.onclick = function(){
+          var c = LIST.courses[+b.dataset.pick];
+          loadCourse(c.file).then(beginWalk);
+        };
+      });
     });
   }
+
+  /* ══ 홈 화면 탭 — 홈 · 코스 · 스탬프 · 미션 ══
+     스탬프·미션은 «화면을 바꾸지 않고» 쓰던 시트를 그대로 연다.
+     걷는 중에도 같은 시트가 뜨므로 학생이 두 가지 조작을 배울 일이 없다. */
+  function showPane(which){
+    $("paneHome").hidden   = (which !== "home");
+    $("paneCourse").hidden = (which !== "course");
+    $("introScroll").scrollTop = 0;
+    $("tabs").querySelectorAll("[data-tab]").forEach(function(b){
+      b.className = (b.dataset.tab === which) ? "on" : "";
+    });
+  }
+  $("tabs").querySelectorAll("[data-tab]").forEach(function(b){
+    b.onclick = function(){
+      var t = b.dataset.tab;
+      if(t === "stamp"){ showStampBoard(); return; }
+      if(t === "mis"){ showMissionBoard(); return; }
+      showPane(t);
+    };
+  });
+
+  /* 공모전·작품집 미리보기 — 내용이 아직 없어서 「곧 올라와요」만 띄운다.
+     ★ 글·사진이 오면 TILES 의 body 만 채우면 된다. 화면은 그대로 둔다. */
+  var TILES = {
+    /* ── 이미 마감된 공모전 — 수상작이 오면 body 를 채운다 ── */
+    poem:  { emoji:"👣", title:"4행시 공모전 최우수작", img:"t-poem.jpg" },
+    catch: { emoji:"✨", title:"캐치프레이즈 선정작",   img:"t-catch.jpg" },
+    shirt: { emoji:"👕", title:"티셔츠 공모전",         img:"t-shirt.jpg" },
+    /* ── 행사 당일부터 ── */
+    photo: { emoji:"🌅", title:"사진전",   img:"t-photo.jpg",
+             body:"걸으며 찍은 사진을 모아 전시합니다.<br>미션 사진이 그대로 출품작이 돼요.", mis:true },
+    reels: { emoji:"🎬", title:"릴스전",   img:"t-reels.jpg",
+             body:"걷는 길·친구·풍경·힘든 순간까지 <b>15초</b>로 담아 보세요.<br>장소는 어디든 좋습니다.", mis:true },
+    report:{ emoji:"📝", title:"보고서",   img:"t-report.jpg",
+             body:"걸으며 보고 느낀 것을 적는 기록·성찰 보고서예요.<br>양식이 정해지면 여기에 올라옵니다." },
+    book:  { emoji:"📖", title:"학생 작품집",
+             body:"걸으며 쓴 글과 사진을 모은 책이에요." }
+  };
+  function openTile(k){
+    var t = TILES[k]; if(!t) return;
+    $("stampTitle").textContent = t.emoji + " " + t.title;
+    $("stampBody").innerHTML =
+      (t.img ? '<img src="' + t.img + '" alt="" style="width:100%;border-radius:16px;margin-bottom:12px">' : '') +
+      '<div class="card"><div class="body">' +
+        (t.body || "아직 올라오지 않았어요.<br>공모전이 끝나면 여기에서 바로 볼 수 있어요.") +
+      '</div></div>' +
+      (t.mis ? '<button class="go" style="width:100%" id="tileMis">📸 미션 보러 가기</button>' : '');
+    if(t.mis) $("tileMis").onclick = showMissionBoard;
+    $("stampSheet").classList.add("show");
+  }
+  document.querySelectorAll("[data-tile]").forEach(function(b){
+    b.onclick = function(){ openTile(b.dataset.tile); };
+  });
 
   /* ══════════════════════════════════════════════════════
      스탬프 투어
@@ -864,25 +1009,11 @@
         ? '<div class="card" style="margin-top:14px;background:#064E3B"><h3>🎉 다 모았습니다!</h3>' +
           '<div class="body">이 화면을 캡처해서 선생님께 보여 주세요.</div></div>'
         : '<div class="card" style="margin-top:14px"><div class="body">명소에 붙은 <b>QR 을 찍거나</b>, 그 자리에 가까이 가면 문제가 열려요.</div></div>') +
-      '<div style="margin-top:18px"><div class="stamp-top"><b>📸</b><span>미션 ' +
-        (misSet().length) + ' / ' + (STAMPS.stamps.filter(function(x){return x.mission;}).length + (STAMPS.missions_free||[]).length) +
-        ' 개 — 스탬프와는 별개예요</span></div>' +
-        STAMPS.stamps.filter(function(x){ return x.mission; }).map(function(x){
-          var d = misSet().indexOf(x.id) >= 0;
-          return '<button class="misrow' + (d ? ' done' : '') + '" data-misgo="' + x.id + '">' +
-            '<span class="e">' + x.mission.emoji + '</span>' +
-            '<span class="k">' + x.mission.title + '<small>' + x.name + ' · ' + x.mission.who + '</small></span>' +
-            '<span class="c">' + (d ? '✅' : '⬜') + '</span></button>';
-        }).join('') +
-        (STAMPS.missions_free||[]).map(function(m){ return misCard(m.id, m); }).join('') +
-        '<div class="card"><div class="body" style="font-size:14px">' + (STAMPS.mission_note || '') + '</div></div></div>';
+      '<div style="margin-top:18px">' + misBlock() + '</div>';
     $("stampBody").querySelectorAll("[data-st]").forEach(function(b){
       b.onclick = function(){ openStamp(b.dataset.st, true); };
     });
-    $("stampBody").querySelectorAll("[data-misgo]").forEach(function(b){
-      b.onclick = function(){ openStamp(b.dataset.misgo, true); };
-    });
-    bindMis($("stampBody"));
+    bindMisBlock($("stampBody"));
     $("stampSheet").classList.add("show");
   }
 
@@ -957,6 +1088,36 @@
       '<input type="file" accept="image/*,video/*" capture="environment" id="cam_' + id + '">' +
       '<button data-mis="' + id + '">' + (done ? '✅ 찍었어요 — 다시 찍기' : '📷 카메라 열기') + '</button></div>';
   }
+  /* 미션 묶음 한 덩어리 — 스탬프판 아래에도, 미션 탭에도 같은 걸 쓴다 */
+  function misBlock(){
+    var tot = STAMPS.stamps.filter(function(x){ return x.mission; }).length + (STAMPS.missions_free||[]).length;
+    return '<div class="stamp-top"><b>📸</b><span>미션 ' + misSet().length + ' / ' + tot +
+             ' 개 — 스탬프와는 별개예요</span></div>' +
+      STAMPS.stamps.filter(function(x){ return x.mission; }).map(function(x){
+        var d = misSet().indexOf(x.id) >= 0;
+        return '<button class="misrow' + (d ? ' done' : '') + '" data-misgo="' + x.id + '">' +
+          '<span class="e">' + x.mission.emoji + '</span>' +
+          '<span class="k">' + x.mission.title + '<small>' + x.name + ' · ' + x.mission.who + '</small></span>' +
+          '<span class="c">' + (d ? '✅' : '⬜') + '</span></button>';
+      }).join('') +
+      (STAMPS.missions_free||[]).map(function(m){ return misCard(m.id, m); }).join('') +
+      '<div class="card"><div class="body" style="font-size:14px">' + (STAMPS.mission_note || '') + '</div></div>';
+  }
+  function bindMisBlock(root){
+    root.querySelectorAll("[data-misgo]").forEach(function(b){
+      b.onclick = function(){ openStamp(b.dataset.misgo, true); };
+    });
+    bindMis(root);
+  }
+  /* 미션 탭 — 미션만 모아 본다 */
+  function showMissionBoard(){
+    if(!STAMPS){ toast("미션을 불러오는 중이에요"); return; }
+    $("stampTitle").textContent = "📸 미션 — 사진전 · 릴스전";
+    $("stampBody").innerHTML = misBlock();
+    bindMisBlock($("stampBody"));
+    $("stampSheet").classList.add("show");
+  }
+
   function bindMis(root){
     root.querySelectorAll("[data-mis]").forEach(function(b){
       var id = b.dataset.mis;
