@@ -1145,6 +1145,23 @@
     });
   }
 
+  /* 선생님 현황판 — 설치 앱에서 누르면 */
+  function openTeacherHelp(url){
+    $("stampTitle").textContent = "👩‍🏫 선생님 현황판";
+    $("stampBody").innerHTML =
+      '<div class="card"><div class="body" style="font-size:15px;line-height:1.7">' +
+      '홈 화면 앱 안에서는 <b>구글 로그인이 사파리와 따로</b>라서 「현재 파일을 열 수 없습니다」가 뜰 수 있어요.<br><br>' +
+      '<b>한 번만 이렇게 해 두세요</b><br>① 아래 <b>주소 복사</b> → <b>사파리</b>에 붙여넣기<br>② <b>학교 계정</b>으로 로그인<br>' +
+      '③ 사파리 <b>공유 ⬆︎ → 「홈 화면에 추가」</b><br>→ 이제 홈 화면의 <b>현황판 아이콘</b>으로 바로 열려요.</div></div>' +
+      '<button class="go" style="width:100%" id="tCopy">📋 현황판 주소 복사</button>' +
+      '<a class="go ghost" style="display:block;text-align:center;line-height:56px;text-decoration:none;margin-top:8px" href="' + url + '" target="_blank" rel="noopener">그냥 열어 보기</a>' +
+      '<div class="card" style="margin-top:12px"><div class="body" style="font-size:14px">「파일을 열 수 없습니다」가 뜨면: 그 창 오른쪽 아래 <b>🧭 → 사파리로 열기</b>. 그래도 같으면 사파리 <b>개인정보 보호 탭</b>에서 학교 계정으로만 로그인해 보세요(구글 계정이 여러 개 로그인돼 있을 때 생겨요).</div></div>';
+    $("tCopy").onclick = function(){
+      if(navigator.clipboard) navigator.clipboard.writeText(url).then(function(){ toast("복사했어요. 사파리 주소창에 붙여넣으세요"); }, function(){ toast("복사가 안 돼요. 「그냥 열어 보기」를 눌러 주세요"); });
+    };
+    $("stampSheet").classList.add("show");
+  }
+
   /* ══ 준비물 ══
      기본 목록은 prep.json. 학생이 체크한 것은 폰에만 남는다. 「학교에서 주는 것」도 함께 보여 줘서
      괜히 무겁게 싸 오지 않게 한다. */
@@ -1645,7 +1662,16 @@
     drawPicks();
     paintPwa();
     if(wantTab === "course") showPane("course");
-    if(LIST.teacher && LIST.teacher.url){ $("teacherBtn").href = LIST.teacher.url; $("teacherBtn").hidden = false; }
+    if(LIST.teacher && LIST.teacher.url){
+      $("teacherBtn").href = LIST.teacher.url; $("teacherBtn").hidden = false;
+      /* ★ 홈 화면에 설치한 앱(아이폰)에서는 바깥 링크가 «앱 안 미리보기 창»으로 열린다.
+           그 창은 사파리와 구글 로그인이 따로라 학교 계정이 안 맞아 「현재 파일을 열 수 없습니다」가 뜬다(10/2 실제 발생).
+           → 설치 앱에서는 바로 열지 않고 안내 판을 먼저 띄운다. 사파리에서 연 현황판을 «따로» 홈 화면에 추가하는 게 정답. */
+      $("teacherBtn").onclick = function(e){
+        if(!standalone) return;            // 사파리·크롬에서 연 경우엔 그냥 새 탭으로
+        e.preventDefault(); openTeacherHelp(LIST.teacher.url);
+      };
+    }
     /* 주소로 코스를 지정할 수 있다 — QR 을 코스별로 따로 뿌릴 때 쓴다. ?day=1 / ?day=2 */
     var m = location.search.match(/[?&]day=(\d+)/);
     var pick = m ? LIST.courses[+m[1] - 1] : null;
