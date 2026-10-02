@@ -366,10 +366,12 @@ function writeGuide(day, form) {
 
 /* ── 집계 ── */
 function onSubmit() { refreshAll(); }
+/* 명단이 있는 날은 모두 집계한다 — 예전엔 폼이나 기록이 있어야만 집계해서,
+   기록이 하나도 없는 2일차는 「집계_2일차」 탭이 아예 안 생겼다(10/2 사용자 지적). */
 function refreshAll() {
   [1, 2].forEach(function (d) {
-    var has = PropertiesService.getDocumentProperties().getProperty('form' + d) || logSheet(d, false);
-    if (has) { try { refresh(d); } catch (e) {} }
+    try { readRoster(d); } catch (e) { return; }      // 명단이 없거나 비었으면 건너뛴다
+    try { refresh(d); } catch (e) {}
   });
 }
 
