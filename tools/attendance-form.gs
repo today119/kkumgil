@@ -36,6 +36,7 @@ function onOpen() {
     .addItem('② 2일차 폼 만들기', 'makeForm2')
     .addSeparator()
     .addItem('집계 새로 고치기', 'refreshAll')
+    .addItem('📥 참가 조사 가져오기', 'importSurvey')
     .addItem('명단 확인하기', 'checkRoster')
     .addSeparator()
     .addItem('🔑 현황판 비번 정하기', 'setPin')
@@ -80,6 +81,98 @@ function checkRoster() {
     } catch (e) { out.push('【' + d + '일차】 ' + e.message); }
   });
   ui.alert('명단 확인', out.join('\n\n') + '\n\n맞으면 「② 폼 만들기」를 누르세요.', ui.ButtonSet.OK);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   📥 참가 조사 가져오기 — 담임 선생님들이 채운 「꿈길걷기_참가조사_담임입력용」 시트에서
+   ★ 반별 탭(1-1 … 2-10)마다:  번호 | 이름 | 1일차 참가(체크) | 불참 사유 | 2일차 신청(체크) | 티셔츠
+   · 1일차 = 1학년만 걷는다(2학년은 인천바로알기). 1학년 전원을 명단에 넣고, 체크가 풀린 학생은
+     현황판 기록에 「불참」(사유 그대로)으로 미리 넣는다 → 아침에 선생님이 따로 안 찍어도 된다.
+   · 2일차 = 희망자만. 1·2학년 모든 반에서 체크한 학생만 모아 명단을 만든다.
+   · 몇 번을 눌러도 같다 — 지난번에 넣은 「참가조사」 기록은 지우고 새로 넣는다(선생님이 현장에서 누른 건 그대로).
+   · 조사 시트 주소는 처음 한 번만 묻고 기억한다(코드에 안 적는다 — 깃허브가 공개라서).
+   ══════════════════════════════════════════════════════════════ */
+var SURVEY_TAG = '참가조사(자동)';
+function importSurvey() {
+  var ui = SpreadsheetApp.getUi(), props = PropertiesService.getDocumentProperties();
+  var src = props.getProperty('surveyId');
+  var r = ui.prompt('📥 참가 조사 가져오기',
+    '담임 입력용 참가 조사 시트 주소(또는 ID)를 붙여넣어 주세요.' + (src ? '\n비워 두면 지난번 시트를 다시 읽어요.' : ''), ui.ButtonSet.OK_CANCEL);
+  if (r.getSelectedButton() !== ui.Button.OK) return;
+  var t = r.getResponseText().trim();
+  if (t) { var m = t.match(/\/d\/([\w-]{20,})/); src = m ? m[1] : t; }
+  if (!src) { ui.alert('시트 주소가 없어요.'); return; }
+  var ss;
+  try { ss = SpreadsheetApp.openById(src); } catch (e) { ui.alert('시트를 열 수 없어요. 주소와 공유 권한을 확인해 주세요.\n' + e.message); return; }
+  props.setProperty('surveyId', src);
+  var S = readSurvey(ss.getSheets().map(function (sh) { return { name: sh.getName(), grid: sh.getDataRange().getDisplayValues() }; }));
+  if (!S.d1.length && !S.d2.length) { ui.alert('반별 탭(1-1, 2-3 …)에서 「이름」 머리줄을 못 찾았어요.'); return; }
+  var me = SpreadsheetApp.getActive();
+  writeRoster(me, '명단_1일차', S.d1);
+  writeRoster(me, '명단_2일차', S.d2);
+  var n = replaceSurveyAbsences(S.d1.filter(function (s) { return !s.go1; }));
+  try { refreshAll(); } catch (e) {}
+  var by = function (list) { var o = {}; list.forEach(function (s) { o[s.cls] = (o[s.cls] || 0) + 1; }); return Object.keys(o).sort(classOrder).map(function (c) { return c + ' ' + o[c]; }).join(' · '); };
+  ui.alert('📥 가져왔어요',
+    '【1일차】 1학년 ' + S.d1.length + '명 · 불참 ' + n + '명' + (n ? ' (현황판에 「불참」으로 미리 넣었어요)' : '') + '\n' +
+    S.d1.filter(function (s) { return !s.go1; }).map(function (s) { return s.cls + ' ' + s.name + (s.why ? '(' + s.why + ')' : ''); }).join(', ') + '\n\n' +
+    '【2일차】 신청 ' + S.d2.length + '명\n' + by(S.d2) + '\n\n' +
+    '조사 시트가 바뀌면 이 버튼을 다시 누르면 돼요.', ui.ButtonSet.OK);
+}
+
+/* 반별 탭 읽기 — 탭 이름이 「1-3」 꼴인 것만. 머리줄은 「이름」 칸이 있는 줄 */
+function readSurvey(tabs) {
+  var d1 = [], d2 = [];
+  tabs.forEach(function (tb) {
+    var cls = String(tb.name).replace(/\s+/g, '');
+    if (!/^\d+-\d+$/.test(cls)) return;
+    var g = tb.grid, hr = -1;
+    for (var i = 0; i < g.length; i++) if (g[i].some(function (v) { return String(v).trim() === '이름'; })) { hr = i; break; }
+    if (hr < 0) return;
+    var H = g[hr].map(function (v) { return String(v).replace(/\s+/g, ''); });
+    var col = function (re) { for (var k = 0; k < H.length; k++) if (re.test(H[k])) return k; return -1; };
+    var cNo = col(/^번호/), cNm = H.indexOf('이름'), c1 = col(/^1일차/), cWhy = col(/^불참사유/), c2 = col(/^2일차/);
+    var grade = cls.split('-')[0];
+    g.slice(hr + 1).forEach(function (row) {
+      var nm = String(row[cNm] || '').trim();
+      if (!nm) return;
+      var yes = function (c) { return c >= 0 && /^(TRUE|O|○|◯|V|✓|✔|Y|예|참가|신청)$/i.test(String(row[c]).trim()); };
+      var s = { cls: cls, no: Number(row[cNo]) || 0, name: nm, go1: yes(c1), go2: yes(c2), why: cWhy >= 0 ? String(row[cWhy] || '').trim() : '' };
+      if (grade === '1') d1.push(s);
+      if (s.go2) d2.push(s);
+    });
+  });
+  return { d1: d1, d2: d2 };
+}
+
+function writeRoster(ss, name, list) {
+  var sh = ss.getSheetByName(name) || ss.insertSheet(name);
+  sh.clear();
+  sh.getRange('A:A').setNumberFormat('@');
+  var rows = [['반', '번호', '이름']].concat(list.slice().sort(function (a, b) { return classOrder(a.cls, b.cls) || a.no - b.no; })
+    .map(function (s) { return [s.cls, s.no, s.name]; }));
+  sh.getRange(1, 1, rows.length, 3).setValues(rows);
+  sh.getRange(1, 1, 1, 3).setFontWeight('bold').setBackground('#E0F2FE');
+  sh.setFrozenRows(1);
+}
+
+/* 1일차 불참을 「기록_1일차」에 넣는다 — 지난번 자동 기록은 지우고 */
+function replaceSurveyAbsences(list) {
+  var sh = logSheet(1, true), last = sh.getLastRow();
+  if (last >= 2) {
+    var vals = sh.getRange(2, 1, last - 1, LOG_HEAD.length).getValues();
+    for (var i = vals.length - 1; i >= 0; i--) if (vals[i][6] === SURVEY_TAG) sh.deleteRow(i + 2);
+  }
+  if (!list.length) return 0;
+  var R = readRoster(1), when = new Date(2026, 9, 30, 7, 0);   // 행사날 아침 7시로 적어 둔다 — 현장 기록보다 늘 앞서게
+  var rows = list.map(function (s) {
+    var lab = s.name;
+    var cl = R.byClass[s.cls];
+    if (cl) { var hit = cl.filter(function (x) { return x.name === s.name && x.no === s.no; })[0]; if (hit) lab = choiceLabel(cl, hit); }
+    return [when, s.cls, lab, '불참', s.why || '', '출발 전', SURVEY_TAG];
+  });
+  sh.getRange(sh.getLastRow() + 1, 1, rows.length, LOG_HEAD.length).setValues(rows);
+  return rows.length;
 }
 
 /* ── ① 명단 탭 ── */
