@@ -162,6 +162,9 @@
   .mis.done{background:#DCFCE7;border-color:#22C55E}
   .mis.done button{background:#16A34A;color:#fff}
   .mis input[type=file]{display:none}
+  .mis-h{display:flex;justify-content:space-between;align-items:baseline;font-size:19px;font-weight:900;margin:2px 2px 2px}
+  .mis-h span{font-size:15px;color:var(--sub);font-weight:800}
+  .mis-sub{font-size:14px;color:var(--sub);font-weight:700;margin:0 2px 10px}
   .misrow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
     background:#EEF1FF;border:1px solid #D4DAFF;border-radius:14px;padding:12px 14px;margin-bottom:8px;
     color:#1E1B4B;font-size:15px;font-weight:800;min-height:52px}
@@ -1246,9 +1249,9 @@
     shirt: { emoji:"👕", title:"티셔츠 공모전",         img:"t-shirt.jpg" },
     /* ── 행사 당일부터 ── */
     photo: { emoji:"🌅", title:"사진전",   img:"t-photo.jpg",
-             body:"걸으며 찍은 사진을 모아 전시합니다.<br>미션 사진이 그대로 출품작이 돼요.", mis:true },
+             body:"걸으며 찍은 사진을 모아 전시합니다.<br>미션 사진이 그대로 출품작이 돼요.", mis:"photo" },
     reels: { emoji:"🎬", title:"릴스전",   img:"t-reels.jpg",
-             body:"걷는 길·친구·풍경·힘든 순간까지 <b>15초</b>로 담아 보세요.<br>장소는 어디든 좋습니다.", mis:true },
+             body:"걷는 길·친구·풍경·힘든 순간까지 <b>15초</b>로 담아 보세요.<br>장소는 어디든 좋습니다.", mis:"reels" },
     report:{ emoji:"📝", title:"보고서",   img:"t-report.jpg",
              body:"걸으며 보고 느낀 것을 적는 기록·성찰 보고서예요.<br>양식이 정해지면 여기에 올라옵니다." },
     book:  { emoji:"📖", title:"학생 작품집",
@@ -1279,7 +1282,7 @@
         (t.works && !t.works.length ? "<br><br>작품은 곧 올라와요." : "") +
       '</div></div>' + worksHtml(t) +
       (t.mis ? '<button class="go" style="width:100%" id="tileMis">📸 미션 보러 가기</button>' : '');
-    if(t.mis) $("tileMis").onclick = showMissionBoard;
+    if(t.mis) $("tileMis").onclick = function(){ showMissionBoard(t.mis); markTab("mis"); };
     $("stampSheet").classList.add("show");
   }
   document.querySelectorAll("[data-tile]").forEach(function(b){
@@ -1343,7 +1346,7 @@
           '<div class="body">이 화면을 캡처해서 선생님께 보여 주세요.</div></div>'
         : '<div class="card" style="margin-top:14px"><div class="body">명소에 붙은 <b>QR 을 찍으면</b> 문제가 열려요.</div>' +
           '<button class="go" style="width:100%;margin-top:10px" data-scan>📷 QR 찍기</button></div>') +
-      '<div style="margin-top:18px">' + misBlock() + '</div>';
+      '';   // 미션은 미션 탭에만 둔다(스탬프판 아래에 같이 뜨면 두 가지가 섞여 보였다 — 사용자 지적 10/2)
     $("stampBody").querySelectorAll("[data-st]").forEach(function(b){
       b.onclick = function(){ openStamp(b.dataset.st, true); };
     });
@@ -1431,19 +1434,25 @@
       '<button data-mis="' + id + '">' + (done ? '✅ 찍었어요 — 다시 찍기' : '📷 카메라 열기') + '</button></div>';
   }
   /* 미션 묶음 한 덩어리 — 스탬프판 아래에도, 미션 탭에도 같은 걸 쓴다 */
+  /* 미션 탭 — 두 공모전을 «따로» 보여 준다.
+       📷 사진전: 명소마다 정해진 미션(누르면 그 명소 화면에서 카메라)
+       🎬 릴스전: 코스 어디서든 15초 — 장소가 없어서 바로 카메라 */
   function misBlock(){
-    var tot = STAMPS.stamps.filter(function(x){ return x.mission; }).length + (STAMPS.missions_free||[]).length;
-    return '<div class="stamp-top"><b>📸</b><span>미션 ' + misSet().length + ' / ' + tot +
-             ' 개 — 스탬프와는 별개예요</span></div>' +
-      STAMPS.stamps.filter(function(x){ return x.mission; }).map(function(x){
-        var d = misSet().indexOf(x.id) >= 0;
+    var photo = STAMPS.stamps.filter(function(x){ return x.mission; });
+    var got = misSet(), pd = photo.filter(function(x){ return got.indexOf(x.id) >= 0; }).length;
+    return '<div class="mis-h" id="misPhoto">📷 사진전 미션<span>' + pd + ' / ' + photo.length + '</span></div>' +
+      '<div class="mis-sub">명소마다 정해진 장면이 있어요. 눌러서 그 자리에서 찍어요.</div>' +
+      photo.map(function(x){
+        var d = got.indexOf(x.id) >= 0;
         return '<button class="misrow' + (d ? ' done' : '') + '" data-misgo="' + x.id + '">' +
           '<span class="e">' + x.mission.emoji + '</span>' +
           '<span class="k">' + x.mission.title + '<small>' + x.name + ' · ' + x.mission.who + '</small></span>' +
           '<span class="c">' + (d ? '✅' : '⬜') + '</span></button>';
       }).join('') +
+      '<div class="mis-h" id="misReels" style="margin-top:22px">🎬 릴스전</div>' +
+      '<div class="mis-sub">장소는 상관없어요. 걷는 동안 아무 때나 15초.</div>' +
       (STAMPS.missions_free||[]).map(function(m){ return misCard(m.id, m); }).join('') +
-      '<div class="card"><div class="body" style="font-size:14px">' + (STAMPS.mission_note || '') + '</div></div>';
+      '<div class="card" style="margin-top:14px"><div class="body" style="font-size:14px">' + (STAMPS.mission_note || '') + '</div></div>';
   }
   function bindMisBlock(root){
     root.querySelectorAll("[data-misgo]").forEach(function(b){
@@ -1452,12 +1461,14 @@
     bindMis(root);
   }
   /* 미션 탭 — 미션만 모아 본다 */
-  function showMissionBoard(){
+  function showMissionBoard(focus){
     if(!STAMPS){ toast("미션을 불러오는 중이에요"); return; }
     $("stampTitle").textContent = "📸 미션 — 사진전 · 릴스전";
     $("stampBody").innerHTML = misBlock();
     bindMisBlock($("stampBody"));
     $("stampSheet").classList.add("show");
+    var f = focus === "reels" ? $("misReels") : null;
+    $("stampBody").scrollTop = f ? f.offsetTop - 10 : 0;
   }
 
   function bindMis(root){
