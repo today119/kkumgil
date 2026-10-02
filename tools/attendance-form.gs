@@ -490,7 +490,10 @@ function fmt(d) { return Utilities.formatDate(new Date(d), 'Asia/Seoul', 'HH:mm'
 /* ══════════════════════════════════════════════════════════════
    📱 선생님 현황판 (웹앱)
    ★ 단톡방에 「몇 명 빠졌어요」를 계속 올리지 않아도, 아무 선생님이나 폰으로 지금 상태를 본다.
-   ★ 기본 잠금 = 학교 계정 로그인(배포 때 「학교 도메인 내 모든 사용자」). 학생 이름은 구글 안에서만 보인다.
+   ★ 권장(10/2 사용자 결정): 배포 액세스 「모든 사용자」 + 🔑 비번 — 선생님은 구글 로그인 없이 비번·성함만.
+     (아이폰 홈 화면 앱·카톡 안 창은 구글 로그인이 사파리와 따로라 「학교 계정만」으로는 자꾸 막혔다)
+     비번 없이 「모든 사용자」로 열면 아무도 못 보게 막아 둔다(anon_ + NOPIN).
+   ★ 예전 방식 = 학교 계정 로그인(배포 때 「학교 도메인 내 모든 사용자」). 학생 이름은 구글 안에서만 보인다.
      꿈길 앱(공개 웹)에는 이 현황판으로 가는 «버튼»만 둔다.
    ★ 비번은 «선택» — 🔑 메뉴로 정하면 로그인에 더해 비번도 묻는다(코드엔 안 쓰고 스크립트 속성에 둔다).
      4자리라 막 눌러 맞히지 못하게 10분 안에 10번 틀리면 10분 동안 잠근다.
@@ -517,7 +520,7 @@ function setPin() {
 
 function checkPin_(pin) {
   var real = PropertiesService.getScriptProperties().getProperty('pin');
-  if (!real) return '';                                     // 비번을 안 정했으면 학교 계정 로그인만으로 연다
+  if (!real) return anon_() ? 'NOPIN' : '';                // 비번이 없으면: 학교 로그인으로 들어온 사람만 연다
   var cache = CacheService.getScriptCache();
   if (cache.get('pinlock')) return '비번을 여러 번 틀려서 잠겼어요. 10분 뒤에 다시 해 주세요.';
   if (String(pin || '') === real) return '';
@@ -528,9 +531,16 @@ function checkPin_(pin) {
   return '비번이 맞지 않아요.';
 }
 
+/* 로그인 없이(「모든 사용자」 배포) 들어온 사람인가 — 그때는 이메일이 비어 있다 */
+function anon_() {
+  try { return !Session.getActiveUser().getEmail(); } catch (e) { return true; }
+}
+var NOPIN_MSG = '현황판 비번이 아직 없어요. 시트 메뉴 🚶 → 「🔑 현황판 비번 정하기」를 먼저 해 주세요.';
+
 /* 현황판이 1분마다 부른다 — 폼이 없어도 명단만 있으면 된다 */
 function getStatus(day, pin) {
   var bad = checkPin_(pin);
+  if (bad === 'NOPIN') return { ok: false, msg: NOPIN_MSG };
   var real = PropertiesService.getScriptProperties().getProperty('pin');
   if (real && (bad || String(pin || '') !== real)) return { ok: false, need: 'pin', msg: bad };
   day = Number(day) === 2 ? 2 : 1;
@@ -558,9 +568,10 @@ function getStatus(day, pin) {
 }
 
 /* 현황판에서 학생(여러 명 가능)의 상황을 기록한다 → 「기록_N일차」 탭에 한 줄 */
-function record(day, pin, cls, names, status, reason, place) {
+function record(day, pin, cls, names, status, reason, place, byName) {
   names = [].concat(names).map(String).filter(Boolean);
   var real = PropertiesService.getScriptProperties().getProperty('pin');
+  if (!real && anon_()) return { ok: false, msg: NOPIN_MSG };
   if (real && String(pin || '') !== real) return { ok: false, need: 'pin', msg: checkPin_(pin) || '비번을 다시 넣어 주세요.' };
   day = Number(day) === 2 ? 2 : 1;
   if (STATUS.indexOf(status) < 0) return { ok: false, msg: '알 수 없는 상황이에요.' };
@@ -571,6 +582,7 @@ function record(day, pin, cls, names, status, reason, place) {
   if (!names.length || bad.length) return { ok: false, msg: '명단에 없는 학생이에요: ' + bad.join(', ') };
   var who = '';
   try { who = Session.getActiveUser().getEmail(); } catch (e) {}
+  if (!who) who = String(byName || '').slice(0, 20);      // 로그인 없이 쓸 때는 처음에 적은 성함
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
@@ -676,8 +688,8 @@ button{font-family:inherit;cursor:pointer}
 <div class="sh" id="sh"><div class="pn" id="pn"></div></div>
 <div class="toast" id="toast"></div>
 <script>
-var day = 1, pin = '', S = null, openCls = null, busy = false;
-try { pin = localStorage.getItem('kk_pin') || ''; } catch (e) {}
+var day = 1, pin = '', me = '', S = null, openCls = null, busy = false;
+try { pin = localStorage.getItem('kk_pin') || ''; me = localStorage.getItem('kk_me') || ''; } catch (e) {}
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 function toast(m){ var t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.k); toast.k = setTimeout(function(){ t.style.display = 'none'; }, 2200); }
@@ -788,7 +800,7 @@ function save(c, names, st, reason, place){
     var i = clsByKey(c.cls); if(i >= 0) openClass(i, true);
   }).withFailureHandler(function(e){
     busy = false; toast('저장하지 못했어요: ' + e.message); openClass(openCls, true);
-  }).record(day, pin, c.cls, names, st, reason, place);
+  }).record(day, pin, c.cls, names, st, reason, place, me);
 }
 
 function show(h, mode){ $('pn').innerHTML = h; $('pn').dataset.mode = mode; $('sh').classList.add('show');
@@ -800,10 +812,12 @@ $('sh').onclick = function(e){ if(e.target === $('sh')) hide(); };
 function askPin(msg){
   $('tm').textContent = '';
   $('w').innerHTML = '<div class="pin"><h2>🔒 선생님 확인</h2><p>선생님들이 같이 쓰는 비밀번호를 넣어 주세요.</p>' +
-    '<input id="pi" type="password" inputmode="numeric" autocomplete="off" maxlength="12"><button id="pb">확인</button><div class="m">' + esc(msg || '') + '</div></div>';
-  var go = function(){ pin = $('pi').value.trim(); try { localStorage.setItem('kk_pin', pin); } catch (e) {} load(); };
+    '<input id="pi" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="비번">' +
+    '<input id="pm" type="text" autocomplete="name" maxlength="20" placeholder="성함 (기록에 남아요)" value="' + esc(me) + '" style="letter-spacing:0;font-size:20px">' +
+    '<button id="pb">확인</button><div class="m">' + esc(msg || '') + '</div></div>';
+  var go = function(){ pin = $('pi').value.trim(); me = $('pm').value.trim(); try { localStorage.setItem('kk_pin', pin); localStorage.setItem('kk_me', me); } catch (e) {} load(); };
   $('pb').onclick = go;
-  $('pi').onkeydown = function(e){ if(e.key === 'Enter') go(); };
+  $('pi').onkeydown = $('pm').onkeydown = function(e){ if(e.key === 'Enter') go(); };
   $('pi').focus();
 }
 document.querySelectorAll('[data-d]').forEach(function(b){
