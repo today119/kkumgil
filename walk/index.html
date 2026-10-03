@@ -1676,6 +1676,11 @@
   });
   if("serviceWorker" in navigator){
     navigator.serviceWorker.register("sw.js").catch(function(){});
+    /* 새 버전이 들어오면 한 번만 저절로 새로고침 — 홈 화면 앱엔 새로고침 버튼이 없다 */
+    var reloaded = false;
+    navigator.serviceWorker.addEventListener("controllerchange", function(){
+      if(reloaded || demo) return; reloaded = true; location.reload();
+    });
   }
 
   fetch("courses.json", {cache:"no-cache"}).then(function(r){ return r.json(); }).then(function(list){

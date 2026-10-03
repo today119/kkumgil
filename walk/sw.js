@@ -7,7 +7,7 @@
      · 내 파일(코스·사진·화면)  → 저장해 둔 것을 «먼저» 주고, 뒤에서 조용히 갱신
      · 카카오 지도 타일         → 저장하지 않는다(약관·용량). 신호 없으면 지도만 안 보인다
    ══════════════════════════════════════════════════════════════ */
-const V = 'kkumgil-v28';
+const V = 'kkumgil-v29';
 const CORE = ['./', './index.html', './courses.json', './course-day1.json', './course-day2.json',
               './manifest.json', './icon-192.png', './icon-512.png', './stamps.json',
               './hero.jpg', './t-poem.jpg', './t-catch.jpg', './t-shirt.jpg',
@@ -36,13 +36,24 @@ self.addEventListener('activate', (e) => {
   })());
 });
 
+/* ★ 화면(html)과 자료(json)는 «인터넷 먼저», 안 되면 저장본 — 고친 게 바로 보이게.
+     예전엔 전부 «저장본 먼저»여서 홈 화면 앱에서 옛 화면이 계속 떴다(10/3 사용자 화면에서 확인).
+     사진·그림은 «저장본 먼저»(용량이 커서 산에서 다시 받으면 느리다). */
 self.addEventListener('fetch', (e) => {
   const u = new URL(e.request.url);
   if (e.request.method !== 'GET') return;
   if (u.origin !== location.origin) return;          // 카카오 지도 등 남의 것은 건드리지 않는다
+  const fresh = e.request.mode === 'navigate' || /\.(html|json|js)$/.test(u.pathname) || u.pathname.endsWith('/');
   e.respondWith((async () => {
     const c = await caches.open(V);
     const hit = await c.match(e.request, { ignoreSearch: true });
+    if (fresh) {
+      try {
+        const r = await fetch(e.request, { cache: 'no-cache' });
+        if (r && r.ok) { c.put(e.request, r.clone()); return r; }
+      } catch (err) { /* 신호 없음 → 저장본 */ }
+      return hit || new Response('', { status: 504 });
+    }
     const net = fetch(e.request).then((r) => {
       if (r && r.ok) c.put(e.request, r.clone());
       return r;
