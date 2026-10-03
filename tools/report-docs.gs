@@ -44,7 +44,7 @@ function rSetup() {
   if (a.getSelectedButton() !== ui.Button.OK) return;
   var b = ui.prompt('② 폴더 이름', '학생 문서를 모을 드라이브 폴더 이름(없으면 만들어요)', ui.ButtonSet.OK_CANCEL);
   if (b.getSelectedButton() !== ui.Button.OK) return;
-  var c = ui.prompt('③ 학생 계정 규칙 (선택)', '예: s26{학번}@yeongjong.icehs.kr (1학년)\n비워 두면 공유하지 않아요.', ui.ButtonSet.OK_CANCEL);
+  var c = ui.prompt('③ 학생 계정 규칙 (선택)', '예: s26{학번}@yeongjong.icehs.kr (1·2학년 모두 지금 학번 앞에 s26)\n비워 두면 공유하지 않아요.', ui.ButtonSet.OK_CANCEL);
   if (c.getSelectedButton() !== ui.Button.OK) return;
   P.setProperty('grade', String(a.getResponseText()).trim() === '2' ? '2' : '1');
   P.setProperty('folder', b.getResponseText().trim() || '꿈길 보고서');
