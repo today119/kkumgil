@@ -232,6 +232,10 @@
   .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 14px;padding:0 4px}
   /* 타일 이름은 그림 밖, 아래에 «같은 크기»로 — 그림에 박으면 타일마다 크기가 달라 읽기 어렵다 */
   .tilebtn{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:0}
+  /* 마감된 공모전 4개는 한 줄에 — 그림을 조금 줄이고 글씨는 같은 굵기로 */
+  .tiles.four{grid-template-columns:repeat(4,1fr);gap:10px;padding:0}
+  .tiles.four .tile{border-radius:16px}
+  .tiles.four .tcap{font-size:14px;letter-spacing:-.05em}
   .tcap{font-size:17px;font-weight:900;color:var(--ink);text-align:center;letter-spacing:-.03em;line-height:1.2}
   .tile{position:relative;border-radius:20px;overflow:hidden;background:var(--panel);padding:0;
     aspect-ratio:1/1;display:block;box-shadow:0 4px 14px rgba(15,23,42,.10)}
@@ -293,6 +297,11 @@
   .h3x{font-size:16px;font-weight:900;margin:14px 2px 8px}
   .gal{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
   .gal img{width:100%;border-radius:12px;background:#fff;display:block}
+  .work .wimg{width:100%;border-radius:12px;display:block;margin-bottom:10px;background:#F8FAFC}
+  .work .wrow{display:flex;align-items:center;gap:10px}
+  .work .wrow .aw{margin:0}
+  .work .wrow b{font-size:16px}
+  .work .wt{font-size:15px;font-weight:800;color:var(--sub);margin-top:6px}
   .work.row{display:flex;align-items:center;gap:12px;padding-top:12px;padding-bottom:12px}
   .work.row .aw{margin:0}
   .work.row b{font-size:16px}
@@ -427,14 +436,12 @@
       </div>
 
       <div class="trow">📣 공모전 결과 (마감)</div>
-      <div class="tiles">
+      <div class="tiles four">
         <button class="tilebtn" data-tile="poem"><span class="tile"><img src="t-poem.jpg" alt=""></span><span class="tcap">4행시</span></button>
         <button class="tilebtn" data-tile="catch"><span class="tile"><img src="t-catch.jpg" alt=""></span><span class="tcap">캐치프레이즈</span></button>
         <button class="tilebtn" data-tile="shirt"><span class="tile"><img src="t-shirt.jpg" alt=""></span><span class="tcap">티셔츠</span></button>
+        <button class="tilebtn" data-tile="plan"><span class="tile"><img src="t-plan.jpg" alt=""></span><span class="tcap">탐방계획서</span></button>
       </div>
-
-      <button class="book" data-tile="plan"><span class="e">🗺</span>
-        <span>탐방계획서 공모전 결과<span class="s">코스와 나의 진로를 잇는 계획 — 수상작 5편</span></span></button>
 
       <button class="book" data-tile="book"><span class="e">📖</span>
         <span>학생 작품집<span class="s">걸으며 쓴 글과 사진을 모은 책</span></span></button>
@@ -1276,8 +1283,7 @@
              works:[{"award": "최우수", "text": "꿈은 바라보는 것이 아니라,\n걸어가는 것이다.", "by": "1학년 9반 권○경"}, {"award": "우수", "text": "누워만 있으면 꿈만 꿈,\n걸어 나가면 내 길을 만듦", "by": "1학년 2반 이○율"}, {"award": "우수", "text": "걱정은 접고, 소매는 걷고,\n한계는 깨고!", "by": "1학년 9반 유○오"}, {"award": "우수", "text": "꿈을 품고, 길을 만들며,\n미래를 걷다", "by": "2학년 6반 김○연"}, {"award": "우수", "text": "작은 걸음이 모여\n큰 꿈을 이룬다.", "by": "2학년 10반 강○빈"}] },
     shirt: { emoji:"👕", title:"티셔츠 디자인 공모전 결과", img:"t-shirt.jpg",
              body:"1·2학년 17명이 참가했어요. 최우수작은 2일차 단체티로 만들어져요.",
-             gallery:["shirt-1.jpg","shirt-2.jpg","shirt-3.jpg","shirt-4.jpg","shirt-5.jpg","shirt-6.jpg"],
-             galleryNote:"수상작 디자인 모음", works:[{"award": "최우수 · 2일차 단체티", "text": "", "by": "2학년 8반 이○민"}, {"award": "우수", "text": "", "by": "1학년 1반 이○서"}, {"award": "우수", "text": "", "by": "1학년 1반 주○성"}, {"award": "우수", "text": "", "by": "1학년 2반 윤○훈"}, {"award": "우수", "text": "", "by": "2학년 10반 황○기"}] },
+             works:[{"award": "최우수 · 2일차 단체티", "text": "", "by": "2학년 8반 이○민", "img": "shirt-w1.jpg", "title": "DPW — DREAM PATH WALK"}, {"award": "우수", "text": "", "by": "1학년 1반 이○서", "img": "shirt-w2.jpg", "title": "한 걸음, 더 큰 꿈으로"}, {"award": "우수", "text": "", "by": "1학년 1반 주○성", "img": "shirt-w3.jpg", "title": "Path of Dreams"}, {"award": "우수", "text": "", "by": "1학년 2반 윤○훈", "img": "shirt-w4.jpg", "title": "Dreamroads Walking"}, {"award": "우수", "text": "", "by": "2학년 10반 황○기", "img": "shirt-w5.jpg", "title": "Just Walk It"}] },
     plan:  { emoji:"🗺", title:"탐방계획서 공모전 결과",
              body:"우리 반 코스와 나의 진로를 연결해 세운 탐방계획서 수상작입니다.", works:[{"award": "최우수", "text": "", "by": "2학년 4반 이○재"}, {"award": "우수", "text": "", "by": "1학년 7반 방○은"}, {"award": "우수", "text": "", "by": "1학년 9반 임○이"}, {"award": "우수", "text": "", "by": "2학년 8반 김○서"}, {"award": "우수", "text": "", "by": "2학년 9반 정○오"}] },
     /* ── 행사 당일부터 ── */
@@ -1301,6 +1307,9 @@
             return '<div class="acro"><span style="background:' + ACRO_COLORS[i % 4] + '">' + esc(c.charAt(0)) + '</span>' + esc(c.slice(1)) + '</div>';
           }).join("")
         : '<div class="wtx">' + lines.map(esc).join("<br>") + '</div>';
+      if(w.img) return '<div class="card work"><img class="wimg" src="' + w.img + '" alt="" loading="lazy">' +
+        '<div class="wrow"><span class="aw">🏆 ' + esc(w.award || "") + '</span><b>' + esc(w.by || "") + '</b></div>' +
+        (w.title ? '<div class="wt">' + esc(w.title) + '</div>' : '') + '</div>';
       if(!w.text) return '<div class="card work row"><span class="aw">🏆 ' + esc(w.award || "") + '</span><b>' + esc(w.by || "") + '</b></div>';
       return '<div class="card work">' + (w.award ? '<span class="aw">🏆 ' + esc(w.award) + '</span>' : '') + txt +
              (w.by ? '<div class="by">' + esc(w.by) + '</div>' : '') + '</div>';
