@@ -290,6 +290,12 @@
   .pv-given{margin-top:20px;padding:14px 16px;border-radius:16px;background:#FFF7E6}
   .pv-given h3{font-size:17px;font-weight:900;margin-bottom:6px}
   .pv-given li{font-size:16px;font-weight:700;line-height:1.7;margin-left:20px}
+  .h3x{font-size:16px;font-weight:900;margin:14px 2px 8px}
+  .gal{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .gal img{width:100%;border-radius:12px;background:#fff;display:block}
+  .work.row{display:flex;align-items:center;gap:12px;padding-top:12px;padding-bottom:12px}
+  .work.row .aw{margin:0}
+  .work.row b{font-size:16px}
   .work .aw{display:inline-block;background:#FEF3C7;color:#92400E;font-size:13px;font-weight:900;padding:4px 10px;border-radius:999px;margin-bottom:10px}
   .work .wtx{font-size:19px;font-weight:900;line-height:1.55;letter-spacing:-.03em}
   .work .acro{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:800;line-height:1.4;margin:6px 0}
@@ -426,6 +432,9 @@
         <button class="tilebtn" data-tile="catch"><span class="tile"><img src="t-catch.jpg" alt=""></span><span class="tcap">캐치프레이즈</span></button>
         <button class="tilebtn" data-tile="shirt"><span class="tile"><img src="t-shirt.jpg" alt=""></span><span class="tcap">티셔츠</span></button>
       </div>
+
+      <button class="book" data-tile="plan"><span class="e">🗺</span>
+        <span>탐방계획서 공모전 결과<span class="s">코스와 나의 진로를 잇는 계획 — 수상작 5편</span></span></button>
 
       <button class="book" data-tile="book"><span class="e">📖</span>
         <span>학생 작품집<span class="s">걸으며 쓴 글과 사진을 모은 책</span></span></button>
@@ -1258,12 +1267,19 @@
     /* works — 작품을 여러 개 올린다. 위에서부터 순서대로 보인다.
          { award:"최우수", text:"한 줄\n한 줄", by:"1학년 ○반 ○○○" }   (by 는 비워도 된다)
        acro:true 면 줄마다 첫 글자를 색 배지로 세운다(4행시). */
+    /* 2026 공모전 결과 — 담당 선생님이 준 시상자 명단(한글 문서)에서 옮김.
+       ★ 앱이 공개 웹이라 이름 가운데 글자는 가린다(1학년 4반 윤○휘). 실명은 이 파일에 넣지 않는다. */
     poem:  { emoji:"👣", title:"4행시 공모전 결과", img:"t-poem.jpg", acro:true,
-             body:"「꿈·길·걷·기」 네 글자로 지은 4행시입니다.", works:[] },
+             body:"「꿈·길·걷·기」 네 글자로 지은 4행시 수상작입니다.", works:[{"award": "최우수", "text": "꿈만 꾸고 멈춰 서 있기에는 우리의 청춘이 너무나 아깝잖아\n길이 없는 곳이라도 우리가 한 발짝 내딛는 순간 길이 될 수 있으니까\n걷어붙인 소매 사이로 시원한 영종의 푸른 바다와 바람을 느끼면서\n기운차게 설렘과 함께 진짜 나만의 꿈을 찾아 걷기를 시작하자", "by": "1학년 4반 윤○휘"}, {"award": "우수", "text": "꿈만 꾸던 나의 미래가 막연하게 느껴질 때,\n길을 잃지 않도록 이끌어준 영종고의 꿈길걷기 프로그램 속에서\n걷고 또 걸으며 내 진로의 발자국을 하나씩 새겨나갑니다.\n기어이 내일의 나를 빛내줄 소중한 이 발걸음이 나의 큰 성장이 될 것을 믿습니다.", "by": "1학년 4반 최○연"}, {"award": "우수", "text": "꿈이나 미래 같은 거창한 얘기는 잠시 접어두고\n길가에 피어난 풀꽃이나 구경하면서 우리답게 걷는 시간.\n걷다 보니 다리도 슬슬 아프고 별 얘기도 안 했는데\n기분만큼은 이상하게 홀가분해지는, 오늘.", "by": "1학년 9반 정○민"}, {"award": "우수", "text": "꿈은 멀리 있는 별보다, 오늘 나를 움직이게 하는 이유.\n길은 처음부터 보이는 게 아니라, 한 걸음 내딛을 때마다 생기는 것.\n걷다 보면 속도보다 포기하지 않은 시간이 더 눈에 들어오고,\n기회는 결국 끝까지 걸은 사람 앞에 슬쩍 나타난다.", "by": "2학년 4반 방○준"}, {"award": "우수", "text": "꿈이 무엇이냐는 질문에 선뜻 대답하지 못해 캄캄한 밤하늘을 방황하던 시간들,\n길을 잃은 줄만 알았던 그 막막한 시간조차 사실은 나만의 별자리를 그리는 과정이었습니다.\n걷고 또 걸으며 남몰래 삼킨 눈물과 책상 위로 떨어지던 땀방울들이 모여,\n기어코 찬란하게 빛날 내일의 나를 완성하는 눈부신 기적이 될 것입니다.", "by": "2학년 4반 전○형"}] },
     catch: { emoji:"✨", title:"캐치프레이즈 공모전 결과", img:"t-catch.jpg",
-             body:"2026 제10회 꿈길 걷기를 한 문장으로 담은 작품들입니다.",
-             works:[ { award:"선정작", text:"꿈은 바라보는 것이 아니라,\n걸어가는 것이다", by:"" } ] },
-    shirt: { emoji:"👕", title:"티셔츠 공모전",         img:"t-shirt.jpg" },
+             body:"2026 제10회 꿈길 걷기를 한 문장으로 담은 수상작입니다. 최우수작이 올해의 캐치프레이즈예요.",
+             works:[{"award": "최우수", "text": "꿈은 바라보는 것이 아니라,\n걸어가는 것이다.", "by": "1학년 9반 권○경"}, {"award": "우수", "text": "누워만 있으면 꿈만 꿈,\n걸어 나가면 내 길을 만듦", "by": "1학년 2반 이○율"}, {"award": "우수", "text": "걱정은 접고, 소매는 걷고,\n한계는 깨고!", "by": "1학년 9반 유○오"}, {"award": "우수", "text": "꿈을 품고, 길을 만들며,\n미래를 걷다", "by": "2학년 6반 김○연"}, {"award": "우수", "text": "작은 걸음이 모여\n큰 꿈을 이룬다.", "by": "2학년 10반 강○빈"}] },
+    shirt: { emoji:"👕", title:"티셔츠 디자인 공모전 결과", img:"t-shirt.jpg",
+             body:"1·2학년 17명이 참가했어요. 최우수작은 2일차 단체티로 만들어져요.",
+             gallery:["shirt-1.jpg","shirt-2.jpg","shirt-3.jpg","shirt-4.jpg","shirt-5.jpg","shirt-6.jpg"],
+             galleryNote:"수상작 디자인 모음", works:[{"award": "최우수 · 2일차 단체티", "text": "", "by": "2학년 8반 이○민"}, {"award": "우수", "text": "", "by": "1학년 1반 이○서"}, {"award": "우수", "text": "", "by": "1학년 1반 주○성"}, {"award": "우수", "text": "", "by": "1학년 2반 윤○훈"}, {"award": "우수", "text": "", "by": "2학년 10반 황○기"}] },
+    plan:  { emoji:"🗺", title:"탐방계획서 공모전 결과",
+             body:"우리 반 코스와 나의 진로를 연결해 세운 탐방계획서 수상작입니다.", works:[{"award": "최우수", "text": "", "by": "2학년 4반 이○재"}, {"award": "우수", "text": "", "by": "1학년 7반 방○은"}, {"award": "우수", "text": "", "by": "1학년 9반 임○이"}, {"award": "우수", "text": "", "by": "2학년 8반 김○서"}, {"award": "우수", "text": "", "by": "2학년 9반 정○오"}] },
     /* ── 행사 당일부터 ── */
     photo: { emoji:"🌅", title:"사진전",   img:"t-photo.jpg",
              body:"걸으며 찍은 사진을 모아 전시합니다.<br>미션 사진이 그대로 출품작이 돼요.", mis:"photo" },
@@ -1285,6 +1301,7 @@
             return '<div class="acro"><span style="background:' + ACRO_COLORS[i % 4] + '">' + esc(c.charAt(0)) + '</span>' + esc(c.slice(1)) + '</div>';
           }).join("")
         : '<div class="wtx">' + lines.map(esc).join("<br>") + '</div>';
+      if(!w.text) return '<div class="card work row"><span class="aw">🏆 ' + esc(w.award || "") + '</span><b>' + esc(w.by || "") + '</b></div>';
       return '<div class="card work">' + (w.award ? '<span class="aw">🏆 ' + esc(w.award) + '</span>' : '') + txt +
              (w.by ? '<div class="by">' + esc(w.by) + '</div>' : '') + '</div>';
     }).join("");
@@ -1297,7 +1314,10 @@
       '<div class="card"><div class="body">' +
         (t.body || "아직 올라오지 않았어요.<br>공모전이 끝나면 여기에서 바로 볼 수 있어요.") +
         (t.works && !t.works.length ? "<br><br>작품은 곧 올라와요." : "") +
-      '</div></div>' + worksHtml(t) +
+      '</div></div>' +
+      (t.gallery ? '<div class="h3x">' + esc(t.galleryNote || "") + '</div><div class="gal">' +
+        t.gallery.map(function(g){ return '<img src="' + g + '" alt="" loading="lazy">'; }).join("") + '</div>' : '') +
+      worksHtml(t) +
       (t.mis ? '<button class="go" style="width:100%" id="tileMis">📸 미션 보러 가기</button>' : '');
     if(t.mis) $("tileMis").onclick = function(){ showMissionBoard(t.mis); markTab("mis"); };
     $("stampSheet").classList.add("show");

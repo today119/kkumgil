@@ -7,11 +7,11 @@
      · 내 파일(코스·사진·화면)  → 저장해 둔 것을 «먼저» 주고, 뒤에서 조용히 갱신
      · 카카오 지도 타일         → 저장하지 않는다(약관·용량). 신호 없으면 지도만 안 보인다
    ══════════════════════════════════════════════════════════════ */
-const V = 'kkumgil-v24';
+const V = 'kkumgil-v25';
 const CORE = ['./', './index.html', './courses.json', './course-day1.json', './course-day2.json',
               './manifest.json', './icon-192.png', './icon-512.png', './stamps.json',
               './hero.jpg', './t-poem.jpg', './t-catch.jpg', './t-shirt.jpg',
-              './t-photo.jpg', './t-reels.jpg', './t-report.jpg', './jsqr.min.js', './prep.json', './t-prep.jpg', './route-day1.jpg', './route-day2.jpg'];
+              './t-photo.jpg', './t-reels.jpg', './t-report.jpg', './jsqr.min.js', './prep.json', './t-prep.jpg', './route-day1.jpg', './route-day2.jpg', './shirt-1.jpg', './shirt-2.jpg', './shirt-3.jpg', './shirt-4.jpg', './shirt-5.jpg', './shirt-6.jpg'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
