@@ -302,7 +302,9 @@
   .work .wrow .aw{margin:0}
   .work .wrow b{font-size:16px}
   .work .wt{font-size:15px;font-weight:800;color:var(--sub);margin-top:6px}
-  .work.det summary{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;cursor:pointer;list-style:none}
+  /* 1줄: 상·이름 / 2줄: 희망 진로·관련 학과 + 계획서 보기 — 길이가 달라도 줄이 통일되게 */
+  .work.det summary{display:flex;flex-direction:column;gap:10px;cursor:pointer;list-style:none}
+  .work.det summary .r1,.work.det summary .r2{display:flex;align-items:center;gap:10px;min-width:0}
   .work.det summary::-webkit-details-marker{display:none}
   .work.det summary .aw{margin:0}
   .work.det summary b{font-size:18px}
@@ -1319,8 +1321,8 @@
       if(w.img) return '<div class="card work"><img class="wimg" src="' + w.img + '" alt="" loading="lazy">' +
         '<div class="wrow"><span class="aw">🏆 ' + esc(w.award || "") + '</span><b>' + esc(w.by || "") + '</b></div>' +
         (w.title ? '<div class="wt">' + esc(w.title) + '</div>' : '') + '</div>';
-      if(w.detail) return '<details class="card work det"><summary><span class="aw">🏆 ' + esc(w.award || "") + '</span><b>' + esc(w.by || "") + '</b>' +
-        (w.job ? '<span class="job">' + esc(w.job) + '</span>' : '') + '<span class="more">계획서 보기 ▾</span></summary>' +
+      if(w.detail) return '<details class="card work det"><summary><div class="r1"><span class="aw">🏆 ' + esc(w.award || "") + '</span><b>' + esc(w.by || "") + '</b></div>' +
+        '<div class="r2">' + (w.job ? '<span class="job">' + esc(w.job) + '</span>' : '') + '<span class="more">계획서 보기 ▾</span></div></summary>' +
         w.detail.map(function(s){ return '<div class="dh">' + esc(s[0]) + '</div><div class="dt">' + esc(s[1]).replace(/\n/g, "<br>") + '</div>'; }).join("") + '</details>';
       if(!w.text) return '<div class="card work row"><span class="aw">🏆 ' + esc(w.award || "") + '</span><b>' + esc(w.by || "") + '</b></div>';
       return '<div class="card work">' + (w.award ? '<span class="aw">🏆 ' + esc(w.award) + '</span>' : '') + txt +
