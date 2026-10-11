@@ -172,6 +172,8 @@
   .misrow .k{flex:1}
   .misrow .k small{display:block;font-size:12px;font-weight:700;color:#6366F1;margin-top:2px}
   .misrow .c{font-size:18px}
+  .subbtn{display:block;text-align:center;text-decoration:none;margin:10px 0 4px;padding:13px;border-radius:14px;background:#2563EB;color:#fff;font-weight:900;font-size:16px}
+  .subbtn small{display:block;font-size:12px;font-weight:700;opacity:.85;margin-top:2px}
   .misrow.done{background:#DCFCE7;border-color:#86EFAC;color:#14532D}
 
   .lock{border:2px dashed #94A3B8}
@@ -1515,10 +1517,19 @@
           '<span class="k">' + x.mission.title + '<small>' + x.name + ' · ' + x.mission.who + '</small></span>' +
           '<span class="c">' + (d ? '✅' : '⬜') + '</span></button>';
       }).join('') +
+      subBtn("photo", "사진전") +
       '<div class="mis-h" id="misReels" style="margin-top:22px">🎬 릴스전</div>' +
       '<div class="mis-sub">장소는 상관없어요. 걷는 동안 아무 때나 15초.</div>' +
       (STAMPS.missions_free||[]).map(function(m){ return misCard(m.id, m); }).join('') +
+      subBtn("reels", "릴스전") +
       '<div class="card" style="margin-top:14px"><div class="body" style="font-size:14px">' + (STAMPS.mission_note || '') + '</div></div>';
+  }
+  /* 출품 — 앱은 폼(구글 폼 파일 업로드)으로 보내기만 한다. stamps.json 의 submit.<종류> 에 주소를 넣으면 버튼이 켜진다 */
+  function subBtn(kind, name){
+    var u = STAMPS.submit && STAMPS.submit[kind];
+    if(!u) return '';
+    return '<a class="subbtn" href="' + u + '" target="_blank" rel="noopener">📤 ' + name + ' 출품하기' +
+      '<small>학교 구글 계정으로 로그인 · ' + (kind === "reels" ? '유튜브·인스타 링크 또는 영상 파일' : '갤러리에서 골라 올려요') + '</small></a>';
   }
   function bindMisBlock(root){
     root.querySelectorAll("[data-misgo]").forEach(function(b){
