@@ -839,7 +839,7 @@ load();
 
 /* ══════════════════════════════════════════════════════════════
    🏅 동판 — 당해년도 1·2일차 완주 + 스탬프 투어 완료 + 보고서 제출 (사용자 결정 10/12)
-     · 동판 미션: ①1일차 스탬프 ②2일차 스탬프 ③사진전 출품 ④학급 단체사진(반에서 한 명이면 반 전체) ⑤보고서
+     · 동판 미션: ①1일차 스탬프 ②2일차 스탬프 ③사진전 출품 ④학급 단체사진(반에서 한 명이면 반 전체) ⑤마시안해변 플로깅(개인) ⑥보고서
      · 스탬프: 1학년 = 1일차(영종도) + 2일차(무의도·용유) 전부 / 2학년 = 2일차 전부
        (2학년 1일차 인천바로알기는 모둠마다 가는 곳이 달라 스탬프 대신 미션 → 선생님이 체크)
      · 스탬프는 학생 폰에만 남는다 → 앱 「스탬프 인증 제출」이 이 폼을 «기록이 채워진 채» 연다. 학생은 제출만.
@@ -922,7 +922,7 @@ function linkExhibit() {
   ui.alert('연결했어요 ✅  「🏅 동판 판정 새로 고치기」를 누르면 사진전 출품·학급 단체사진이 채워져요.');
 }
 function readExhibit_() {
-  var out = { me: {}, cls: {} }, id = PropertiesService.getDocumentProperties().getProperty('exhibitId');
+  var out = { me: {}, cls: {}, plog: {} }, id = PropertiesService.getDocumentProperties().getProperty('exhibitId');
   if (!id) return null;
   var ss; try { ss = SpreadsheetApp.openById(id); } catch (e) { return null; }
   ss.getSheets().forEach(function (sh) {
@@ -935,15 +935,17 @@ function readExhibit_() {
     v.slice(1).forEach(function (r) {
       var m = String(r[cM]).match(/^s\d\d(\d)(\d\d)(\d\d)@/); if (!m) return;
       var c = m[1] + '-' + Number(m[2]);
-      out.me[c + '|' + Number(m[3])] = true;
-      if (cK >= 0 && /단체/.test(String(r[cK]))) out.cls[c] = true;
+      var kind = cK >= 0 ? String(r[cK]) : '', who = c + '|' + Number(m[3]);
+      if (/플로깅/.test(kind)) out.plog[who] = true;          // 플로깅 인증은 사진전 출품으로 치지 않는다
+      else out.me[who] = true;
+      if (/단체/.test(kind)) out.cls[c] = true;
     });
   });
   return out;
 }
 
 var PL_HEAD = ['반', '번호', '이름', '1일차 완주(1학년 자동)', '1일차 스탬프(1학년)', '인천바로알기 완료·미션(2학년 체크)', '2일차 완주', '2일차 스탬프',
-               '사진전 출품', '학급 단체사진', '보고서 제출(체크)', '🏅 동판'];
+               '사진전 출품', '학급 단체사진', '플로깅 인증', '보고서 제출(체크)', '🏅 동판'];
 function refreshPlaque() {
   var ss = SpreadsheetApp.getActive();
   var R2 = readRoster(2), S2 = computeStatus(R2, readEvents(2));
@@ -954,7 +956,7 @@ function refreshPlaque() {
   // 손으로 체크한 칸(인천바로알기·보고서)은 다시 고쳐도 남긴다
   var keep = {};
   if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, PL_HEAD.length).getValues().forEach(function (r) {
-    keep[plaqueKey_(r[0], r[1])] = { inc: r[5] === true, rep: r[10] === true };
+    keep[plaqueKey_(r[0], r[1])] = { inc: r[5] === true, rep: r[11] === true };
   });
   var rows = S2.people.map(function (p) {
     var key = plaqueKey_(p[7], p[1], 1), grade = key.charAt(0), k = keep[key] || {};
@@ -965,18 +967,19 @@ function refreshPlaque() {
     var ok1 = grade === '1' ? d1 === '○' && /^○/.test(s1) : k.inc === true;
     var cls = key.split('|')[0];
     var ph = !ex ? '시트 미연결' : ex.me[key] ? '○' : '', gp = !ex ? '시트 미연결' : ex.cls[cls] ? '○' : '';
-    var all = ok1 && d2 === '○' && /^○/.test(s2) && ph === '○' && gp === '○' && k.rep === true;
-    return [cls, p[1], p[2], d1, s1, k.inc === true, d2, s2, ph, gp, k.rep === true, all ? '🏅' : ''];
+    var pl = !ex ? '시트 미연결' : ex.plog[key] ? '○' : '';
+    var all = ok1 && d2 === '○' && /^○/.test(s2) && ph === '○' && gp === '○' && pl === '○' && k.rep === true;
+    return [cls, p[1], p[2], d1, s1, k.inc === true, d2, s2, ph, gp, pl, k.rep === true, all ? '🏅' : ''];
   });
   sh.clear();
   sh.getRange(1, 1, 1, PL_HEAD.length).setValues([PL_HEAD]).setFontWeight('bold').setBackground('#FEF3C7').setWrap(true);
   if (rows.length) {
     sh.getRange(2, 1, rows.length, PL_HEAD.length).setValues(rows).setHorizontalAlignment('center');
     sh.getRange(2, 6, rows.length, 1).insertCheckboxes();
-    sh.getRange(2, 11, rows.length, 1).insertCheckboxes();
+    sh.getRange(2, 12, rows.length, 1).insertCheckboxes();
   }
   sh.setFrozenRows(1);
-  var n = rows.filter(function (r) { return r[11]; }).length;
+  var n = rows.filter(function (r) { return r[12]; }).length;
   sh.getRange(1, PL_HEAD.length + 2).setValue('동판 ' + n + '명 / 2일차 명단 ' + rows.length + '명 — ' +
     Utilities.formatDate(new Date(), 'Asia/Seoul', 'MM-dd HH:mm') + ' 갱신').setFontWeight('bold');
   return n;
