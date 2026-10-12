@@ -584,6 +584,7 @@
 
   var $ = function(id){ return document.getElementById(id); };
   var C = null;                 // course.json
+  var CUR_DAY = 0;              // 지금 걷는 날(1·2) — 스탬프 개수를 그날 것만 센다
   var XY = [], CUM = [];        // 코스 꼭짓점의 평면 좌표(m)와 누적 거리
   var LAT0 = 0, LNG0 = 0, KX = 0, KY = 111320;
   var state = {progress:null, off:0, offCount:0, isOff:false, pos:null, lastFix:0, snap:null};
@@ -1061,13 +1062,14 @@
   window.__kkumgil = {onPosition:onPosition, state:state, placeText:placeText,
                       stamps:function(){ return STAMPS; }, got:gotSet,
                       openStamp:openStamp, board:showStampBoard, code:handleCode, opened:openSet,
-                      mis:function(){ return misSet(); }, misAdd:function(i){ return misAdd(i); }};
+                      mis:function(){ return misSet(); }, certRec:certRec, certSig:certSig, misAdd:function(i){ return misAdd(i); }};
 
   /* 코스 하나를 실제로 불러와 길안내를 준비한다. */
   function loadCourse(file){
     return fetch(file, {cache:"no-cache"}).then(function(r){ return r.json(); }).then(function(d){
       /* 홈 탭으로 나갔다가 다른 날 코스를 고를 수 있다 — 앞 코스의 진행 위치·지도를 비우고 새로 시작 */
       C = d; prepCourse();
+      CUR_DAY = Number((String(file).match(/day(\d)/) || [])[1]) || 0; paintStampCount();
       state.progress = null; state.off = 0; state.offCount = 0; state.isOff = false; state.snap = null; shown = "";
       if(state.pos) state.snap = project(state.pos.lat, state.pos.lng);
       $("progAll").textContent = (C.lengthM/1000).toFixed(1);
@@ -1378,7 +1380,33 @@
   function gotAdd(id){
     var g = gotSet();
     if(g.indexOf(id) < 0){ g.push(id); try{ localStorage.setItem(gotKey, JSON.stringify(g)); }catch(e){} }
+    var T = gotTimes(); if(!T[id]){ T[id] = Date.now(); try{ localStorage.setItem(timeKey, JSON.stringify(T)); }catch(e){} }
     paintStampCount();
+  }
+  /* 스탬프 받은 시각 — 인증 제출 때 함께 보낸다(동판 기준: 2일차 스탬프 전부) */
+  var timeKey = "kkumgil.stampTimes";
+  function gotTimes(){
+    try { return JSON.parse(localStorage.getItem(timeKey) || "{}") || {}; } catch(e){ return {}; }
+  }
+  /* 인증 제출 — stamps.json 의 certify(구글 폼 사전입력 주소, __REC__·__SIG__ 자리)로 연다.
+     SIG 는 손으로 기록을 고쳐 쓰는 것만 막는 간단한 확인값. 시트(attendance-form.gs)가 같은 식으로 검사한다 */
+  function certRec(d){
+    var T = gotTimes(), g = gotSet(), L = STAMPS.stamps.filter(function(x){ return x.day === d; });
+    var have = L.filter(function(x){ return g.indexOf(x.id) >= 0; });
+    var hm = function(t){ if(!t) return "--:--"; var x = new Date(t); return ("0" + x.getHours()).slice(-2) + ":" + ("0" + x.getMinutes()).slice(-2); };
+    return d + "일차 " + have.length + "/" + L.length + " · " + have.map(function(x){ return x.name + " " + hm(T[x.id]); }).join(" · ");
+  }
+  function certSig(rec){
+    var h = 0x811c9dc5, str = rec + "|kkumgil-2026";
+    for(var i = 0; i < str.length; i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+    return ("0000000" + h.toString(16)).slice(-8);
+  }
+  function certBtn(d){
+    if(!STAMPS.certify) return "";
+    var rec = certRec(d);
+    var u = STAMPS.certify.replace("__REC__", encodeURIComponent(rec)).replace("__SIG__", encodeURIComponent(certSig(rec)));
+    return '<a class="subbtn" style="background:#FBBF24;color:#422006" href="' + u + '" target="_blank" rel="noopener">🏅 ' + d + '일차 스탬프 인증 제출' +
+      '<small>학교 계정으로 열리면 «제출» 만 누르세요 · 동판 기준에 들어가요</small></a>';
   }
   function openSet(){
     try { return JSON.parse(localStorage.getItem(openKey) || "[]"); } catch(e){ return []; }
@@ -1393,28 +1421,42 @@
   }
   function paintStampCount(){
     if(!STAMPS) return;
-    var n = gotSet().length, all = STAMPS.stamps.length;
+    var got = gotSet(), L = STAMPS.stamps.filter(function(s){ return !CUR_DAY || s.day === CUR_DAY; });
+    var n = L.filter(function(s){ return got.indexOf(s.id) >= 0; }).length, all = L.length;
     var el2 = $("stampCount"); if(el2) el2.textContent = n + "/" + all;
   }
 
+  function dayCount(d){
+    var g = gotSet(), L = STAMPS.stamps.filter(function(x){ return x.day === d; });
+    return d + '일차 ' + L.filter(function(x){ return g.indexOf(x.id) >= 0; }).length + '/' + L.length;
+  }
   /* 스탬프판 */
   function showStampBoard(){
     if(!STAMPS) return;
     var got = gotSet();
     $("stampTitle").textContent = STAMPS.title || "스탬프 투어";
-    $("stampBody").innerHTML =
-      '<div class="stamp-top"><b>' + got.length + '</b><span>/ ' + STAMPS.stamps.length + ' 개 모았어요</span></div>' +
-      '<div class="stamps">' + STAMPS.stamps.map(function(s){
+    /* 날짜별로 나눈다 — 2일차(무의도·용유)는 1·2학년이 같이 걷는 날. 지금 걷는 날을 위에 */
+    var days = [];
+    STAMPS.stamps.forEach(function(s){ if(days.indexOf(s.day) < 0) days.push(s.day); });
+    days.sort(function(a, b){ return (b === CUR_DAY) - (a === CUR_DAY) || a - b; });
+    var DAYNM = STAMPS.days || {};
+    $("stampBody").innerHTML = days.map(function(d){
+      var L = STAMPS.stamps.filter(function(s){ return s.day === d; });
+      var n = L.filter(function(s){ return got.indexOf(s.id) >= 0; }).length;
+      return '<div class="stamp-top"' + (d !== days[0] ? ' style="margin-top:22px"' : '') + '><b>' + n + '</b><span>/ ' + L.length +
+        ' · ' + d + '일차' + (DAYNM[d] ? ' ' + DAYNM[d] : '') + '</span></div>' +
+        '<div class="stamps">' + L.map(function(s){
         var on = got.indexOf(s.id) >= 0;
         return '<button class="st' + (on ? ' got' : '') + '" data-st="' + s.id + '">' +
                '<div class="em">' + s.emoji + '</div><div class="nm">' + s.name + '</div>' +
-               '<div class="km">' + s.km.toFixed(1) + 'km</div></button>';
+               '<div class="km">' + (s.km != null ? s.km.toFixed(1) + 'km' : '') + '</div></button>';
       }).join('') + '</div>' +
-      (got.length === STAMPS.stamps.length
-        ? '<div class="card" style="margin-top:14px;background:#064E3B"><h3>🎉 다 모았습니다!</h3>' +
-          '<div class="body">이 화면을 캡처해서 선생님께 보여 주세요.</div></div>'
-        : '<div class="card" style="margin-top:14px"><div class="body">명소에 붙은 <b>QR 을 찍으면</b> 문제가 열려요.</div>' +
-          '<button class="go" style="width:100%;margin-top:10px" data-scan>📷 QR 찍기</button></div>') +
+      (n === L.length
+        ? '<div class="card" style="margin-top:14px;background:#064E3B"><h3 style="color:#fff">🎉 ' + d + '일차 다 모았습니다!</h3>' +
+          '<div class="body" style="color:#D1FAE5">' + (STAMPS.certify ? '아래 버튼으로 인증을 제출하세요.' : '이 화면을 캡처해서 선생님께 보여 주세요.') + '</div></div>' + certBtn(d) : '');
+    }).join('') +
+      '<div class="card" style="margin-top:14px"><div class="body">명소에 붙은 <b>QR 을 찍으면</b> 문제가 열려요.</div>' +
+      '<button class="go" style="width:100%;margin-top:10px" data-scan>📷 QR 찍기</button></div>' +
       '';   // 미션은 미션 탭에만 둔다(스탬프판 아래에 같이 뜨면 두 가지가 섞여 보였다 — 사용자 지적 10/2)
     $("stampBody").querySelectorAll("[data-st]").forEach(function(b){
       b.onclick = function(){ openStamp(b.dataset.st, true); };
@@ -1470,7 +1512,7 @@
               '<div class="t">스탬프 획득!</div></div>' +
               '<div class="card"><div class="body">' + (s.quiz.after || "잘했어요!") + '</div></div>' +
               (s.mission ? misCard(s.id, s.mission) : '') +
-              '<button class="go" style="width:100%" id="toBoard2">🏅 스탬프판 보기 (' + gotSet().length + '/' + STAMPS.stamps.length + ')</button>';
+              '<button class="go" style="width:100%" id="toBoard2">🏅 스탬프판 보기 (' + dayCount(s.day) + ')</button>';
             $("toBoard2").onclick = showStampBoard;
             bindMis($("stampBody"));
           }else{
@@ -1509,7 +1551,8 @@
   function misBlock(){
     var photo = STAMPS.stamps.filter(function(x){ return x.mission; });
     var got = misSet(), pd = photo.filter(function(x){ return got.indexOf(x.id) >= 0; }).length;
-    return '<div class="mis-h" id="misPhoto">📷 사진전 미션<span>' + pd + ' / ' + photo.length + '</span></div>' +
+    return plaqueBlock() +
+      '<div class="mis-h" id="misPhoto" style="margin-top:22px">📷 사진전 미션<span>' + pd + ' / ' + photo.length + '</span></div>' +
       '<div class="mis-sub">명소마다 정해진 장면이 있어요. 눌러서 그 자리에서 찍어요.</div>' +
       photo.map(function(x){
         var d = got.indexOf(x.id) >= 0;
@@ -1539,7 +1582,34 @@
     return '<a class="subbtn" href="' + u + '" target="_blank" rel="noopener">📤 ' + name + ' 출품하기' +
       '<small>학교 구글 계정으로 로그인 · ' + (kind === "reels" ? '15초 영상 파일을 올려요 · 우수작은 학생회 인스타에' : '갤러리에서 골라 올려요') + '</small></a>' + galBtn(kind);
   }
+  /* 🏅 동판 미션 (사용자 결정 10/12) — 당해년도 1·2일차 완주 + 아래 다섯 가지.
+     앱이 아는 건 스탬프뿐이다. 나머지는 학교 시트(출석 시트 「동판」 탭)가 폼 응답으로 판정한다 */
+  function plaqueBlock(){
+    var g = gotSet();
+    var cnt = function(d){ var L = STAMPS.stamps.filter(function(x){ return x.day === d; });
+      return [L.filter(function(x){ return g.indexOf(x.id) >= 0; }).length, L.length]; };
+    var c1 = cnt(1), c2 = cnt(2);
+    var row = function(e, t, sub, st, go){
+      return '<' + (go ? 'button data-plq="' + go + '"' : 'div') + ' class="misrow' + (st === '✅' ? ' done' : '') + '">' +
+        '<span class="e">' + e + '</span><span class="k">' + t + '<small>' + sub + '</small></span>' +
+        '<span class="c" style="font-size:' + (st === '✅' ? '18px' : '13px;font-weight:900;color:#475569') + '">' + st + '</span></' + (go ? 'button' : 'div') + '>';
+    };
+    var st = function(c){ return c[0] >= c[1] ? '✅' : c[0] + '/' + c[1]; };
+    return '<div class="mis-h">🏅 동판 미션</div>' +
+      '<div class="mis-sub">당해년도 1·2일차를 완주하고 다섯 가지를 모두 하면 학교 동판에 이름이 새겨져요.</div>' +
+      row('👣', '1일차 스탬프 투어', '1학년 영종도 ' + c1[1] + '곳 · 2학년은 인천바로알기 미션', st(c1), 'stamp') +
+      row('🏝', '2일차 스탬프 투어', '무의도·용유 ' + c2[1] + '곳 · 다 모으면 인증 제출', st(c2), 'stamp') +
+      row('📷', '사진전 출품', '1장 이상 · 아래 「사진전 출품하기」', '제출', 'photo') +
+      row('👥', '학급 단체사진', '반에서 한 명이 올리면 반 전체 인정', '제출', 'photo') +
+      row('📝', '보고서 제출', '걷고 나서 소감·보고서 · 클래스룸', '제출', '');
+  }
   function bindMisBlock(root){
+    root.querySelectorAll("[data-plq]").forEach(function(b){
+      b.onclick = function(){
+        if(b.dataset.plq === "stamp"){ showStampBoard(); markTab("stamp"); return; }
+        var t = $("misPhoto"); if(t) $("stampBody").scrollTop = t.offsetTop - 10;
+      };
+    });
     root.querySelectorAll("[data-misgo]").forEach(function(b){
       b.onclick = function(){ openStamp(b.dataset.misgo, true); };
     });
@@ -1548,7 +1618,7 @@
   /* 미션 탭 — 미션만 모아 본다 */
   function showMissionBoard(focus){
     if(!STAMPS){ toast("미션을 불러오는 중이에요"); return; }
-    $("stampTitle").textContent = "📸 미션 — 사진전 · 릴스전";
+    $("stampTitle").textContent = "📸 미션 — 동판 · 사진전 · 릴스전";
     $("stampBody").innerHTML = misBlock();
     bindMisBlock($("stampBody"));
     $("stampSheet").classList.add("show");

@@ -39,6 +39,10 @@ function onOpen() {
     .addItem('📥 참가 조사 가져오기', 'importSurvey')
     .addItem('명단 확인하기', 'checkRoster')
     .addSeparator()
+    .addItem('🏅 스탬프 인증 폼 만들기', 'makeStampForm')
+    .addItem('🏅 동판 판정 새로 고치기', 'refreshPlaque')
+    .addItem('🔗 출품 시트 연결(사진전)', 'linkExhibit')
+    .addSeparator()
     .addItem('🔑 현황판 비번 정하기', 'setPin')
     .addItem('📱 현황판 주소 보기', 'showDashUrl')
     .addSeparator()
@@ -365,7 +369,10 @@ function writeGuide(day, form) {
 }
 
 /* ── 집계 ── */
-function onSubmit() { refreshAll(); }
+function onSubmit() {
+  refreshAll();
+  if (SpreadsheetApp.getActive().getSheetByName('동판')) { try { refreshPlaque(); } catch (e) {} }   // 스탬프 인증이 들어오면 동판도
+}
 /* 명단이 있는 날은 모두 집계한다 — 예전엔 폼이나 기록이 있어야만 집계해서,
    기록이 하나도 없는 2일차는 「집계_2일차」 탭이 아예 안 생겼다(10/2 사용자 지적). */
 function refreshAll() {
@@ -828,3 +835,149 @@ setInterval(function(){ if(!$('sh').classList.contains('show') || $('pn').datase
 load();
 </script></body></html>
 `;
+
+
+/* ══════════════════════════════════════════════════════════════
+   🏅 동판 — 당해년도 1·2일차 완주 + 스탬프 투어 완료 + 보고서 제출 (사용자 결정 10/12)
+     · 동판 미션: ①1일차 스탬프 ②2일차 스탬프 ③사진전 출품 ④학급 단체사진(반에서 한 명이면 반 전체) ⑤보고서
+     · 스탬프: 1학년 = 1일차(영종도) + 2일차(무의도·용유) 전부 / 2학년 = 2일차 전부
+       (2학년 1일차 인천바로알기는 모둠마다 가는 곳이 달라 스탬프 대신 미션 → 선생님이 체크)
+     · 스탬프는 학생 폰에만 남는다 → 앱 「스탬프 인증 제출」이 이 폼을 «기록이 채워진 채» 연다. 학생은 제출만.
+     · 학교 계정 로그인 → 이메일(s26 + 학번)로 누구인지 안다. 이름을 따로 안 받는다.
+     · 확인값 = 앱과 같은 식(FNV-1a)의 짧은 값. 기록 글자를 손으로 고치면 맞지 않는다.
+   ══════════════════════════════════════════════════════════════ */
+function makeStampForm() {
+  var ss = SpreadsheetApp.getActive(), props = PropertiesService.getDocumentProperties(), ui = SpreadsheetApp.getUi();
+  if (props.getProperty('stampForm')) {
+    var ok = ui.alert('스탬프 인증 폼이 이미 있어요. 새로 만들까요?', ui.ButtonSet.YES_NO);
+    if (ok !== ui.Button.YES) return;
+  }
+  var form = FormApp.create('꿈길 걷기 스탬프 인증')
+    .setDescription('앱에서 열면 기록이 채워져 있어요. 고치지 말고 «제출» 만 누르세요.')
+    .setConfirmationMessage('인증했어요 🏅  수고 많았어요!')
+    .setAllowResponseEdits(false).setProgressBar(false);
+  try { form.setRequireLogin(true); } catch (e) {}
+  try { form.setCollectEmail(true); } catch (e) {}
+  var a = form.addTextItem().setTitle('스탬프 기록').setRequired(true);
+  var b = form.addTextItem().setTitle('확인값').setRequired(true);
+  form.setDestination(FormApp.DestinationType.SPREADSHEET, ss.getId());
+  props.setProperty('stampForm', form.getId());
+  SpreadsheetApp.flush();
+  ss.getSheets().forEach(function (sh) {
+    var u = sh.getFormUrl();
+    if (u && u.indexOf(form.getId()) >= 0) sh.setName('응답_스탬프');
+  });
+  var pre = form.createResponse()
+    .withItemResponse(a.asTextItem().createResponse('__REC__'))
+    .withItemResponse(b.asTextItem().createResponse('__SIG__')).toPrefilledUrl();
+  var g = ss.getSheetByName('안내') || ss.insertSheet('안내', 0);
+  g.getRange(10, 1, 2, 1).setValues([['🏅 스탬프 인증 폼 — 앱 연결 주소(김선빵에게 보내기)'], [pre]]);
+  g.getRange(10, 1).setFontWeight('bold').setFontSize(13);
+  ui.alert('스탬프 인증 폼을 만들었어요 ✅',
+    '「안내」 탭 11행의 주소를 김선빵에게 보내 주세요. 앱에 연결하면 그날 스탬프를 다 모은 학생에게 「스탬프 인증 제출」 버튼이 떠요(1일차·2일차 따로).',
+    ui.ButtonSet.OK);
+}
+
+function stampSig_(rec) {
+  var h = 0x811c9dc5, str = rec + '|kkumgil-2026';
+  for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return ('0000000' + h.toString(16)).slice(-8);
+}
+/* 학번 열쇠 — 「1-3|12」. 1일차 명단처럼 반만 적힌 경우 학년을 채운다 */
+function plaqueKey_(cls, no, grade) {
+  var c = String(cls).replace(/반$/, '').trim();
+  if (/^\d+$/.test(c)) c = (grade || 1) + '-' + Number(c);
+  return c + '|' + Number(no);
+}
+function readStamps_() {
+  var id = PropertiesService.getDocumentProperties().getProperty('stampForm'), out = {};
+  if (!id) return out;
+  var form; try { form = FormApp.openById(id); } catch (e) { return out; }
+  form.getResponses().forEach(function (r) {
+    var mail = ''; try { mail = r.getRespondentEmail(); } catch (x) {}
+    var m = String(mail).match(/^s\d\d(\d)(\d\d)(\d\d)@/); if (!m) return;
+    var rec = '', sig = '';
+    r.getItemResponses().forEach(function (ir) {
+      var t = ir.getItem().getTitle();
+      if (t === '스탬프 기록') rec = String(ir.getResponse()); else if (t === '확인값') sig = String(ir.getResponse()).trim();
+    });
+    var d = rec.match(/^(\d)일차 (\d+)\/(\d+)/); if (!d) return;
+    var key = m[1] + '-' + Number(m[2]) + '|' + Number(m[3]) + '|' + d[1];      // 학생 + 날
+    var ok = stampSig_(rec) === sig, full = d[2] === d[3];
+    var prev = out[key];
+    if (!prev || (ok && full && !(prev.ok && prev.full))) out[key] = { ok: ok, full: full, n: d[2] + '/' + d[3], time: r.getTimestamp() };
+  });
+  return out;
+}
+
+/* 사진전 출품 시트(exhibit.gs 를 붙인 시트) — 「사진」 탭에서 이메일로 출품자, 「사진 종류」가 단체면 그 반 전체 */
+function linkExhibit() {
+  var ui = SpreadsheetApp.getUi();
+  var a = ui.prompt('🔗 출품 시트 연결', '사진전·릴스전 응답이 쌓이는 스프레드시트 주소를 붙여 넣으세요.', ui.ButtonSet.OK_CANCEL);
+  if (a.getSelectedButton() !== ui.Button.OK) return;
+  var m = a.getResponseText().match(/\/d\/([\w-]{20,})/);
+  if (!m) { ui.alert('주소에서 시트 ID 를 못 찾았어요.'); return; }
+  try { SpreadsheetApp.openById(m[1]).getName(); } catch (e) { ui.alert('그 시트를 열 수 없어요: ' + e.message); return; }
+  PropertiesService.getDocumentProperties().setProperty('exhibitId', m[1]);
+  ui.alert('연결했어요 ✅  「🏅 동판 판정 새로 고치기」를 누르면 사진전 출품·학급 단체사진이 채워져요.');
+}
+function readExhibit_() {
+  var out = { me: {}, cls: {} }, id = PropertiesService.getDocumentProperties().getProperty('exhibitId');
+  if (!id) return null;
+  var ss; try { ss = SpreadsheetApp.openById(id); } catch (e) { return null; }
+  ss.getSheets().forEach(function (sh) {
+    if (!/사진/.test(sh.getName())) return;
+    var v = sh.getDataRange().getValues(); if (v.length < 2) return;
+    var H = v[0].map(function (x) { return String(x).replace(/\s+/g, ''); });
+    var cM = -1, cK = -1;
+    H.forEach(function (h, i) { if (cM < 0 && /이메일/.test(h)) cM = i; if (cK < 0 && /종류/.test(h)) cK = i; });
+    if (cM < 0) return;
+    v.slice(1).forEach(function (r) {
+      var m = String(r[cM]).match(/^s\d\d(\d)(\d\d)(\d\d)@/); if (!m) return;
+      var c = m[1] + '-' + Number(m[2]);
+      out.me[c + '|' + Number(m[3])] = true;
+      if (cK >= 0 && /단체/.test(String(r[cK]))) out.cls[c] = true;
+    });
+  });
+  return out;
+}
+
+var PL_HEAD = ['반', '번호', '이름', '1일차 완주(1학년 자동)', '1일차 스탬프(1학년)', '인천바로알기 완료·미션(2학년 체크)', '2일차 완주', '2일차 스탬프',
+               '사진전 출품', '학급 단체사진', '보고서 제출(체크)', '🏅 동판'];
+function refreshPlaque() {
+  var ss = SpreadsheetApp.getActive();
+  var R2 = readRoster(2), S2 = computeStatus(R2, readEvents(2));
+  var day1 = {};
+  try { computeStatus(readRoster(1), readEvents(1)).people.forEach(function (p) { day1[plaqueKey_(p[7], p[1], 1)] = p[3]; }); } catch (e) {}
+  var st = readStamps_(), ex = readExhibit_();
+  var sh = ss.getSheetByName('동판') || ss.insertSheet('동판');
+  // 손으로 체크한 칸(인천바로알기·보고서)은 다시 고쳐도 남긴다
+  var keep = {};
+  if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, PL_HEAD.length).getValues().forEach(function (r) {
+    keep[plaqueKey_(r[0], r[1])] = { inc: r[5] === true, rep: r[10] === true };
+  });
+  var rows = S2.people.map(function (p) {
+    var key = plaqueKey_(p[7], p[1], 1), grade = key.charAt(0), k = keep[key] || {};
+    var d1 = grade === '1' ? (day1[key] === '걷는 중' ? '○' : day1[key] ? '✕ ' + day1[key] : '명단 없음') : '—';
+    var d2 = p[3] === '걷는 중' ? '○' : '✕ ' + p[3];
+    var sv = function (day) { var s = st[key + '|' + day]; return !s ? '' : s.ok && s.full ? '○ ' + s.n : (s.ok ? '△ ' + s.n : '확인값 틀림'); };
+    var s1 = grade === '1' ? sv(1) : '—', s2 = sv(2);
+    var ok1 = grade === '1' ? d1 === '○' && /^○/.test(s1) : k.inc === true;
+    var cls = key.split('|')[0];
+    var ph = !ex ? '시트 미연결' : ex.me[key] ? '○' : '', gp = !ex ? '시트 미연결' : ex.cls[cls] ? '○' : '';
+    var all = ok1 && d2 === '○' && /^○/.test(s2) && ph === '○' && gp === '○' && k.rep === true;
+    return [cls, p[1], p[2], d1, s1, k.inc === true, d2, s2, ph, gp, k.rep === true, all ? '🏅' : ''];
+  });
+  sh.clear();
+  sh.getRange(1, 1, 1, PL_HEAD.length).setValues([PL_HEAD]).setFontWeight('bold').setBackground('#FEF3C7').setWrap(true);
+  if (rows.length) {
+    sh.getRange(2, 1, rows.length, PL_HEAD.length).setValues(rows).setHorizontalAlignment('center');
+    sh.getRange(2, 6, rows.length, 1).insertCheckboxes();
+    sh.getRange(2, 11, rows.length, 1).insertCheckboxes();
+  }
+  sh.setFrozenRows(1);
+  var n = rows.filter(function (r) { return r[11]; }).length;
+  sh.getRange(1, PL_HEAD.length + 2).setValue('동판 ' + n + '명 / 2일차 명단 ' + rows.length + '명 — ' +
+    Utilities.formatDate(new Date(), 'Asia/Seoul', 'MM-dd HH:mm') + ' 갱신').setFontWeight('bold');
+  return n;
+}
