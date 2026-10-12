@@ -38,8 +38,8 @@ SEGMENTS_DAY1 = [
     #   하늘도시 중심상가 ~ 씨사이드파크 ~ 영종씨사이드 카라반캠핑장
     #   ⚠️ 답사가 아니라 «지도에서 뽑은» 길이다. 갈림길 사진이 없다.
     {"gpx": "data/gpx/day1_seaside_20260929.gpx"},
-    # 2026-10-12 영종해안남로 답사(씨사이드 뒤 12~14km) — 길이 막혀 지점 2개뿐. 선은 FULL 이 쓰고 «지점·사진만» 얹는다
-    {"extra": "data/survey-20261012/지점목록.json", "photos": "data/survey-20261012/photos", "names": {"2": "갯벌 데크길"}},
+    # 2026-10-12 영종해안남로 답사(씨사이드 뒤 12~14km) — 갯벌 데크길(→하늘교)이 통제돼 지점 2개뿐. 선은 FULL 이 쓰고 «지점·사진만» 얹는다
+    {"extra": "data/survey-20261012/지점목록.json", "photos": "data/survey-20261012/photos", "names": {"2": "갯벌 데크길 통제 — 들어가지 말고 큰길 인도로"}, "types": {"2": "risk"}},
 ]
 # 2일차(무의도) — 2026-09-23 답사분. 아직 «앞 4.8km 뿐»이고 뒷구간은 답사 전이다.
 SEGMENTS_DAY2 = [
@@ -204,7 +204,7 @@ def load_extra(seg, no):
             out_name = "d%d_s%d_%s" % (DAY, no, nfc(name))
             shrink(os.path.join(photo_dir, real), os.path.join(OUT, "photos", out_name))
             photos.append(out_name)
-        points.append({"type": p["type"], "name": fix(seg.get("names", {}).get(str(p["no"])) or p.get("memo", "")) or KIND.get(p["type"], p["type"]),
+        points.append({"type": seg.get("types", {}).get(str(p["no"])) or p["type"], "name": fix(seg.get("names", {}).get(str(p["no"])) or p.get("memo", "")) or KIND.get(p["type"], p["type"]),
                        "m": 0, "lat": p["lat"], "lng": p["lng"], "dir": "", "photos": photos})
     return points
 
