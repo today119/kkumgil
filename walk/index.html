@@ -173,6 +173,7 @@
   .misrow .k small{display:block;font-size:12px;font-weight:700;color:#6366F1;margin-top:2px}
   .misrow .c{font-size:18px}
   .subbtn{display:block;text-align:center;text-decoration:none;margin:10px 0 4px;padding:13px;border-radius:14px;background:#2563EB;color:#fff;font-weight:900;font-size:16px}
+  .subbtn.gal-b{background:#fff;color:#2563EB;border:2px solid #BFDBFE}
   .subbtn small{display:block;font-size:12px;font-weight:700;opacity:.85;margin-top:2px}
   .misrow.done{background:#DCFCE7;border-color:#86EFAC;color:#14532D}
 
@@ -1349,7 +1350,7 @@
       (t.gallery ? '<div class="h3x">' + esc(t.galleryNote || "") + '</div><div class="gal">' +
         t.gallery.map(function(g){ return '<img src="' + g + '" alt="" loading="lazy">'; }).join("") + '</div>' : '') +
       worksHtml(t) +
-      (t.mis ? '<button class="go" style="width:100%" id="tileMis">📸 미션 보러 가기</button>' : '');
+      (t.mis ? galBtn(t.mis) + '<button class="go" style="width:100%" id="tileMis">📸 미션 보러 가기</button>' : '');
     if(t.mis) $("tileMis").onclick = function(){ showMissionBoard(t.mis); markTab("mis"); };
     $("stampSheet").classList.add("show");
   }
@@ -1525,11 +1526,18 @@
       '<div class="card" style="margin-top:14px"><div class="body" style="font-size:14px">' + (STAMPS.mission_note || '') + '</div></div>';
   }
   /* 출품 — 앱은 폼(구글 폼 파일 업로드)으로 보내기만 한다. stamps.json 의 submit.<종류> 에 주소를 넣으면 버튼이 켜진다 */
+  /* 작품 보기 — 출품 시트의 앱스 스크립트 웹앱(tools/exhibit.gs). 선생님이 「공개」 체크한 것만 뜬다 */
+  function galBtn(kind){
+    var u = STAMPS && STAMPS.gallery;
+    if(!u) return '';
+    return '<a class="subbtn gal-b" href="' + u + (u.indexOf("?") < 0 ? "?" : "&") + 'k=' + kind + '" target="_blank" rel="noopener">🖼 친구들 작품 보기' +
+      '<small>선생님이 고른 작품 · 학교 계정으로 로그인</small></a>';
+  }
   function subBtn(kind, name){
     var u = STAMPS.submit && STAMPS.submit[kind];
-    if(!u) return '';
+    if(!u) return galBtn(kind);
     return '<a class="subbtn" href="' + u + '" target="_blank" rel="noopener">📤 ' + name + ' 출품하기' +
-      '<small>학교 구글 계정으로 로그인 · ' + (kind === "reels" ? '내 인스타(공개 계정)에 올리고 학생회 태그 → 링크 제출' : '갤러리에서 골라 올려요') + '</small></a>';
+      '<small>학교 구글 계정으로 로그인 · ' + (kind === "reels" ? '15초 영상 파일을 올려요 · 우수작은 학생회 인스타에' : '갤러리에서 골라 올려요') + '</small></a>' + galBtn(kind);
   }
   function bindMisBlock(root){
     root.querySelectorAll("[data-misgo]").forEach(function(b){
