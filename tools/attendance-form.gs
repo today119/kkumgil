@@ -929,11 +929,13 @@ function readExhibit_() {
     if (!/사진/.test(sh.getName())) return;
     var v = sh.getDataRange().getValues(); if (v.length < 2) return;
     var H = v[0].map(function (x) { return String(x).replace(/\s+/g, ''); });
-    var cM = -1, cK = -1;
-    H.forEach(function (h, i) { if (cM < 0 && /이메일/.test(h)) cM = i; if (cK < 0 && /종류/.test(h)) cK = i; });
-    if (cM < 0) return;
+    var cM = -1, cK = -1, cN = -1;
+    H.forEach(function (h, i) { if (cM < 0 && /이메일/.test(h)) cM = i; if (cK < 0 && /종류/.test(h)) cK = i; if (cN < 0 && /학번/.test(h)) cN = i; });
+    if (cM < 0 && cN < 0) return;
     v.slice(1).forEach(function (r) {
-      var m = String(r[cM]).match(/^s\d\d(\d)(\d\d)(\d\d)@/); if (!m) return;
+      var m = cM >= 0 ? String(r[cM]).match(/^s\d\d(\d)(\d\d)(\d\d)@/) : null;
+      if (!m && cN >= 0) m = String(r[cN]).replace(/\D/g, '').match(/^(\d)(\d\d)(\d\d)$/);   // 적어 낸 학번
+      if (!m) return;
       var c = m[1] + '-' + Number(m[2]);
       var kind = cK >= 0 ? String(r[cK]) : '', who = c + '|' + Number(m[3]);
       if (/플로깅/.test(kind)) out.plog[who] = true;          // 플로깅 인증은 사진전 출품으로 치지 않는다

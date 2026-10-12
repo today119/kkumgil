@@ -82,7 +82,7 @@ function eRows(kind) {
     var H = v[0].map(function (x) { return String(x).replace(/\s+/g, ''); });
     var col = function (re) { for (var i = 0; i < H.length; i++) if (re.test(H[i])) return i; return -1; };
     var cOpen = H.indexOf('공개'), cBest = H.indexOf('우수작');
-    var cMail = col(/이메일/), cName = col(/이름|성명/), cMis = col(/미션|장소|어디서/), cTitle = col(/제목/), cDesc = col(/설명|소개/), cTeam = col(/함께|모둠/);
+    var cNo = col(/학번/), cMail = col(/이메일/), cName = col(/이름|성명/), cMis = col(/미션|장소|어디서/), cTitle = col(/제목/), cDesc = col(/설명|소개/), cTeam = col(/함께|모둠/);
     var cFile = -1;
     for (var i = 0; i < H.length && cFile < 0; i++)
       for (var r = 1; r < v.length; r++) if (/drive\.google\.com\/open\?id=/.test(String(v[r][i]))) { cFile = i; break; }
@@ -91,6 +91,7 @@ function eRows(kind) {
       var ids = (String(r[cFile]).match(/id=[\w-]+/g) || []).map(function (s) { return s.slice(3); });
       if (!ids.length) return;
       var mail = cMail >= 0 ? String(r[cMail]) : '', m = mail.match(/s\d\d(\d)(\d\d)\d\d@/), who = '';
+      if (!m && cNo >= 0) m = String(r[cNo]).replace(/\D/g, '').match(/^(\d)(\d\d)\d\d$/);     // 이메일이 학생 계정이 아니면 적어 낸 학번으로
       if (m) who = m[1] + '학년 ' + Number(m[2]) + '반 ';
       who += eMask(cName >= 0 ? r[cName] : '');
       out.push({
