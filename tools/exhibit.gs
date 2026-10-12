@@ -82,7 +82,7 @@ function eRows(kind) {
     var H = v[0].map(function (x) { return String(x).replace(/\s+/g, ''); });
     var col = function (re) { for (var i = 0; i < H.length; i++) if (re.test(H[i])) return i; return -1; };
     var cOpen = H.indexOf('공개'), cBest = H.indexOf('우수작');
-    var cMail = col(/이메일/), cName = col(/이름|성명/), cMis = col(/미션/), cTitle = col(/제목/), cDesc = col(/설명|소개/), cTeam = col(/함께|모둠/);
+    var cMail = col(/이메일/), cName = col(/이름|성명/), cMis = col(/미션|장소|어디서/), cTitle = col(/제목/), cDesc = col(/설명|소개/), cTeam = col(/함께|모둠/);
     var cFile = -1;
     for (var i = 0; i < H.length && cFile < 0; i++)
       for (var r = 1; r < v.length; r++) if (/drive\.google\.com\/open\?id=/.test(String(v[r][i]))) { cFile = i; break; }
@@ -204,7 +204,7 @@ var E_HTML = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
   'function draw(){document.querySelectorAll(".tabs button").forEach(function(b){b.className=b.dataset.k===K?"on":""});' +
   'var L=D.map(function(x,j){x.j=j;return x}).filter(function(x){return x.kind===K}),h="";' +
   'if(!L.length){h=\'<div class="empty">아직 공개된 작품이 없어요.<br>선생님이 고른 작품이 여기에 올라와요.</div>\'}' +
-  'else if(K==="photo"){var g={};L.forEach(function(x){var m=x.mission||"자유 사진";(g[m]=g[m]||[]).push(x)});' +
+  'else if(K==="photo"){var g={};L.forEach(function(x){var m=x.mission||"기타";(g[m]=g[m]||[]).push(x)});' +
   'Object.keys(g).forEach(function(m){h+="<h2>"+es(m)+" · "+g[m].length+\'</h2><div class="grid">\'+g[m].map(function(x){return card(x,x.j)}).join("")+"</div>"})}' +
   'else{h=\'<div class="grid" style="margin-top:12px">\'+L.map(function(x){return card(x,x.j)}).join("")+"</div>"}' +
   'document.getElementById("m").innerHTML=h;document.querySelectorAll(".im").forEach(lazy);' +
