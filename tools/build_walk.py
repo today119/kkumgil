@@ -38,6 +38,8 @@ SEGMENTS_DAY1 = [
     #   하늘도시 중심상가 ~ 씨사이드파크 ~ 영종씨사이드 카라반캠핑장
     #   ⚠️ 답사가 아니라 «지도에서 뽑은» 길이다. 갈림길 사진이 없다.
     {"gpx": "data/gpx/day1_seaside_20260929.gpx"},
+    # 2026-10-12 영종해안남로 답사(씨사이드 뒤 12~14km) — 길이 막혀 지점 2개뿐. 선은 FULL 이 쓰고 «지점·사진만» 얹는다
+    {"extra": "data/survey-20261012/지점목록.json", "photos": "data/survey-20261012/photos", "names": {"2": "갯벌 데크길"}},
 ]
 # 2일차(무의도) — 2026-09-23 답사분. 아직 «앞 4.8km 뿐»이고 뒷구간은 답사 전이다.
 SEGMENTS_DAY2 = [
@@ -185,6 +187,28 @@ def load_survey(seg, no):
     return data["course"], data["lengthM"], points
 
 
+def load_extra(seg, no):
+    """답사 앱 원본(지점목록.json)의 «지점만». 선은 FULL GPX 위에 다시 붙인다(m 은 main 에서 project)."""
+    data = json.load(open(os.path.join(ROOT, seg["extra"]), encoding="utf-8"))
+    photo_dir = os.path.join(ROOT, seg["photos"])
+    files = {nfc(f): f for f in os.listdir(photo_dir)}
+    points = []
+    for p in data["points"]:
+        photos = []
+        for ph in p.get("photos", []):
+            name = ph["file"] if isinstance(ph, dict) else ph
+            real = files.get(nfc(name))
+            if not real:
+                print("  사진 없음:", name)
+                continue
+            out_name = "d%d_s%d_%s" % (DAY, no, nfc(name))
+            shrink(os.path.join(photo_dir, real), os.path.join(OUT, "photos", out_name))
+            photos.append(out_name)
+        points.append({"type": p["type"], "name": fix(seg.get("names", {}).get(str(p["no"])) or p.get("memo", "")) or KIND.get(p["type"], p["type"]),
+                       "m": 0, "lat": p["lat"], "lng": p["lng"], "dir": "", "photos": photos})
+    return points
+
+
 def load_gpx(seg):
     root = ET.parse(os.path.join(ROOT, seg["gpx"])).getroot()
     local = lambda el: el.tag.split("}")[-1]
@@ -213,6 +237,13 @@ def main():
             os.remove(os.path.join(OUT, "photos", f))
     course, points, offset_m = [], [], 0.0
     for no, seg in enumerate(SEGMENTS, 1):
+        if "extra" in seg:
+            if not FULL:
+                raise SystemExit("extra 구간은 FULL GPX 가 있어야 합니다(지점을 붙일 선이 필요)")
+            ex = load_extra(seg, no)
+            points += ex
+            print("  %d구간 지점만 %d개 (%s)" % (no, len(ex), seg["extra"]))
+            continue
         path, seg_len, seg_points = load_survey(seg, no) if "survey" in seg else load_gpx(seg)
         name = seg.get("survey") or seg.get("gpx")
         if course:
