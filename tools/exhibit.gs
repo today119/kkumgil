@@ -234,7 +234,7 @@ var E_HTML = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
   '.it .tx{padding:8px 10px}.it b{display:block;font-size:14px}.it small{color:#64748B;font-size:12px;font-weight:700}' +
   '.empty{text-align:center;color:#64748B;font-weight:700;padding:60px 10px;line-height:1.7}' +
   '#ov{position:fixed;inset:0;background:rgba(15,23,42,.92);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9;padding:16px}' +
-  '#ov.show{display:flex}#ov img,#ov iframe{max-width:100%;max-height:78vh;border:0;border-radius:12px;background:#000}#ovb{width:100%;display:flex;flex-direction:column;align-items:center}.vp{position:relative;width:calc(100vw - 32px);max-width:480px;display:flex;flex-direction:column;align-items:center;gap:14px}.vt{height:56vh;aspect-ratio:9/16;max-width:100%;border-radius:12px;background:#000 center/contain no-repeat}.pl{display:block;width:100%;text-align:center;background:#EF4444;color:#fff;font-size:20px;font-weight:900;padding:16px;border-radius:14px;text-decoration:none}.vh{color:#CBD5E1;font-size:12px;margin:6px 0 0;text-align:center}' +
+  '#ov.show{display:flex}#ov img,#ov iframe{max-width:100%;max-height:78vh;border:0;border-radius:12px;background:#000}#ovb{width:100%;display:flex;flex-direction:column;align-items:center}.vp{position:relative;width:calc(100vw - 32px);max-width:480px;display:flex;flex-direction:column;align-items:center;gap:14px}.vt{height:56vh;aspect-ratio:9/16;max-width:100%;border-radius:12px;background:#000 center/contain no-repeat}.pbtn{display:block;width:100%;text-align:center;background:#EF4444;color:#fff;font-size:20px;font-weight:900;padding:16px;border-radius:14px;text-decoration:none}.vh{color:#CBD5E1;font-size:12px;margin:6px 0 0;text-align:center}' +
   '#ov p{color:#fff;font-weight:700;text-align:center;margin:12px 0 0;line-height:1.5}#ov .x{position:absolute;top:12px;right:16px;font-size:32px;color:#fff;background:none;border:0}' +
   '#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0F172A;color:#fff;font-weight:800;padding:10px 16px;border-radius:12px;display:none;z-index:20}' +
   '</style></head><body>' +
@@ -292,7 +292,7 @@ function eClient(S) {
       google.script.run.withSuccessHandler(function (r) {
         if (!r || !r.p) { b.innerHTML = '<p>재생할 수 없어요</p>'; return; }
         var url = r.p.replace('/preview', '/view');
-        b.innerHTML = '<div class="vp"><div class="vt" id="vt"></div><a class="pl" href="' + url + '" target="_blank" rel="noopener">▶ 영상 재생</a></div><p class="vh">새 창에서 열려요 · 다 보면 창을 닫고 돌아오세요</p>';
+        b.innerHTML = '<div class="vp"><div class="vt" id="vt"></div><a class="pbtn" href="' + url + '" target="_blank" rel="noopener">▶ 영상 재생</a></div><p class="vh">새 창에서 열려요 · 다 보면 창을 닫고 돌아오세요</p>';
         google.script.run.withSuccessHandler(function (u) { var t = $('vt'); if (t && u) t.style.backgroundImage = 'url("' + u + '")'; }).eThumb(x.ids[0], true);
       }).withFailureHandler(function () { b.innerHTML = '<p>재생할 수 없어요</p>'; }).ePlay(x.ids[0]);
     } else {
