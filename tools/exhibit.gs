@@ -233,7 +233,7 @@ var E_HTML = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
   '.it .tx{padding:8px 10px}.it b{display:block;font-size:14px}.it small{color:#64748B;font-size:12px;font-weight:700}' +
   '.empty{text-align:center;color:#64748B;font-weight:700;padding:60px 10px;line-height:1.7}' +
   '#ov{position:fixed;inset:0;background:rgba(15,23,42,.92);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9;padding:16px}' +
-  '#ov.show{display:flex}#ov img,#ov iframe{max-width:100%;max-height:78vh;border:0;border-radius:12px;background:#000}#ov iframe{width:min(420px,100%);aspect-ratio:9/16;height:auto}' +
+  '#ov.show{display:flex}#ov img,#ov iframe{max-width:100%;max-height:78vh;border:0;border-radius:12px;background:#000}#ov iframe{width:100%;max-width:520px;height:74vh;max-height:none}.vh{color:#CBD5E1;font-size:12px;margin:6px 0 0;text-align:center}' +
   '#ov p{color:#fff;font-weight:700;text-align:center;margin:12px 0 0;line-height:1.5}#ov .x{position:absolute;top:12px;right:16px;font-size:32px;color:#fff;background:none;border:0}' +
   '#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0F172A;color:#fff;font-weight:800;padding:10px 16px;border-radius:12px;display:none;z-index:20}' +
   '</style></head><body>' +
@@ -288,7 +288,7 @@ function eClient(S) {
     $('ovp').innerHTML = '<b>' + es(x.title) + '</b><br>' + es(x.who) + (x.team ? ' · ' + es(x.team) : '') + (x.desc ? '<br>' + es(x.desc) : '');
     b.innerHTML = '<p>불러오는 중…</p>'; $('ov').classList.add('show');
     if (x.kind === 'reels') {
-      google.script.run.withSuccessHandler(function (u) { b.innerHTML = u ? '<iframe src="' + u + '" allow="autoplay" allowfullscreen></iframe>' : '<p>재생할 수 없어요</p>'; }).ePlay(x.ids[0]);
+      google.script.run.withSuccessHandler(function (u) { b.innerHTML = u ? '<iframe src="' + u + '" allow="autoplay; fullscreen" allowfullscreen></iframe><p class="vh">▶ 재생하면 버튼은 잠시 뒤 사라져요 · ⤢ 전체 화면</p>' : '<p>재생할 수 없어요</p>'; }).ePlay(x.ids[0]);
     } else {
       var i = 0, sh = function () {
         google.script.run.withSuccessHandler(function (u) {
