@@ -183,6 +183,7 @@ function eHide(tab, row, id, hide) {
   if (!has(r)) { r = -1; for (var i = 1; i < v.length; i++) if (has(i)) { r = i; break; } }
   if (r < 1) throw new Error('그 작품 줄을 찾지 못했어요.');
   sh.getRange(r + 1, cHide).insertCheckboxes().setValue(!!hide);
+  if (hide) { try { DriveApp.getFileById(id).setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE); } catch (e) {} }
   sh.getRange(r + 1, cWho).setValue(hide ? me + ' · ' + Utilities.formatDate(new Date(), 'Asia/Seoul', 'MM-dd HH:mm') : '');
   eFlush();
   return { ok: true, row: r + 1 };
@@ -207,13 +208,15 @@ function eThumb(id, big) {
   return out;
 }
 
-/* 영상 재생 — 누를 때 그 파일만 «학교 계정 + 링크» 보기로 열고 미리보기 주소를 준다 */
+/* 영상 재생 — 누른 영상만 «링크가 있는 모든 사람 보기»로 열고 폰 기본 플레이어용 주소(v)를 준다.
+   학교 관리자 설정으로 외부 공개가 막히면 «학교 계정 + 링크»로 열고 드라이브 미리보기(p)만 준다 */
 function ePlay(id) {
   var x = eCanSee(id);
-  if (!x || x.k !== 'reels') return '';
-  var f = DriveApp.getFileById(id);
-  try { f.setSharing(DriveApp.Access.DOMAIN_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
-  return 'https://drive.google.com/file/d/' + id + '/preview';
+  if (!x || x.k !== 'reels') return null;
+  var f = DriveApp.getFileById(id), v = '';
+  try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); v = 'https://drive.usercontent.google.com/download?id=' + id + '&export=download'; }
+  catch (e) { try { f.setSharing(DriveApp.Access.DOMAIN_WITH_LINK, DriveApp.Permission.VIEW); } catch (e2) {} }
+  return { v: v, p: 'https://drive.google.com/file/d/' + id + '/preview' };
 }
 
 var E_HTML = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>' +
@@ -233,7 +236,7 @@ var E_HTML = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
   '.it .tx{padding:8px 10px}.it b{display:block;font-size:14px}.it small{color:#64748B;font-size:12px;font-weight:700}' +
   '.empty{text-align:center;color:#64748B;font-weight:700;padding:60px 10px;line-height:1.7}' +
   '#ov{position:fixed;inset:0;background:rgba(15,23,42,.92);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9;padding:16px}' +
-  '#ov.show{display:flex}#ov img,#ov iframe{max-width:100%;max-height:78vh;border:0;border-radius:12px;background:#000}#ovb{width:100%;display:flex;flex-direction:column;align-items:center}#ov iframe{width:calc(100vw - 32px);max-width:560px;height:72vh;max-height:none}.vh{color:#CBD5E1;font-size:12px;margin:6px 0 0;text-align:center}' +
+  '#ov.show{display:flex}#ov img,#ov iframe{max-width:100%;max-height:78vh;border:0;border-radius:12px;background:#000}#ovb{width:100%;display:flex;flex-direction:column;align-items:center}#ov iframe{width:calc(100vw - 32px);max-width:560px;height:72vh;max-height:none}#ov video{width:calc(100vw - 32px);max-width:560px;max-height:72vh;border-radius:12px;background:#000}.vh{color:#CBD5E1;font-size:12px;margin:6px 0 0;text-align:center}' +
   '#ov p{color:#fff;font-weight:700;text-align:center;margin:12px 0 0;line-height:1.5}#ov .x{position:absolute;top:12px;right:16px;font-size:32px;color:#fff;background:none;border:0}' +
   '#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0F172A;color:#fff;font-weight:800;padding:10px 16px;border-radius:12px;display:none;z-index:20}' +
   '</style></head><body>' +
@@ -288,7 +291,12 @@ function eClient(S) {
     $('ovp').innerHTML = '<b>' + es(x.title) + '</b><br>' + es(x.who) + (x.team ? ' · ' + es(x.team) : '') + (x.desc ? '<br>' + es(x.desc) : '');
     b.innerHTML = '<p>불러오는 중…</p>'; $('ov').classList.add('show');
     if (x.kind === 'reels') {
-      google.script.run.withSuccessHandler(function (u) { b.innerHTML = u ? '<iframe src="' + u + '" allow="autoplay; fullscreen" allowfullscreen></iframe><p class="vh">▶ 재생하면 버튼은 잠시 뒤 사라져요 · ⤢ 전체 화면</p>' : '<p>재생할 수 없어요</p>'; }).ePlay(x.ids[0]);
+      google.script.run.withSuccessHandler(function (r) {
+        var fr = function () { b.innerHTML = r && r.p ? '<iframe src="' + r.p + '" allow="autoplay; fullscreen" allowfullscreen></iframe><p class="vh">⤢ 누르면 크게 볼 수 있어요</p>' : '<p>재생할 수 없어요</p>'; };
+        if (!r || !r.v) return fr();
+        b.innerHTML = '<video controls playsinline autoplay preload="metadata"></video>';
+        var vd = b.querySelector('video'); vd.onerror = fr; vd.src = r.v;
+      }).withFailureHandler(function () { b.innerHTML = '<p>재생할 수 없어요</p>'; }).ePlay(x.ids[0]);
     } else {
       var i = 0, sh = function () {
         google.script.run.withSuccessHandler(function (u) {
