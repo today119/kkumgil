@@ -200,6 +200,15 @@ function eVotes() {
   try { c.put('votes1', JSON.stringify(o), 30); } catch (e) {}
   return o;
 }
+/* 갤러리(폰)에서 선생님이 투표 시작·마감·끄기 — 시트 메뉴는 폰에서 안 보여서 */
+function eVoteCtl(v) {
+  if (!eIsTeacher()) throw new Error('선생님 계정만 할 수 있어요.');
+  if (['off', 'on', 'done'].indexOf(v) < 0) throw new Error('잘못된 값');
+  if (v === 'on') eVoteSheet();
+  PropertiesService.getScriptProperties().setProperty('VOTE', v); eVoteFlush();
+  if (v === 'done') try { eVoteReport(); } catch (e) {}
+  return v;
+}
 function eVoteFlush() { try { CacheService.getScriptCache().remove('votes1'); } catch (e) {} }
 function eVote(kind, ids) {
   if (eVoteState() !== 'on') throw new Error(eVoteState() === 'done' ? '투표가 마감됐어요.' : '아직 투표 기간이 아니에요.');
@@ -249,7 +258,8 @@ function doGet(e) {
              n: show ? (V.tally[x.ids[0]] || 0) : null };
   });
   var vote = { st: VS, n: E_VOTE_N, my: (V && V.mine[me]) || {}, voters: show ? V.voters : null, can: E_DOMAIN.test(me) };
-  var data = JSON.stringify({ items: items, k: k, teacher: T, app: E_APP, vote: vote }).replace(/</g, '\\u003c');
+  var self = ''; try { self = ScriptApp.getService().getUrl(); } catch (e) {}
+  var data = JSON.stringify({ items: items, k: k, teacher: T, app: E_APP, vote: vote, self: self }).replace(/</g, '\\u003c');
   var html = E_HTML.replace('__CLIENT__', function () { return '(' + eClient.toString() + ')(' + data + ');'; });
   return HtmlService.createHtmlOutput(html).setTitle('꿈길 걷기 작품 보기')
     .addMetaTag('viewport', 'width=device-width,initial-scale=1');
@@ -319,6 +329,7 @@ var E_HTML = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
   '.vb{position:absolute;right:8px;bottom:8px;border:0;border-radius:99px;width:44px;height:44px;font-size:22px;background:rgba(255,255,255,.95);box-shadow:0 1px 4px rgba(0,0,0,.25)}.vb.on{background:#F43F5E;color:#fff}.it .im{position:relative}' +
   '.cnt{position:absolute;left:8px;bottom:8px;background:#F43F5E;color:#fff;border-radius:99px;padding:3px 9px;font-size:13px;font-weight:900}' +
   '.vbar{position:sticky;top:58px;z-index:4;background:#FFF1F2;border:2px solid #FDA4AF;border-radius:14px;padding:10px 12px;margin:10px 0;display:flex;align-items:center;gap:10px}.vbar div{flex:1;font-size:13px;font-weight:800;color:#9F1239;line-height:1.4}.vbar button{border:0;border-radius:12px;padding:11px 14px;font-size:15px;font-weight:900;background:#F43F5E;color:#fff}.vbar button:disabled{background:#FDA4AF}' +
+  '.vc{margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.vc button{border:0;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:900;background:#F43F5E;color:#fff}.vc button.sure{background:#7F1D1D}' +
   '.rk{position:absolute;top:6px;left:50%;transform:translateX(-50%);font-size:28px}' +
   '.empty{text-align:center;color:#64748B;font-weight:700;padding:60px 10px;line-height:1.7}' +
   '#ov{position:fixed;inset:0;background:rgba(15,23,42,.92);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9;padding:16px}' +
@@ -342,7 +353,21 @@ function eClient(S) {
     L.forEach(function (x, i) { if (x.n !== pv) { r = i + 1; pv = x.n; } if (x.n > 0) rk[x.ids[0]] = r; });
   });
   $('back').href = S.app;
-  if (T) $('tm').innerHTML = '<div class="tm">👩‍🏫 선생님 모드 — 위험한 사진은 「🙈 숨기기」(두 번 눌러 확정). 숨긴 것은 학생에게 안 보여요.</div>';
+  if (T) {
+    var lab = { off: '꺼짐', on: '진행 중', done: '마감(결과 공개)' }[VT.st];
+    var bt = VT.st === 'on' ? [['done', '🏁 투표 마감'], ['off', '끄기']] : VT.st === 'done' ? [['on', '▶ 다시 열기'], ['off', '끄기']] : [['on', '🗳 투표 시작']];
+    $('tm').innerHTML = '<div class="tm">👩‍🏫 선생님 모드 — 위험한 사진은 「🙈 숨기기」(두 번 눌러 확정). 숨긴 것은 학생에게 안 보여요.' +
+      '<div class="vc">🗳 투표: <b>' + lab + '</b> ' + bt.map(function (b) { return '<button data-vc="' + b[0] + '">' + b[1] + '</button>'; }).join('') + '</div></div>';
+    document.querySelectorAll('[data-vc]').forEach(function (b) {
+      b.onclick = function () {
+        var v = b.dataset.vc;
+        if (v !== 'on' && !b.classList.contains('sure')) { b.classList.add('sure'); b.textContent = '정말요? 한 번 더'; return; }
+        b.disabled = true; b.textContent = '…';
+        google.script.run.withSuccessHandler(function () { if (S.self) { var a = document.createElement('a'); a.href = S.self + '?k=' + K + '&t=' + Date.now(); a.target = '_top'; document.body.appendChild(a); a.click(); } else location.reload(); })
+          .withFailureHandler(function (e) { toast(e.message || '실패했어요'); b.disabled = false; }).eVoteCtl(v);
+      };
+    });
+  }
   else $('tm').innerHTML = '<div class="tm" style="background:#FEF2F2;color:#991B1B">⚠️ 친구 몰래 찍은·우스운 사진, 동의 없는 얼굴, 장난 사진, 개인정보·퍼 온 사진은 선생님이 숨겨요. 캡처해서 퍼뜨리지 마세요.</div>';
   function es(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function toast(m) { var t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.k); toast.k = setTimeout(function () { t.style.display = 'none'; }, 2200); }
