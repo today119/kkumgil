@@ -581,6 +581,7 @@
   var FAR_M      = 1000;  // 이보다 멀면 「행사 코스 밖」 (경보 안 울림)
   var MAX_ACC    = 50;    // 정확도가 이보다 나쁘면 이탈 판정을 보류
   var STALE_MS   = 30000;
+  var STOP_M     = 200;   // 스탬프 지점(족욕장 등)이 코스선에서 조금 떨어져 있어도 이 안에선 이탈 경보를 울리지 않는다
 
   var $ = function(id){ return document.getElementById(id); };
   var C = null;                 // course.json
@@ -643,6 +644,16 @@
   }
   function fmtM(m){ m = Math.max(0, m); return m < 1000 ? Math.round(m/10)*10 + "m" : (m/1000).toFixed(1) + "km"; }
 
+  function nearStop(lat, lng){
+    if(!STAMPS || !STAMPS.stamps) return false;
+    var p = toXY(lat, lng);
+    return STAMPS.stamps.some(function(s){
+      if(s.lat == null || (CUR_DAY && s.day !== CUR_DAY)) return false;
+      var q = toXY(s.lat, s.lng);
+      return Math.hypot(p[0]-q[0], p[1]-q[1]) < STOP_M;
+    });
+  }
+
   /* ---------- 위치가 들어올 때마다 ---------- */
   function onPosition(lat, lng, acc){
     var r = project(lat, lng);
@@ -651,8 +662,8 @@
     state.snap = r;
     state.off = r.off;
 
-    if(r.off > FAR_M){
-      state.isOff = false; state.offCount = 0;          // 코스 근처에도 없으면 경보 대신 안내만
+    if(r.off > FAR_M || nearStop(lat, lng)){
+      state.isOff = false; state.offCount = 0;          // 코스 근처에도 없거나 쉬는 지점(스탬프) 옆이면 경보 대신 안내만
     }else{
       if(state.progress === null || r.off < OFF_M) state.progress = r.along;
       if(acc <= MAX_ACC){
