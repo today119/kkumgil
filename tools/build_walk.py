@@ -40,6 +40,9 @@ SEGMENTS_DAY1 = [
     {"gpx": "data/gpx/day1_seaside_20260929.gpx"},
     # 2026-10-12 영종해안남로 답사(씨사이드 뒤 12~14km) — 갯벌 데크길(→하늘교)이 통제돼 지점 2개뿐. 선은 FULL 이 쓰고 «지점·사진만» 얹는다
     {"extra": "data/survey-20261012/지점목록.json", "photos": "data/survey-20261012/photos", "names": {"2": "갯벌 데크길 통제 — 들어가지 말고 큰길 인도로"}, "types": {"2": "risk"}},
+    # 2026-10-13 족욕장 → 학교 역방향 답사(20.1~22.9km). 1·2번은 10/12 것과 같고, 6번은 5번 화장실 중복(사진 없음)
+    {"extra": "data/survey-20261013/지점목록.json", "photos": "data/survey-20261013/photos", "skip": ["1", "2", "6"],
+     "names": {"3": "차량 진입(족욕장 주차장)", "4": "해구 족욕장", "8": "건널목", "9": "건널목", "10": "건널목"}, "types": {"8": "risk", "9": "risk", "10": "risk"}},
 ]
 # 2일차(무의도) — 2026-09-23 답사분. 아직 «앞 4.8km 뿐»이고 뒷구간은 답사 전이다.
 SEGMENTS_DAY2 = [
@@ -194,6 +197,8 @@ def load_extra(seg, no):
     files = {nfc(f): f for f in os.listdir(photo_dir)}
     points = []
     for p in data["points"]:
+        if str(p["no"]) in seg.get("skip", []):
+            continue
         photos = []
         for ph in p.get("photos", []):
             name = ph["file"] if isinstance(ph, dict) else ph
@@ -205,7 +210,8 @@ def load_extra(seg, no):
             shrink(os.path.join(photo_dir, real), os.path.join(OUT, "photos", out_name))
             photos.append(out_name)
         points.append({"type": seg.get("types", {}).get(str(p["no"])) or p["type"], "name": fix(seg.get("names", {}).get(str(p["no"])) or p.get("memo", "")) or KIND.get(p["type"], p["type"]),
-                       "m": 0, "lat": p["lat"], "lng": p["lng"], "dir": "", "photos": photos})
+                       "m": 0, "lat": p["lat"], "lng": p["lng"],
+                       "dir": next((ph.get("dir") for ph in p.get("photos", []) if isinstance(ph, dict) and ph.get("dir")), ""), "photos": photos})
     return points
 
 
