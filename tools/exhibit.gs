@@ -166,6 +166,8 @@ function eCouncil() {
    한 사람이 사진전 3개·릴스전 3개 — 자기 작품도 OK, 3개를 «다» 골라야 제출, 마감 전까지 바꿀 수 있다.
    대상: 「우수작」 체크한 작품(그 종류에 하나도 없으면 공개 작품 전체). 상태: 스크립트 속성 VOTE = off | on | done */
 var E_VOTE_TAB = '투표', E_VOTE_N = 3, E_DOMAIN = /@yeongjong\.icehs\.kr$/i;
+var E_VOTE_ADMIN = ['teacher51@yeongjong.icehs.kr'];   // 투표 시작·마감 버튼 — 담당 선생님만(사용자 요청 10/13)
+function eIsVoteAdmin() { return E_VOTE_ADMIN.indexOf(eViewer().toLowerCase()) >= 0; }
 function eVoteState() { return PropertiesService.getScriptProperties().getProperty('VOTE') || 'off'; }
 function eVoteSet(v, msg) { PropertiesService.getScriptProperties().setProperty('VOTE', v); eVoteFlush(); SpreadsheetApp.getUi().alert(msg); }
 function eVoteOpen() { eVoteSheet(); eVoteSet('on', '🗳 투표를 시작했어요. 갤러리에 ❤ 버튼이 생겨요.\n표 수는 선생님 화면에만 보여요.'); }
@@ -202,7 +204,7 @@ function eVotes() {
 }
 /* 갤러리(폰)에서 선생님이 투표 시작·마감·끄기 — 시트 메뉴는 폰에서 안 보여서 */
 function eVoteCtl(v) {
-  if (!eIsTeacher()) throw new Error('선생님 계정만 할 수 있어요.');
+  if (!eIsVoteAdmin()) throw new Error('투표 담당 선생님만 할 수 있어요.');
   if (['off', 'on', 'done'].indexOf(v) < 0) throw new Error('잘못된 값');
   if (v === 'on') eVoteSheet();
   PropertiesService.getScriptProperties().setProperty('VOTE', v); eVoteFlush();
@@ -259,7 +261,7 @@ function doGet(e) {
   });
   var vote = { st: VS, n: E_VOTE_N, my: (V && V.mine[me]) || {}, voters: show ? V.voters : null, can: E_DOMAIN.test(me) };
   var self = ''; try { self = ScriptApp.getService().getUrl(); } catch (e) {}
-  var data = JSON.stringify({ items: items, k: k, teacher: T, app: E_APP, vote: vote, self: self }).replace(/</g, '\\u003c');
+  var data = JSON.stringify({ items: items, k: k, teacher: T, admin: eIsVoteAdmin(), app: E_APP, vote: vote, self: self }).replace(/</g, '\\u003c');
   var html = E_HTML.replace('__CLIENT__', function () { return '(' + eClient.toString() + ')(' + data + ');'; });
   return HtmlService.createHtmlOutput(html).setTitle('꿈길 걷기 작품 보기')
     .addMetaTag('viewport', 'width=device-width,initial-scale=1');
@@ -357,7 +359,7 @@ function eClient(S) {
     var lab = { off: '꺼짐', on: '진행 중', done: '마감(결과 공개)' }[VT.st];
     var bt = VT.st === 'on' ? [['done', '🏁 투표 마감'], ['off', '끄기']] : VT.st === 'done' ? [['on', '▶ 다시 열기'], ['off', '끄기']] : [['on', '🗳 투표 시작']];
     $('tm').innerHTML = '<div class="tm">👩‍🏫 선생님 모드 — 위험한 사진은 「🙈 숨기기」(두 번 눌러 확정). 숨긴 것은 학생에게 안 보여요.' +
-      '<div class="vc">🗳 투표: <b>' + lab + '</b> ' + bt.map(function (b) { return '<button data-vc="' + b[0] + '">' + b[1] + '</button>'; }).join('') + '</div></div>';
+      '<div class="vc">🗳 투표: <b>' + lab + '</b> ' + (!S.admin ? '' : bt.map(function (b) { return '<button data-vc="' + b[0] + '">' + b[1] + '</button>'; }).join('')) + '</div></div>';
     document.querySelectorAll('[data-vc]').forEach(function (b) {
       b.onclick = function () {
         var v = b.dataset.vc;
