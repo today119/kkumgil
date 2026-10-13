@@ -4,7 +4,7 @@
    ★ 흐름: 학생이 앱 「📤 출품하기」 → 구글 폼(파일 업로드) → 이 응답 시트
            → 올라오면 «바로» 앱 갤러리에 뜬다(사용자 결정 10/12: 당일엔 시트·폴더를 오가며 공개 체크할 틈이 없다)
            → 위험한 사진은 «발견한 선생님»이 갤러리에서 「🙈 숨기기」 (teacher숫자@ 계정만 버튼이 보이고, 서버도 막는다)
-           → 「우수작」 체크 → 메뉴 한 번으로 학생회 전달 폴더 → 학생회 인스타 좋아요 투표
+           → 「우수작」 체크 → 메뉴 「🗳 투표 시작」 → 앱 갤러리 ❤ 투표(1인 3개, 자기 작품 OK) → 「투표 마감」 → 순위 공개, 학생회 인스타는 홍보용
    ★ 사진은 공유 설정을 건드리지 않는다. 서버(이 스크립트)가 썸네일을 받아 그림 글자로 내려 준다.
      영상 재생만 「학교 계정 + 링크」 보기 권한을 연다(숨기지 않은 영상, 누를 때).
 
@@ -24,6 +24,11 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('📸 꿈길 출품')
     .addItem('① 체크 칸 만들기(숨김·우수작)', 'eSetup')
     .addItem('② 학생회 전달 폴더 만들기(우수작)', 'eCouncil')
+    .addSeparator()
+    .addItem('🗳 투표 시작', 'eVoteOpen')
+    .addItem('🗳 투표 마감(결과 공개)', 'eVoteClose')
+    .addItem('🗳 투표 결과 탭 새로 고치기', 'eVoteReport')
+    .addItem('🗳 투표 끄기(처음 상태로)', 'eVoteOff')
     .addSeparator()
     .addItem('❓ 사용법', 'eHelp')
     .addToUi();
@@ -157,15 +162,94 @@ function eCouncil() {
     '.\n폴더: ' + root.getUrl() + '\n\n이 폴더를 학생회 담당 학생 계정에 «보기» 로 공유하세요. 이름은 가운데 글자를 가렸어요.');
 }
 
+/* ── ❤ 투표 (사용자 결정 10/13: 앱 안 좋아요로 순위, 인스타는 홍보용) ──
+   한 사람이 사진전 3개·릴스전 3개 — 자기 작품도 OK, 3개를 «다» 골라야 제출, 마감 전까지 바꿀 수 있다.
+   대상: 「우수작」 체크한 작품(그 종류에 하나도 없으면 공개 작품 전체). 상태: 스크립트 속성 VOTE = off | on | done */
+var E_VOTE_TAB = '투표', E_VOTE_N = 3, E_DOMAIN = /@yeongjong\.icehs\.kr$/i;
+function eVoteState() { return PropertiesService.getScriptProperties().getProperty('VOTE') || 'off'; }
+function eVoteSet(v, msg) { PropertiesService.getScriptProperties().setProperty('VOTE', v); eVoteFlush(); SpreadsheetApp.getUi().alert(msg); }
+function eVoteOpen() { eVoteSheet(); eVoteSet('on', '🗳 투표를 시작했어요. 갤러리에 ❤ 버튼이 생겨요.\n표 수는 선생님 화면에만 보여요.'); }
+function eVoteClose() { eVoteSet('done', '🗳 투표를 마감했어요. 갤러리에 순위(🥇🥈🥉)가 공개돼요.'); eVoteReport(); }
+function eVoteOff() { eVoteSet('off', '투표를 껐어요(❤ 버튼 숨김). 표 기록은 「투표」 탭에 그대로 있어요.'); }
+function eVoteSheet() {
+  var ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName(E_VOTE_TAB);
+  if (!sh) { sh = ss.insertSheet(E_VOTE_TAB); sh.appendRow(['시각', '이메일', '종류', '작품1', '작품2', '작품3']); sh.setFrozenRows(1); }
+  return sh;
+}
+/* 후보 — 종류별로 «우수작» 이 있으면 그것만, 없으면 공개 작품 전체 */
+function eCands(rows) {
+  var o = {};
+  ['photo', 'reels'].forEach(function (k) {
+    var vis = rows.filter(function (x) { return x.kind === k && !x.hidden; });
+    var best = vis.filter(function (x) { return x.best; });
+    (best.length ? best : vis).forEach(function (x) { o[x.ids[0]] = k; });
+  });
+  return o;
+}
+/* 표 읽기 → { tally:{id:n}, mine:{email:{photo:[],reels:[]}}, voters:{photo:n,reels:n} } (30초 캐시) */
+function eVotes() {
+  var c = CacheService.getScriptCache(), hit = c.get('votes1');
+  if (hit) return JSON.parse(hit);
+  var o = { tally: {}, mine: {}, voters: { photo: 0, reels: 0 } }, sh = SpreadsheetApp.getActive().getSheetByName(E_VOTE_TAB);
+  if (sh && sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 6).getValues().forEach(function (r) {
+    var em = String(r[1]).toLowerCase(), k = r[2], ids = [r[3], r[4], r[5]].map(String).filter(Boolean);
+    if (!em || (k !== 'photo' && k !== 'reels')) return;
+    (o.mine[em] = o.mine[em] || {})[k] = ids; o.voters[k]++;
+    ids.forEach(function (id) { o.tally[id] = (o.tally[id] || 0) + 1; });
+  });
+  try { c.put('votes1', JSON.stringify(o), 30); } catch (e) {}
+  return o;
+}
+function eVoteFlush() { try { CacheService.getScriptCache().remove('votes1'); } catch (e) {} }
+function eVote(kind, ids) {
+  if (eVoteState() !== 'on') throw new Error(eVoteState() === 'done' ? '투표가 마감됐어요.' : '아직 투표 기간이 아니에요.');
+  var me = eViewer().toLowerCase();
+  if (!E_DOMAIN.test(me)) throw new Error('학교 계정으로 들어와야 투표할 수 있어요.');
+  if (kind !== 'photo' && kind !== 'reels') throw new Error('종류가 이상해요.');
+  ids = (ids || []).map(String).filter(function (v, i, a) { return v && a.indexOf(v) === i; });
+  if (ids.length !== E_VOTE_N) throw new Error('❤ ' + E_VOTE_N + '개를 모두 골라 주세요.');
+  var cand = eCands(eRows(''));
+  ids.forEach(function (id) { if (cand[id] !== kind) throw new Error('투표할 수 없는 작품이 섞여 있어요. 새로 고침 해 주세요.'); });
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    var sh = eVoteSheet(), n = sh.getLastRow(), row = 0;
+    if (n > 1) { var v = sh.getRange(2, 2, n - 1, 2).getValues(); for (var i = 0; i < v.length; i++) if (String(v[i][0]).toLowerCase() === me && v[i][1] === kind) { row = i + 2; break; } }
+    var rec = [new Date(), me, kind].concat(ids);
+    if (row) sh.getRange(row, 1, 1, 6).setValues([rec]); else sh.appendRow(rec);
+    SpreadsheetApp.flush();
+  } finally { lock.releaseLock(); }
+  eVoteFlush();
+  return { ok: true };
+}
+/* 결과 탭 — 종류별 순위 */
+function eVoteReport() {
+  eVoteFlush();
+  var V = eVotes(), rows = eRows(''), cand = eCands(rows), ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName('투표결과') || ss.insertSheet('투표결과'); sh.clear();
+  var out = [['종류', '순위', '❤ 표', '제목', '출품', '탭·줄']];
+  ['photo', 'reels'].forEach(function (k) {
+    var L = rows.filter(function (x) { return cand[x.ids[0]] === k; })
+      .map(function (x) { return { x: x, n: V.tally[x.ids[0]] || 0 }; }).sort(function (a, b) { return b.n - a.n; });
+    var rank = 0, prev = -1;
+    L.forEach(function (o, i) { if (o.n !== prev) { rank = i + 1; prev = o.n; }
+      out.push([k === 'reels' ? '릴스전' : '사진전', rank, o.n, o.x.title, o.x.who + (o.x.team ? ' · ' + o.x.team : ''), o.x.tab + ' ' + o.x.row]); });
+    out.push(['', '', '', '참여 ' + V.voters[k] + '명', '', '']);
+  });
+  sh.getRange(1, 1, out.length, 6).setValues(out); sh.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#FEF3C7'); sh.setFrozenRows(1);
+}
+
 /* ── 앱 갤러리 (웹 앱) ── */
 function doGet(e) {
   var k = (e && e.parameter && e.parameter.k) === 'reels' ? 'reels' : 'photo';
-  var T = eIsTeacher();
-  var items = eRows('').filter(function (x) { return T || !x.hidden; }).map(function (x) {
+  var T = eIsTeacher(), VS = eVoteState(), rows = eRows(''), cand = VS === 'off' ? {} : eCands(rows);
+  var V = VS === 'off' ? null : eVotes(), me = eViewer().toLowerCase(), show = V && (T || VS === 'done');
+  var items = rows.filter(function (x) { return T || !x.hidden; }).map(function (x) {
     return { kind: x.kind, tab: x.tab, row: x.row, ids: x.ids, who: x.who, mission: x.mission, title: x.title,
-             desc: x.desc, team: x.team, sort: x.sort, hidden: x.hidden };
+             desc: x.desc, team: x.team, sort: x.sort, hidden: x.hidden, cand: !!cand[x.ids[0]],
+             n: show ? (V.tally[x.ids[0]] || 0) : null };
   });
-  var data = JSON.stringify({ items: items, k: k, teacher: T, app: E_APP }).replace(/</g, '\\u003c');
+  var vote = { st: VS, n: E_VOTE_N, my: (V && V.mine[me]) || {}, voters: show ? V.voters : null, can: E_DOMAIN.test(me) };
+  var data = JSON.stringify({ items: items, k: k, teacher: T, app: E_APP, vote: vote }).replace(/</g, '\\u003c');
   var html = E_HTML.replace('__CLIENT__', function () { return '(' + eClient.toString() + ')(' + data + ');'; });
   return HtmlService.createHtmlOutput(html).setTitle('꿈길 걷기 작품 보기')
     .addMetaTag('viewport', 'width=device-width,initial-scale=1');
@@ -232,6 +316,10 @@ var E_HTML = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
   '.it .hb{position:absolute;top:8px;left:8px;border:0;border-radius:99px;padding:5px 10px;font-size:12px;font-weight:900;background:rgba(255,255,255,.92);color:#B91C1C}' +
   '.it .hb.sure{background:#DC2626;color:#fff}.it.hid .hb{background:#16A34A;color:#fff}' +
   '.it .tx{padding:8px 10px}.it b{display:block;font-size:14px}.it small{color:#64748B;font-size:12px;font-weight:700}' +
+  '.vb{position:absolute;right:8px;bottom:8px;border:0;border-radius:99px;width:44px;height:44px;font-size:22px;background:rgba(255,255,255,.95);box-shadow:0 1px 4px rgba(0,0,0,.25)}.vb.on{background:#F43F5E;color:#fff}.it .im{position:relative}' +
+  '.cnt{position:absolute;left:8px;bottom:8px;background:#F43F5E;color:#fff;border-radius:99px;padding:3px 9px;font-size:13px;font-weight:900}' +
+  '.vbar{position:sticky;top:58px;z-index:4;background:#FFF1F2;border:2px solid #FDA4AF;border-radius:14px;padding:10px 12px;margin:10px 0;display:flex;align-items:center;gap:10px}.vbar div{flex:1;font-size:13px;font-weight:800;color:#9F1239;line-height:1.4}.vbar button{border:0;border-radius:12px;padding:11px 14px;font-size:15px;font-weight:900;background:#F43F5E;color:#fff}.vbar button:disabled{background:#FDA4AF}' +
+  '.rk{position:absolute;top:6px;left:50%;transform:translateX(-50%);font-size:28px}' +
   '.empty{text-align:center;color:#64748B;font-weight:700;padding:60px 10px;line-height:1.7}' +
   '#ov{position:fixed;inset:0;background:rgba(15,23,42,.92);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9;padding:16px}' +
   '#ov.show{display:flex}#ov img,#ov iframe{max-width:100%;max-height:78vh;border:0;border-radius:12px;background:#000}#ovb{width:100%;display:flex;flex-direction:column;align-items:center}.vp{position:relative;width:calc(100vw - 32px);max-width:480px;display:flex;flex-direction:column;align-items:center;gap:14px}.vt{height:56vh;aspect-ratio:9/16;max-width:100%;border-radius:12px;background:#000 center/contain no-repeat}.pbtn{display:block;width:100%;text-align:center;background:#EF4444;color:#fff;font-size:20px;font-weight:900;padding:16px;border-radius:14px;text-decoration:none}.vh{color:#CBD5E1;font-size:12px;margin:6px 0 0;text-align:center}' +
@@ -246,6 +334,13 @@ var E_HTML = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
 /* 브라우저에서 도는 쪽 — doGet 이 이 함수 소스를 그대로 페이지에 넣는다(문자열 이스케이프 지옥 피하기) */
 function eClient(S) {
   var D = S.items, K = S.k, T = S.teacher, $ = function (id) { return document.getElementById(id); };
+  var VT = S.vote || { st: 'off', n: 3, my: {} }, VON = VT.st === 'on' && VT.can, VN = VT.n;
+  var sel = { photo: (VT.my.photo || []).slice(), reels: (VT.my.reels || []).slice() };
+  var rk = {};   // 마감 후 순위 — 종류별 표 수로
+  if (VT.st === 'done') ['photo', 'reels'].forEach(function (k) {
+    var L = D.filter(function (x) { return x.kind === k && x.cand; }).sort(function (a, b) { return b.n - a.n; }), r = 0, pv = -1;
+    L.forEach(function (x, i) { if (x.n !== pv) { r = i + 1; pv = x.n; } if (x.n > 0) rk[x.ids[0]] = r; });
+  });
   $('back').href = S.app;
   if (T) $('tm').innerHTML = '<div class="tm">👩‍🏫 선생님 모드 — 위험한 사진은 「🙈 숨기기」(두 번 눌러 확정). 숨긴 것은 학생에게 안 보여요.</div>';
   else $('tm').innerHTML = '<div class="tm" style="background:#FEF2F2;color:#991B1B">⚠️ 친구 몰래 찍은·우스운 사진, 동의 없는 얼굴, 장난 사진, 개인정보·퍼 온 사진은 선생님이 숨겨요. 캡처해서 퍼뜨리지 마세요.</div>';
@@ -253,7 +348,10 @@ function eClient(S) {
   function toast(m) { var t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.k); toast.k = setTimeout(function () { t.style.display = 'none'; }, 2200); }
   function card(x, j) {
     var v = x.kind === 'reels';
-    return '<div class="it' + (v ? ' v' : '') + (x.hidden ? ' hid' : '') + '" data-j="' + j + '"><div class="im" data-id="' + x.ids[0] + '"></div>' +
+    var id = x.ids[0], on = sel[x.kind].indexOf(id) >= 0, md = { 1: '🥇', 2: '🥈', 3: '🥉' }[rk[id]];
+    var vb = x.cand && VT.st !== 'off' ? (VON ? '<button class="vb' + (on ? ' on' : '') + '" data-v="' + j + '">' + (on ? '❤' : '♡') + '</button>' : '') +
+      (x.n != null ? '<span class="cnt">❤ ' + x.n + '</span>' : '') + (md ? '<span class="rk">' + md + '</span>' : '') : '';
+    return '<div class="it' + (v ? ' v' : '') + (x.hidden ? ' hid' : '') + '" data-j="' + j + '"><div class="im" data-id="' + id + '">' + vb + '</div>' +
       (v ? '<span class="pl">▶ 재생</span>' : (x.ids.length > 1 ? '<span class="pl">+' + (x.ids.length - 1) + '</span>' : '')) +
       (T ? '<button class="hb" data-h="' + j + '">' + (x.hidden ? '👁 다시 보이기' : '🙈 숨기기') + '</button>' : '') +
       '<div class="tx"><b>' + es(x.title || (v ? '릴스' : '사진')) + '</b><small>' + es(x.who) + (x.team ? ' 외' : '') + (x.hidden ? ' · 숨김' : '') + '</small></div></div>';
@@ -261,12 +359,29 @@ function eClient(S) {
   function draw() {
     document.querySelectorAll('.tabs button').forEach(function (b) { b.className = b.dataset.k === K ? 'on' : ''; });
     var L = D.map(function (x, j) { x.j = j; return x; }).filter(function (x) { return x.kind === K && (T || !x.hidden); }), h = '';
-    if (!L.length) h = '<div class="empty">아직 올라온 작품이 없어요.<br>출품하면 여기에 바로 떠요.</div>';
+    var C = VT.st === 'off' ? [] : L.filter(function (x) { return x.cand; });
+    if (C.length) {
+      if (VT.st === 'done') C.sort(function (a, b) { return (b.n || 0) - (a.n || 0); });
+      h += vbar() + '<h2>🏆 투표 작품 · ' + C.length + '</h2><div class="grid">' + C.map(function (x) { return card(x, x.j); }).join('') + '</div>';
+      L = L.filter(function (x) { return !x.cand; });
+      if (L.length) h += '<h2 style="color:#64748B;margin-top:28px">그 밖의 출품작</h2>';
+    }
+    if (!L.length && !C.length) h = '<div class="empty">아직 올라온 작품이 없어요.<br>출품하면 여기에 바로 떠요.</div>';
+    else if (!L.length) {}
     else if (K === 'photo') {
       var g = {}; L.forEach(function (x) { var m = x.mission || '기타'; (g[m] = g[m] || []).push(x); });
       Object.keys(g).forEach(function (m) { h += '<h2>' + es(m) + ' · ' + g[m].length + '</h2><div class="grid">' + g[m].map(function (x) { return card(x, x.j); }).join('') + '</div>'; });
-    } else h = '<div class="grid" style="margin-top:12px">' + L.map(function (x) { return card(x, x.j); }).join('') + '</div>';
+    } else h += '<div class="grid" style="margin-top:12px">' + L.map(function (x) { return card(x, x.j); }).join('') + '</div>';
     $('m').innerHTML = h;
+    document.querySelectorAll('.vb').forEach(function (b) {
+      b.onclick = function (ev) {
+        ev.stopPropagation();
+        var x = D[b.dataset.v], a = sel[K], id = x.ids[0], i = a.indexOf(id);
+        if (i >= 0) a.splice(i, 1); else { if (a.length >= VN) { toast('❤ 는 ' + VN + '개까지 — 다른 하트를 먼저 빼세요'); return; } a.push(id); }
+        b.className = 'vb' + (i < 0 ? ' on' : ''); b.textContent = i < 0 ? '❤' : '♡'; paintBar();
+      };
+    });
+    paintBar();
     document.querySelectorAll('.im').forEach(lazy);
     document.querySelectorAll('.it').forEach(function (c) { c.onclick = function () { op(D[c.dataset.j]); }; });
     document.querySelectorAll('.hb').forEach(function (b) {
@@ -280,6 +395,27 @@ function eClient(S) {
           .eHide(x.tab, x.row, x.ids[0], hide);
       };
     });
+  }
+  function same(a, b) { return a.length === b.length && a.every(function (v) { return b.indexOf(v) >= 0; }); }
+  function vbar() {
+    if (VT.st === 'done') return '<div class="vbar"><div>🗳 투표 마감 — 결과 공개' + (VT.voters ? ' · 참여 ' + VT.voters[K] + '명' : '') + '</div></div>';
+    if (VT.st !== 'on') return '';
+    if (!VT.can) return '<div class="vbar"><div>🗳 투표 중이에요. 학교 계정(@yeongjong.icehs.kr)으로 들어와야 ❤ 를 누를 수 있어요.</div></div>';
+    return '<div class="vbar"><div id="vtx"></div><button id="vgo">제출</button></div>';
+  }
+  function paintBar() {
+    var t = $('vtx'), g = $('vgo'); if (!t) return;
+    var a = sel[K], my = VT.my[K] || [], done = my.length === VN && same(a, my);
+    t.innerHTML = '🗳 마음에 드는 작품 ❤ <b>' + VN + '개</b>를 모두 골라 제출하세요 (내 작품도 OK)<br>지금 ' + a.length + ' / ' + VN +
+      (done ? ' · ✅ 제출 완료 (마감 전까지 바꿀 수 있어요)' : (my.length ? ' · 바꾼 뒤 다시 제출하세요' : '')) +
+      (T && VT.voters ? '<br>👩‍🏫 참여 ' + VT.voters[K] + '명' : '');
+    g.disabled = a.length !== VN || done; g.textContent = done ? '제출됨' : '제출';
+    g.onclick = function () {
+      g.disabled = true; g.textContent = '…';
+      google.script.run.withSuccessHandler(function () { VT.my[K] = a.slice(); toast('투표했어요! ❤ ' + VN + '개 제출 완료'); paintBar(); })
+        .withFailureHandler(function (e) { toast(e.message || '실패했어요 — 잠시 후 다시'); paintBar(); })
+        .eVote(K, a.slice());
+    };
   }
   var io = ('IntersectionObserver' in window) ? new IntersectionObserver(function (es2) { es2.forEach(function (e) { if (e.isIntersecting) { io.unobserve(e.target); th(e.target); } }); }, { rootMargin: '300px' }) : null;
   function lazy(el) { io ? io.observe(el) : th(el); }
