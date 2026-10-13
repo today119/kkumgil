@@ -208,15 +208,13 @@ function eThumb(id, big) {
   return out;
 }
 
-/* 영상 재생 — 누른 영상만 «링크가 있는 모든 사람 보기»로 열고 폰 기본 플레이어용 주소(v)를 준다.
-   학교 관리자 설정으로 외부 공개가 막히면 «학교 계정 + 링크»로 열고 드라이브 미리보기(p)만 준다 */
+/* 영상 재생 — 누를 때 그 파일만 «학교 계정 + 링크» 보기로 열고 드라이브 미리보기 주소를 준다.
+   (폰 기본 플레이어 직접 재생은 불가: 드라이브 다운로드 주소가 Cross-Origin-Resource-Policy: same-site 라 다른 사이트의 <video> 에서 막힘) */
 function ePlay(id) {
   var x = eCanSee(id);
   if (!x || x.k !== 'reels') return null;
-  var f = DriveApp.getFileById(id), v = '';
-  try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); v = 'https://drive.usercontent.google.com/download?id=' + id + '&export=download'; }
-  catch (e) { try { f.setSharing(DriveApp.Access.DOMAIN_WITH_LINK, DriveApp.Permission.VIEW); } catch (e2) {} }
-  return { v: v, p: 'https://drive.google.com/file/d/' + id + '/preview' };
+  try { DriveApp.getFileById(id).setSharing(DriveApp.Access.DOMAIN_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
+  return { v: '', p: 'https://drive.google.com/file/d/' + id + '/preview' };
 }
 
 var E_HTML = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>' +
