@@ -93,6 +93,12 @@
   .say{background:#10243A;color:#fff;border-radius:12px;padding:12px 14px;margin:8px 0;font-size:15px}
   .say b{color:var(--sun)}
 
+  /* 행동요령 체크 */
+  .tl li[data-tk]{list-style:none;position:relative;padding:3px 4px 3px 30px;margin-left:-20px;border-radius:8px;cursor:pointer;-webkit-user-select:none;user-select:none}
+  .tl li[data-tk]::before{content:"";position:absolute;left:4px;top:6px;width:18px;height:18px;border:2px solid #9FB4C6;border-radius:5px;background:#fff;box-sizing:border-box}
+  .tl li[data-tk].on{background:#E9F6EF;color:var(--muted)}
+  .tl li[data-tk].on::before{background:var(--forest);border-color:var(--forest)}
+  .tl li[data-tk].on::after{content:"✓";position:absolute;left:8px;top:3px;color:#fff;font-weight:900;font-size:13px}
   /* 일정 체크리스트 */
   ul.ck{list-style:none;padding:0;margin:8px 0 4px}
   ul.ck li{display:grid;grid-template-columns:26px 92px 1fr auto;gap:4px 8px;align-items:start;padding:10px 10px;border:1px solid var(--line);border-radius:10px;margin:6px 0;cursor:pointer;background:#fff;-webkit-user-select:none;user-select:none}
@@ -194,71 +200,71 @@
   <div class="tl">
     <h4>전날까지</h4>
     <ul>
-      <li><b>시간외근무는 각자 신청</b>해 주세요. 출장은 예술체육부에서 한꺼번에 올려요.</li>
-      <li>휴대폰에 번호 저장: 우리 반(그룹) 담임·부담임, 상황실</li>
-      <li><b>교직원 단톡방</b>에 들어와 있는지 확인(알림 켜기)</li>
-      <li>학생 앱을 한 번 열어 「홈 화면에 추가」 → <a href="#app">앱 사용법</a></li>
-      <li>현황판 주소를 열어 우리 반 명단이 보이는지 확인해 주세요. <b>비밀번호는 교직원 화장실 비번입니다.</b></li>
-      <li>보조배터리 충전, 편한 신발, 바람막이(바닷바람이 차요)</li>
-      <li>학급에 건강 관련 학생(천식·알레르기·당뇨·심장·벌 알레르기)이 있는지 확인하고, <b>본인 상비약을 챙겼는지</b> 물어봐 주세요.</li>
+      <li data-tk="t1"><b>시간외근무는 각자 신청</b>해 주세요. 출장은 예술체육부에서 한꺼번에 올려요.</li>
+      <li data-tk="t2">휴대폰에 번호 저장: 우리 반(그룹) 담임·부담임, 상황실</li>
+      <li data-tk="t3"><b>교직원 단톡방</b>에 들어와 있는지 확인(알림 켜기)</li>
+      <li data-tk="t4">학생 앱을 한 번 열어 「홈 화면에 추가」 → <a href="#app">앱 사용법</a></li>
+      <li data-tk="t5">현황판 주소를 열어 우리 반 명단이 보이는지 확인해 주세요. <b>비밀번호는 교직원 화장실 비번입니다.</b></li>
+      <li data-tk="t6">보조배터리 충전, 편한 신발, 바람막이(바닷바람이 차요)</li>
+      <li data-tk="t7">학급에 건강 관련 학생(천식·알레르기·당뇨·심장·벌 알레르기)이 있는지 확인하고, <b>본인 상비약을 챙겼는지</b> 물어봐 주세요.</li>
     </ul>
     <h4>출근 (08:10 전)</h4>
     <ul>
-      <li>☝️ <b>출근하면 바로 지문 확인</b></li>
-      <li>단톡방 알림이 켜져 있는지, 폰 배터리가 충분한지 확인</li>
-      <li>우리 구간 <b>안전요원을 만나면 이름·번호를 <a href="#safety">안전요원 연락처</a> 칸에 적어</b> 두세요.</li>
-      <li>담임: 출석 확인 → <b>안 온 학생은 현황판에 「불참」으로 기록</b>. 참가 조사에서 불참으로 표시된 학생은 이미 들어가 있어요.</li>
-      <li>아침(샌드위치·음료·간식) 나눠 주기. <b>아침을 거른 학생은 반드시 먹게</b> 해 주세요. 어지럼·실신의 가장 흔한 원인이에요.</li>
+      <li data-tk="t8">☝️ <b>출근하면 바로 지문 확인</b></li>
+      <li data-tk="t9">단톡방 알림이 켜져 있는지, 폰 배터리가 충분한지 확인</li>
+      <li data-tk="t10">우리 구간 <b>안전요원을 만나면 이름·번호를 <a href="#safety">안전요원 연락처</a> 칸에 적어</b> 두세요.</li>
+      <li data-tk="t11">담임: 출석 확인 → <b>안 온 학생은 현황판에 「불참」으로 기록</b>. 참가 조사에서 불참으로 표시된 학생은 이미 들어가 있어요.</li>
+      <li data-tk="t12">아침(샌드위치·음료·간식) 나눠 주기. <b>아침을 거른 학생은 반드시 먹게</b> 해 주세요. 어지럼·실신의 가장 흔한 원인이에요.</li>
     </ul>
     <h4>출발 전</h4>
     <ul>
-      <li>학생 상태 한 번 훑어보기: 새 신발, 슬리퍼, 얇은 옷, 폰 배터리, 얼굴빛</li>
-      <li><a href="#stu">학생에게 하는 3분 안내</a>를 읽어 주세요.</li>
-      <li>출발 순서: 1일차 1그룹(1~3반) → 2그룹(4~7반) → 3그룹(8~10반). 2일차는 1그룹부터 순서대로 출발해요.</li>
+      <li data-tk="t13">학생 상태 한 번 훑어보기: 새 신발, 슬리퍼, 얇은 옷, 폰 배터리, 얼굴빛</li>
+      <li data-tk="t14"><a href="#stu">학생에게 하는 3분 안내</a>를 읽어 주세요.</li>
+      <li data-tk="t15">출발 순서: 1일차 1그룹(1~3반) → 2그룹(4~7반) → 3그룹(8~10반). 2일차는 1그룹부터 순서대로 출발해요.</li>
     </ul>
     <h4>걷는 중</h4>
     <ul>
-      <li><b>제1지도(담임)는 반 앞, 제2지도는 반 맨 뒤.</b> 뒤 선생님 뒤에는 학생이 없어야 해요.</li>
-      <li>인도 한쪽으로 <b>2줄 이하</b>. 차도 쪽으로 나가거나 뛰는 학생은 바로 불러 주세요.</li>
-      <li>갈림길에서는 반 맨 뒤가 지나갈 때까지 앞 선생님이 방향을 확인해 주세요. 앞 반과 간격이 벌어지면 단톡에 알려 주세요.</li>
-      <li>절뚝거리는 학생, 대열에서 처지는 학생, 말수가 갑자기 줄어든 학생은 <b>먼저 말을 걸어</b> 주세요.</li>
-      <li>물: 목마르기 전에 휴식 때마다 마시게 해 주세요(용궁사에서 생수를 줘요).</li>
+      <li data-tk="t16"><b>제1지도(담임)는 반 앞, 제2지도는 반 맨 뒤.</b> 뒤 선생님 뒤에는 학생이 없어야 해요.</li>
+      <li data-tk="t17">인도 한쪽으로 <b>2줄 이하</b>. 차도 쪽으로 나가거나 뛰는 학생은 바로 불러 주세요.</li>
+      <li data-tk="t18">갈림길에서는 반 맨 뒤가 지나갈 때까지 앞 선생님이 방향을 확인해 주세요. 앞 반과 간격이 벌어지면 단톡에 알려 주세요.</li>
+      <li data-tk="t19">절뚝거리는 학생, 대열에서 처지는 학생, 말수가 갑자기 줄어든 학생은 <b>먼저 말을 걸어</b> 주세요.</li>
+      <li data-tk="t20">물: 목마르기 전에 휴식 때마다 마시게 해 주세요(용궁사에서 생수를 줘요).</li>
     </ul>
     <h4>휴식·점심 지점</h4>
     <ul>
-      <li>도착하면 <b>인원 확인 → 단톡 보고</b> (예: "3반 23명 이상 없음")</li>
-      <li>신발을 벗고 발을 확인하게 해 주세요. 물집은 <b>작을 때</b> 밴드를 붙이면 끝나요.</li>
-      <li>화장실은 이때 다녀오게 해 주세요(코스 중 화장실 위치는 1·2일차 표에 있어요).</li>
-      <li>스탬프 QR이 있는 곳에서는 학생이 앱으로 찍는 시간을 2~3분 주세요.</li>
+      <li data-tk="t21">도착하면 <b>인원 확인 → 단톡 보고</b> (예: "3반 23명 이상 없음")</li>
+      <li data-tk="t22">신발을 벗고 발을 확인하게 해 주세요. 물집은 <b>작을 때</b> 밴드를 붙이면 끝나요.</li>
+      <li data-tk="t23">화장실은 이때 다녀오게 해 주세요(코스 중 화장실 위치는 1·2일차 표에 있어요).</li>
+      <li data-tk="t24">스탬프 QR이 있는 곳에서는 학생이 앱으로 찍는 시간을 2~3분 주세요.</li>
     </ul>
     <h4>도착 후</h4>
     <ul>
-      <li>인원 확인 → 상황실에 최종 보고 → 하교 지도</li>
-      <li>☝️ <b>학교에 도착하면 지문 확인 꼭 해 주세요</b> (시간외근무 인정에 필요해요)</li>
-      <li>단톡에 「도착·인원 이상 없음」 보고 · 중도포기 학생이 귀가했는지 확인</li>
-      <li>그날 다친 학생은 보건 선생님께 알리고, 가정에도 연락해 주세요.</li>
+      <li data-tk="t25">인원 확인 → 상황실에 최종 보고 → 하교 지도</li>
+      <li data-tk="t26">☝️ <b>학교에 도착하면 지문 확인 꼭 해 주세요</b> (시간외근무 인정에 필요해요)</li>
+      <li data-tk="t27">단톡에 「도착·인원 이상 없음」 보고 · 중도포기 학생이 귀가했는지 확인</li>
+      <li data-tk="t28">그날 다친 학생은 보건 선생님께 알리고, 가정에도 연락해 주세요.</li>
     </ul>
   </div>
+  <div class="ckbar"><span class="tkn"></span><button class="btn ghost small" onclick="tkReset()">체크 모두 지우기</button></div>
+  <p class="small muted" style="margin:2px 0 0">읽고 확인한 항목을 누르면 ✓가 남아요(이 폰에만 저장).</p>
 </section>
 
 <!-- ═══════════ 1일차 ═══════════ -->
 <section id="d1">
   <h2><i>2</i>1일차 · 10/30(금)</h2>
   <p class="lead">1학년 도보 「영종 국제도시의 어제와 오늘」 · 약 25km<br>학교 → 백운산 → 용궁사 → 중산교차로 → 박석공원 → 영종진 → 하늘신도시(점심) → 씨사이드파크 → 족욕장 → 학교</p>
-  <p class="small muted" style="margin:4px 0 0">진행한 일정을 누르면 ✓와 시각이 남아요(이 폰에만 저장). 다시 누르면 지워져요.</p>
-  <ul class="ck" data-day="1">
-    <li data-ck="d1-0"><span class="cb"></span><span class="tm">08:10</span><span class="tx">등교 · 출석 확인 · 아침(샌드위치·음료·간식)</span><span class="at"></span></li>
-    <li data-ck="d1-1"><span class="cb"></span><span class="tm">08:10~08:30</span><span class="tx">안전교육 · 일정 안내 · 스트레칭 · 출발 선포</span><span class="at"></span></li>
-    <li class="walk" data-ck="d1-2"><span class="cb"></span><span class="tm">08:30~09:30</span><span class="tx">학교 → 백운산 정상 <span class="small muted">(오르막 · 갈림길 많음)</span></span><span class="km">3km</span><span class="at"></span></li>
-    <li data-ck="d1-3"><span class="cb"></span><span class="tm">09:30~09:40</span><span class="tx">백운산 정상 휴식</span><span class="at"></span></li>
-    <li class="walk" data-ck="d1-4"><span class="cb"></span><span class="tm">09:40~12:30</span><span class="tx">용궁사(생수) → 중산교차로 → 박석공원 → 영종진</span><span class="km">11km</span><span class="at"></span></li>
-    <li data-ck="d1-5"><span class="cb"></span><span class="tm">12:30~13:30</span><span class="tx">점심: 하늘신도시 방앗간 한식뷔페 · 생수·아이스크림</span><span class="at"></span></li>
-    <li class="walk" data-ck="d1-6"><span class="cb"></span><span class="tm">13:30~14:50</span><span class="tx">씨사이드파크 → 족욕장</span><span class="km">8km</span><span class="at"></span></li>
-    <li data-ck="d1-7"><span class="cb"></span><span class="tm">14:50~15:10</span><span class="tx">족욕장 휴식 · 간식 · 학급별 캠페인 사진</span><span class="at"></span></li>
-    <li class="walk" data-ck="d1-8"><span class="cb"></span><span class="tm">15:10~15:40</span><span class="tx">족욕장 → 학교 (도착)</span><span class="km">3km</span><span class="at"></span></li>
-  </ul>
-  <div class="ckbar"><span class="ckn" data-n="1"></span><button class="btn ghost small" onclick="ckReset(1)">체크 모두 지우기</button></div>
-
+  <div class="scroll"><table>
+    <tr><th>시간</th><th>내용</th><th>거리</th></tr>
+    <tr><td class="t">08:10</td><td>등교 · 출석 확인 · 아침(샌드위치·음료·간식)</td><td class="k"></td></tr>
+    <tr><td class="t">08:10~08:30</td><td>안전교육 · 일정 안내 · 스트레칭 · 출발 선포</td><td class="k"></td></tr>
+    <tr class="walk"><td class="t">08:30~09:30</td><td>학교 → 백운산 정상 <span class="small muted">(오르막 · 갈림길 많음)</span></td><td class="k">3km</td></tr>
+    <tr><td class="t">09:30~09:40</td><td>백운산 정상 휴식</td><td class="k"></td></tr>
+    <tr class="walk"><td class="t">09:40~12:30</td><td>용궁사(생수) → 중산교차로 → 박석공원 → 영종진</td><td class="k">11km</td></tr>
+    <tr><td class="t">12:30~13:30</td><td>점심: 하늘신도시 방앗간 한식뷔페 · 생수·아이스크림</td><td class="k"></td></tr>
+    <tr class="walk"><td class="t">13:30~14:50</td><td>씨사이드파크 → 족욕장</td><td class="k">8km</td></tr>
+    <tr><td class="t">14:50~15:10</td><td>족욕장 휴식 · 간식 · 학급별 캠페인 사진</td><td class="k"></td></tr>
+    <tr class="walk"><td class="t">15:10~15:40</td><td>족욕장 → 학교 (도착)</td><td class="k">3km</td></tr>
+  </table></div>
   <h3>👥 1일차 배치 <span class="small muted">(1학년 251명 · 교직원 38명 · 안전요원 15명)</span></h3>
   <ul class="small" style="font-size:14px">
     <li><b>선두</b> 이재성 교장, 김시형, 한상형 실장(인하항공여행사) · <b>후미</b> 차영신 교감, 인하항공여행사 1명</li>
@@ -327,21 +333,19 @@
 <section id="d2">
   <h2><i>3</i>2일차 · 10/31(토)</h2>
   <p class="lead">1·2학년 희망자 「과거와 현재가 만나는 인천의 섬」 · 약 25km<br>학교 →(버스) 무의도 공영주차장 → 잠진도 → 마시안해변 → 선녀바위 → 을왕 → 용유초 →(버스) 학교</p>
-  <p class="small muted" style="margin:4px 0 0">진행한 일정을 누르면 ✓와 시각이 남아요(이 폰에만 저장). 다시 누르면 지워져요.</p>
-  <ul class="ck" data-day="2">
-    <li data-ck="d2-0"><span class="cb"></span><span class="tm">08:10</span><span class="tx">등교 · 출석 확인 · 아침</span><span class="at"></span></li>
-    <li data-ck="d2-1"><span class="cb"></span><span class="tm">08:10~08:20</span><span class="tx">출발 준비 · 버스 확인</span><span class="at"></span></li>
-    <li data-ck="d2-2"><span class="cb"></span><span class="tm">08:20~08:55</span><span class="tx">버스: 학교 → 무의도 공영주차장 (화장실 들르기)</span><span class="km">버스</span><span class="at"></span></li>
-    <li class="walk" data-ck="d2-3"><span class="cb"></span><span class="tm">08:55~10:15</span><span class="tx">공영주차장 → 잠진도 → 마시안해변</span><span class="km">4.5km</span><span class="at"></span></li>
-    <li class="walk" data-ck="d2-4"><span class="cb"></span><span class="tm">10:15~11:05</span><span class="tx">해변 청소 행군 · 단체사진 (쓰레기봉투)</span><span class="km">1.8km</span><span class="at"></span></li>
-    <li class="walk" data-ck="d2-5"><span class="cb"></span><span class="tm">11:05~12:30</span><span class="tx">마시안해변 → 선녀바위 → 을왕해수욕장</span><span class="km">5km</span><span class="at"></span></li>
-    <li data-ck="d2-6"><span class="cb"></span><span class="tm">12:30~13:30</span><span class="tx">점심: 을왕 인근 식당 또는 밥차</span><span class="at"></span></li>
-    <li class="walk" data-ck="d2-7"><span class="cb"></span><span class="tm">13:30~15:00</span><span class="tx">을왕해수욕장 → 용유초 (염전길)</span><span class="km">7km</span><span class="at"></span></li>
-    <li data-ck="d2-8"><span class="cb"></span><span class="tm">15:00~15:20</span><span class="tx">용유초 휴식 · 음료</span><span class="at"></span></li>
-    <li data-ck="d2-9"><span class="cb"></span><span class="tm">15:20~16:20</span><span class="tx">버스: 용유초 → 학교 · 강당에서 하교 지도</span><span class="km">버스</span><span class="at"></span></li>
-  </ul>
-  <div class="ckbar"><span class="ckn" data-n="2"></span><button class="btn ghost small" onclick="ckReset(2)">체크 모두 지우기</button></div>
-
+  <div class="scroll"><table>
+    <tr><th>시간</th><th>내용</th><th>거리</th></tr>
+    <tr><td class="t">08:10</td><td>등교 · 출석 확인 · 아침</td><td class="k"></td></tr>
+    <tr><td class="t">08:10~08:20</td><td>출발 준비 · 버스 확인</td><td class="k"></td></tr>
+    <tr><td class="t">08:20~08:55</td><td>버스: 학교 → 무의도 공영주차장 (화장실 들르기)</td><td class="k">버스</td></tr>
+    <tr class="walk"><td class="t">08:55~10:15</td><td>공영주차장 → 잠진도 → 마시안해변</td><td class="k">4.5km</td></tr>
+    <tr class="walk"><td class="t">10:15~11:05</td><td>해변 청소 행군 · 단체사진 (쓰레기봉투)</td><td class="k">1.8km</td></tr>
+    <tr class="walk"><td class="t">11:05~12:30</td><td>마시안해변 → 선녀바위 → 을왕해수욕장</td><td class="k">5km</td></tr>
+    <tr><td class="t">12:30~13:30</td><td>점심: 을왕 인근 식당 또는 밥차</td><td class="k"></td></tr>
+    <tr class="walk"><td class="t">13:30~15:00</td><td>을왕해수욕장 → 용유초 (염전길)</td><td class="k">7km</td></tr>
+    <tr><td class="t">15:00~15:20</td><td>용유초 휴식 · 음료</td><td class="k"></td></tr>
+    <tr><td class="t">15:20~16:20</td><td>버스: 용유초 → 학교 · 강당에서 하교 지도</td><td class="k">버스</td></tr>
+  </table></div>
   <h3>👥 2일차 배치 <span class="small muted">(1학년 53명 · 2학년 66명 · 교직원 28명 · 안전요원 5명)</span></h3>
   <ul class="small" style="font-size:14px">
     <li><b>선두</b> 김시형, 한상형 실장(인하항공여행사) · <b>후미</b> 김양선, 인하항공여행사 안전요원 1명</li>
@@ -367,7 +371,6 @@
     <li><b>해안도로는 인도가 좁거나 없는 구간이 있어요.</b> 꼭 한 줄로 걷게 하고, 선두·후미 선생님이 차량에 손신호를 해 주세요. 을왕 구간은 차량 통제가 있어요.</li>
     <li><b>해변 청소:</b> 깨진 유리, 낚싯바늘, 주사기 같은 날카로운 쓰레기는 <b>맨손으로 줍지 않게</b> 해 주세요. 갯벌이나 물가 쪽으로 들어가지 않게도 해 주세요.</li>
     <li><b>선녀바위 주변 바위:</b> 젖은 바위는 미끄러워요. 바위 위에 올라가 사진 찍는 것은 막아 주세요.</li>
-    <li>2학년도 함께 걸어요. 그룹마다 2학년·1학년 지도교사가 짝으로 붙어요(위 배치표).</li>
     <li>2일차는 <b>동판 미션</b>: 스탬프 7곳과 마시안해변 플로깅 인증이 있어요. 스탬프 QR 앞에서 2~3분만 기다려 주세요.</li>
   </ul>
   <div class="box blue small">
@@ -647,29 +650,21 @@
   /* ── 일정 체크리스트 · 안전요원 연락처: 이 폰(localStorage)에만 저장 ── */
   function ld(k,d){ try{ return JSON.parse(localStorage.getItem(k)) || d; }catch(e){ return d; } }
   function sv(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
-  var CK = ld('kg_guide_ck', {});
-  function hhmm(t){ var d=new Date(t); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
-  function ckPaint(){
-    document.querySelectorAll('ul.ck li').forEach(function(li){
-      var t = CK[li.dataset.ck];
-      li.classList.toggle('on', !!t);
-      li.querySelector('.at').textContent = t ? '✓ 진행함 · ' + (new Date(t).getMonth()+1) + '/' + new Date(t).getDate() + ' ' + hhmm(t) : '';
-    });
-    document.querySelectorAll('.ckn').forEach(function(n){
-      var L = document.querySelectorAll('ul.ck[data-day="'+n.dataset.n+'"] li'), k = 0;
-      L.forEach(function(li){ if(CK[li.dataset.ck]) k++; });
-      n.textContent = '진행 ' + k + ' / ' + L.length;
-    });
+  var TK = ld('kg_guide_tk', {});
+  function tkPaint(){
+    var L = document.querySelectorAll('.tl li[data-tk]'), k = 0;
+    L.forEach(function(li){ var on = !!TK[li.dataset.tk]; li.classList.toggle('on', on); if(on) k++; });
+    document.querySelector('.tkn').textContent = '확인 ' + k + ' / ' + L.length;
   }
-  document.querySelectorAll('ul.ck li').forEach(function(li){
-    li.onclick = function(){ var k = li.dataset.ck; if(CK[k]) delete CK[k]; else CK[k] = Date.now(); sv('kg_guide_ck', CK); ckPaint(); };
+  document.querySelectorAll('.tl li[data-tk]').forEach(function(li){
+    li.addEventListener('click', function(e){
+      if(e.target.closest('a')) return;            // 안의 링크는 그대로 이동
+      var k = li.dataset.tk; if(TK[k]) delete TK[k]; else TK[k] = Date.now();
+      sv('kg_guide_tk', TK); tkPaint();
+    });
   });
-  function ckReset(day){
-    if(!confirm(day + '일차 체크를 모두 지울까요?')) return;
-    Object.keys(CK).forEach(function(k){ if(k.indexOf('d'+day+'-') === 0) delete CK[k]; });
-    sv('kg_guide_ck', CK); ckPaint();
-  }
-  ckPaint();
+  function tkReset(){ if(!confirm('체크를 모두 지울까요?')) return; TK = {}; sv('kg_guide_tk', TK); tkPaint(); }
+  tkPaint();
 
   var SF = ld('kg_guide_sf', [{n:'',p:''},{n:'',p:''}]);
   function esc(x){ return String(x).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
