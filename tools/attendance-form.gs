@@ -946,7 +946,7 @@ function readExhibit_() {
   return out;
 }
 
-var PL_HEAD = ['반', '번호', '이름', '1일차 완주(1학년 자동)', '1일차 스탬프(1학년)', '인천바로알기 완료·미션(2학년 체크)', '2일차 완주', '2일차 스탬프',
+var PL_HEAD = ['반', '번호', '이름', '1일차 완주(1학년 자동)', '1일차 스탬프(1학년 영종도·2학년 인천바로알기)', '인천바로알기 완료(2학년 체크)', '2일차 완주', '2일차 스탬프',
                '사진전·릴스전 출품', '학급 단체사진', '플로깅 인증', '완주보고서 제출(체크)', '🏅 동판'];
 function refreshPlaque() {
   var ss = SpreadsheetApp.getActive();
@@ -965,8 +965,8 @@ function refreshPlaque() {
     var d1 = grade === '1' ? (day1[key] === '걷는 중' ? '○' : day1[key] ? '✕ ' + day1[key] : '명단 없음') : '—';
     var d2 = p[3] === '걷는 중' ? '○' : '✕ ' + p[3];
     var sv = function (day) { var s = st[key + '|' + day]; return !s ? '' : s.ok && s.full ? '○ ' + s.n : (s.ok ? '△ ' + s.n : '확인값 틀림'); };
-    var s1 = grade === '1' ? sv(1) : '—', s2 = sv(2);
-    var ok1 = grade === '1' ? d1 === '○' && /^○/.test(s1) : k.inc === true;
+    var s1 = sv(1), s2 = sv(2);   // 2학년 1일차 = 인천바로알기 코스 스탬프(10/15~)
+    var ok1 = grade === '1' ? d1 === '○' && /^○/.test(s1) : (k.inc === true || /^○/.test(s1));
     var cls = key.split('|')[0];
     var ph = !ex ? '시트 미연결' : ex.me[key] ? '○' : '', gp = !ex ? '시트 미연결' : ex.cls[cls] ? '○' : '';
     var pl = !ex ? '시트 미연결' : ex.plog[key] ? '○' : '';

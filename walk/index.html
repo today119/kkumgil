@@ -250,6 +250,11 @@
   .prepcard > span:nth-child(2){flex:1;font-size:18px}
   .prepcard .go2{font-size:28px;color:var(--sub);font-weight:400}
   .prepcard.done{background:#DCFCE7}
+  .st-seg{margin:0 0 10px}
+  .route-pick{display:grid;grid-template-columns:1fr;gap:6px;margin:0 0 14px}
+  .route-pick button{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-radius:14px;background:var(--panel);border:2px solid var(--line);font-size:15px;text-align:left}
+  .route-pick button small{color:var(--sub);font-weight:700;font-size:13px}
+  .route-pick button.on{border-color:#0284C7;background:#E0F2FE}
   .prow{display:flex;gap:10px;align-items:stretch}
   .prow .prepcard{flex:1 1 auto;min-width:0}
   .prow .prepcard .s{font-size:13.5px}
@@ -657,7 +662,7 @@
     if(!STAMPS || !STAMPS.stamps) return false;
     var p = toXY(lat, lng);
     return STAMPS.stamps.some(function(s){
-      if(s.lat == null || (CUR_DAY && s.day !== CUR_DAY)) return false;
+      if(s.lat == null || s.grade || (CUR_DAY && s.day !== CUR_DAY)) return false;
       var q = toXY(s.lat, s.lng);
       return Math.hypot(p[0]-q[0], p[1]-q[1]) < STOP_M;
     });
@@ -1396,6 +1401,20 @@
   var STAMPS = null;
   var gotKey = "kkumgil.stamps";
   var openKey = "kkumgil.unlocked";   // QR 을 찍어 퀴즈가 열린 명소
+  /* ★ 2학년 1일차(인천바로알기)는 학급별 버스 코스라 QR 안내판이 없다 → 코스(A·B·C)를 고르고
+       그 자리에서 «사진을 찍으면» 퀴즈가 열린다(사진은 폰 갤러리에만, 앱·서버에 안 올라감). 10/15 사용자 요청 */
+  var routeKey = "kkumgil.route";
+  function myRoute(){ try{ return localStorage.getItem(routeKey) || ""; }catch(e){ return ""; } }
+  function setRoute(r){ try{ localStorage.setItem(routeKey, r); }catch(e){} }
+  /* 그날 «내가» 모을 스탬프 — 1일차는 학년(2학년은 내 코스)에 따라 다르다 */
+  function dayStamps(d){
+    var g2 = d === 1 && getGrade() === "2", r = myRoute();
+    return STAMPS.stamps.filter(function(x){
+      if(x.day !== d) return false;
+      if(d !== 1) return true;
+      return g2 ? (x.grade === 2 && x.route === r) : !x.grade;
+    });
+  }
 
   function gotSet(){
     try { return JSON.parse(localStorage.getItem(gotKey) || "[]"); } catch(e){ return []; }
@@ -1414,7 +1433,7 @@
   /* 인증 제출 — stamps.json 의 certify(구글 폼 사전입력 주소, __REC__·__SIG__ 자리)로 연다.
      SIG 는 손으로 기록을 고쳐 쓰는 것만 막는 간단한 확인값. 시트(attendance-form.gs)가 같은 식으로 검사한다 */
   function certRec(d){
-    var T = gotTimes(), g = gotSet(), L = STAMPS.stamps.filter(function(x){ return x.day === d; });
+    var T = gotTimes(), g = gotSet(), L = dayStamps(d);
     var have = L.filter(function(x){ return g.indexOf(x.id) >= 0; });
     var hm = function(t){ if(!t) return "--:--"; var x = new Date(t); return ("0" + x.getHours()).slice(-2) + ":" + ("0" + x.getMinutes()).slice(-2); };
     return d + "일차 " + have.length + "/" + L.length + " · " + have.map(function(x){ return x.name + " " + hm(T[x.id]); }).join(" · ");
@@ -1444,13 +1463,13 @@
   }
   function paintStampCount(){
     if(!STAMPS) return;
-    var got = gotSet(), L = STAMPS.stamps.filter(function(s){ return !CUR_DAY || s.day === CUR_DAY; });
+    var got = gotSet(), L = CUR_DAY ? dayStamps(CUR_DAY) : dayStamps(1).concat(dayStamps(2));
     var n = L.filter(function(s){ return got.indexOf(s.id) >= 0; }).length, all = L.length;
     var el2 = $("stampCount"); if(el2) el2.textContent = n + "/" + all;
   }
 
   function dayCount(d){
-    var g = gotSet(), L = STAMPS.stamps.filter(function(x){ return x.day === d; });
+    var g = gotSet(), L = dayStamps(d);
     return d + '일차 ' + L.filter(function(x){ return g.indexOf(x.id) >= 0; }).length + '/' + L.length;
   }
   /* 스탬프판 */
@@ -1463,11 +1482,21 @@
     STAMPS.stamps.forEach(function(s){ if(days.indexOf(s.day) < 0) days.push(s.day); });
     days.sort(function(a, b){ return (b === CUR_DAY) - (a === CUR_DAY) || a - b; });
     var DAYNM = STAMPS.days || {};
+    var g2 = getGrade() === "2", R = STAMPS.routes || {}, r = myRoute();
     $("stampBody").innerHTML = days.map(function(d){
-      var L = STAMPS.stamps.filter(function(s){ return s.day === d; });
+      var L = dayStamps(d);
       var n = L.filter(function(s){ return got.indexOf(s.id) >= 0; }).length;
-      return '<div class="stamp-top"' + (d !== days[0] ? ' style="margin-top:22px"' : '') + '><b>' + n + '</b><span>/ ' + L.length +
-        ' · ' + d + '일차' + (DAYNM[d] ? ' ' + DAYNM[d] : '') + '</span></div>' +
+      var nm = (d === 1 && g2) ? '인천바로알기' + (R[r] ? ' · ' + R[r].name : '') : (DAYNM[d] || '');
+      /* 1일차 위에 학년 고르기(2학년은 코스까지) */
+      var pick = d !== 1 ? '' :
+        '<div class="seg st-seg"><button data-sg="1"' + (!g2 ? ' class="on"' : '') + '>1학년 · 영종도</button>' +
+        '<button data-sg="2"' + (g2 ? ' class="on"' : '') + '>2학년 · 인천바로알기</button></div>' +
+        (g2 ? '<div class="route-pick">' + Object.keys(R).map(function(k){
+          return '<button data-rt="' + k + '"' + (k === r ? ' class="on"' : '') + '><b>' + R[k].name + '</b><small>' + R[k].classes + '</small></button>';
+        }).join('') + '</div>' : '');
+      if(d === 1 && g2 && !R[r]) return pick + '<div class="card"><div class="body">👆 우리 반 코스를 먼저 골라 주세요.</div></div>';
+      return pick + '<div class="stamp-top"' + (d !== days[0] ? ' style="margin-top:22px"' : '') + '><b>' + n + '</b><span>/ ' + L.length +
+        ' · ' + d + '일차' + (nm ? ' ' + nm : '') + '</span></div>' +
         '<div class="stamps">' + L.map(function(s){
         var on = got.indexOf(s.id) >= 0;
         return '<button class="st' + (on ? ' got' : '') + '" data-st="' + s.id + '">' +
@@ -1478,11 +1507,18 @@
         ? '<div class="card" style="margin-top:14px;background:#064E3B"><h3 style="color:#fff">🎉 ' + d + '일차 다 모았습니다!</h3>' +
           '<div class="body" style="color:#D1FAE5">' + (STAMPS.certify ? '아래 버튼으로 인증을 제출하세요.' : '이 화면을 캡처해서 선생님께 보여 주세요.') + '</div></div>' + certBtn(d) : '');
     }).join('') +
-      '<div class="card" style="margin-top:14px"><div class="body">명소에 붙은 <b>QR 을 찍으면</b> 문제가 열려요.</div>' +
+      '<div class="card" style="margin-top:14px"><div class="body">명소에 붙은 <b>QR 을 찍으면</b> 문제가 열려요.' +
+      (g2 ? '<br>2학년 인천바로알기는 QR 대신 <b>스탬프를 눌러 그 자리에서 사진을 찍으면</b> 문제가 열려요.' : '') + '</div>' +
       '<button class="go" style="width:100%;margin-top:10px" data-scan>📷 QR 찍기</button></div>' +
       '';   // 미션은 미션 탭에만 둔다(스탬프판 아래에 같이 뜨면 두 가지가 섞여 보였다 — 사용자 지적 10/2)
     $("stampBody").querySelectorAll("[data-st]").forEach(function(b){
       b.onclick = function(){ openStamp(b.dataset.st, true); };
+    });
+    $("stampBody").querySelectorAll("[data-sg]").forEach(function(b){
+      b.onclick = function(){ try{ localStorage.setItem(gradeKey, b.dataset.sg); }catch(e){} paintStampCount(); showStampBoard(); };
+    });
+    $("stampBody").querySelectorAll("[data-rt]").forEach(function(b){
+      b.onclick = function(){ setRoute(b.dataset.rt); paintStampCount(); showStampBoard(); };
     });
     bindScan($("stampBody"));
     bindMisBlock($("stampBody"));
@@ -1504,7 +1540,12 @@
     h += '<div class="card"><h3>' + s.emoji + ' ' + s.name + '</h3>' +
          (s.photo ? '<img src="photos/' + s.photo + '" style="width:100%;border-radius:14px;margin:4px 0 10px">' : '') +
          '<div class="body">' + s.desc + '</div></div>';
-    if(!got && !opened){
+    if(!got && !opened && s.open === "photo"){
+      h += '<div class="card lock"><h3>📷 이곳에서 사진을 찍으면 문제가 열려요</h3>' +
+           '<div class="body">' + (s.shot || s.name + '이(가) 보이게 한 컷 찍어 보세요.') + '<br><small style="color:var(--sub)">사진은 내 폰 갤러리에만 남아요. 앱이나 서버로 보내지 않아요.</small></div>' +
+           '<label class="go" style="display:block;text-align:center;width:100%;margin-top:10px;line-height:56px">📷 사진 찍고 문제 열기' +
+           '<input type="file" accept="image/*" capture="environment" id="shotIn" style="display:none"></label></div>';
+    } else if(!got && !opened){
       h += '<div class="card lock"><h3>🔒 문제는 이곳 QR 을 찍으면 열려요</h3>' +
            '<div class="body">' + s.name + '에 붙은 QR 안내판을 찾아 보세요.</div>' +
            '<button class="go" style="width:100%;margin-top:10px" data-scan>📷 QR 찍기</button></div>';
@@ -1519,6 +1560,9 @@
     h += '<button class="go" style="width:100%;margin-top:6px" id="toBoard">🏅 스탬프판 보기</button>';
     $("stampBody").innerHTML = h;
     $("toBoard").onclick = showStampBoard;
+    if($("shotIn")) $("shotIn").onchange = function(){
+      if(this.files && this.files.length){ unlock(s.id); openStamp(s.id, fromBoard); }
+    };
     bindScan($("stampBody"));
     bindMis($("stampBody"));
     if(!got && opened){
@@ -1572,7 +1616,7 @@
        📷 사진전: 명소마다 정해진 미션(누르면 그 명소 화면에서 카메라)
        🎬 릴스전: 코스 어디서든 15초 — 장소가 없어서 바로 카메라 */
   function misBlock(){
-    var photo = STAMPS.stamps.filter(function(x){ return x.mission; });
+    var photo = STAMPS.stamps.filter(function(x){ return x.mission && !x.grade; });
     var got = misSet(), pd = photo.filter(function(x){ return got.indexOf(x.id) >= 0; }).length;
     return plaqueBlock() +
       '<div class="mis-h" id="misPhoto" style="margin-top:22px">📷 사진 미션<span>' + pd + ' / ' + photo.length + '</span></div>' +
@@ -1609,7 +1653,7 @@
      앱이 아는 건 스탬프뿐이다. 나머지는 학교 시트(출석 시트 「동판」 탭)가 폼 응답으로 판정한다 */
   function plaqueBlock(){
     var g = gotSet();
-    var cnt = function(d){ var L = STAMPS.stamps.filter(function(x){ return x.day === d; });
+    var cnt = function(d){ var L = dayStamps(d);
       return [L.filter(function(x){ return g.indexOf(x.id) >= 0; }).length, L.length]; };
     var c1 = cnt(1), c2 = cnt(2);
     var row = function(e, t, sub, st, go){
@@ -1621,8 +1665,8 @@
     return '<div class="mis-h">🏅 동판 미션</div>' +
       '<div class="mis-sub">여섯 가지를 모두 하면 학교 동판에 이름이 새겨져요.</div>' +
       row('🚶', '1. 1·2일차 완주', '두 날 모두 끝까지 · 선생님이 확인해요', '확인', '') +
-      row('👣', '2. 스탬프 완료', (getGrade() === "2" ? '2학년: 1일차 인천바로알기 미션' : '1일차 영종도 ' + c1[1] + '곳') + ' + 2일차 무의도·용유 ' + c2[1] + '곳 · 다 모으면 인증 제출',
-          getGrade() === "2" ? st(c2) : (c1[0] + c2[0] >= c1[1] + c2[1] ? '✅' : (c1[0] + c2[0]) + '/' + (c1[1] + c2[1])), 'stamp') +
+      row('👣', '2. 스탬프 완료', (getGrade() === "2" ? '1일차 인천바로알기 ' + (c1[1] ? c1[1] + '곳' : '(코스 고르기)') : '1일차 영종도 ' + c1[1] + '곳') + ' + 2일차 무의도·용유 ' + c2[1] + '곳 · 다 모으면 인증 제출',
+          (c1[1] && c1[0] + c2[0] >= c1[1] + c2[1]) ? '✅' : (c1[0] + c2[0]) + '/' + (c1[1] + c2[1]), 'stamp') +
       row('📷', '3. 사진전 또는 릴스전 출품', '하나 이상 · 아래 「출품하기」', '제출', 'photo') +
       row('👥', '4. 학급 단체사진 찍기', '반에서 한 명이 올리면 반 전체 인정', '제출', 'photo') +
       row('🧤', '5. 마시안해변 플로깅', '2일차 · 활동 사진 + 모은 해양쓰레기 사진', '제출', 'photo') +
