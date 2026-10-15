@@ -250,6 +250,11 @@
   .prepcard > span:nth-child(2){flex:1;font-size:18px}
   .prepcard .go2{font-size:28px;color:var(--sub);font-weight:400}
   .prepcard.done{background:#DCFCE7}
+  .prow{display:flex;gap:10px;align-items:stretch}
+  .prow .prepcard{flex:1 1 auto;min-width:0}
+  .prow .prepcard .s{font-size:13.5px}
+  .guidecard{flex:0 0 84px;flex-direction:column;justify-content:center;gap:4px;padding:10px 6px;text-align:center;text-decoration:none;font-size:15px;line-height:1.25}
+  .guidecard .e{font-size:26px}
   /* 코스 안내 */
   .seg{display:flex;gap:4px;padding:4px;border-radius:16px;background:#E2E8F0;margin-bottom:16px}
   .seg button{flex:1;min-height:48px;border-radius:12px;font-size:16px;font-weight:900;color:#475569}
@@ -443,8 +448,12 @@
 
       <div class="picks" id="picks"></div>
 
-      <button class="book prepcard" id="prepCard"><img src="t-prep.jpg" alt="">
-        <span>🎒 준비물 챙기기<span class="s" id="prepCount">눌러서 하나씩 체크해 보세요</span></span><span class="go2">›</span></button>
+      <!-- 준비물 + 선생님 안내(10/15 사용자 요청: 1·2일차 카드 아래, 준비물 오른쪽) -->
+      <div class="prow">
+        <button class="book prepcard" id="prepCard"><img src="t-prep.jpg" alt="">
+          <span>🎒 준비물 챙기기<span class="s" id="prepCount">눌러서 하나씩 체크해 보세요</span></span><span class="go2">›</span></button>
+        <a class="book guidecard" href="../guide/" target="_blank" rel="noopener"><span class="e">👩‍🏫</span><span>선생님<br>안내</span></a>
+      </div>
 
       <!-- 공모전 미리보기 — 윗줄은 «이미 마감된» 것, 아랫줄은 «행사 당일부터» 하는 것 -->
       <div class="trow">🚩 행사 당일부터</div>
