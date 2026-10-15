@@ -354,7 +354,7 @@
   #intro li b{display:block;font-size:16px}
   #intro .go{min-height:60px;border-radius:16px;background:var(--route);color:#04263A;font-size:19px;font-weight:900;margin-top:8px}
   /* 코스 고르기 — 이틀을 각각 다른 날 걷는다. 첫 화면에서 «오늘 걸을 코스»를 고른다. */
-  .picks{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:0}
+  .picks{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:0;min-height:92px} /* 카드 오기 전에도 자리를 잡아 둔다 */
   .pick{display:flex;align-items:center;gap:11px;text-align:left;padding:13px 12px;border-radius:20px;
     background:#fff;color:#0F172A;font-weight:900;min-height:74px;box-shadow:0 5px 16px rgba(15,23,42,.12)}
   .pick .ic{flex:0 0 auto;width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center}
@@ -1800,13 +1800,18 @@
   });
   if("serviceWorker" in navigator){
     navigator.serviceWorker.register("sw.js").catch(function(){});
-    /* 새 버전이 들어오면 한 번만 저절로 새로고침 — 홈 화면 앱엔 새로고침 버튼이 없다 */
-    var reloaded = false;
-    navigator.serviceWorker.addEventListener("controllerchange", function(){
-      if(reloaded || demo) return; reloaded = true; location.reload();
-    });
+    /* ★ 새 버전이 들어와도 «저절로 새로고침하지 않는다»(10/15 사용자: 화면이 한 번 깜빡이며 바뀐다).
+         화면·자료는 sw.js 가 «인터넷 먼저»로 주므로 열 때 이미 새 버전이다. 새로고침은 쓸데없이
+         앱을 연 지 몇 초 뒤(사진을 다 받은 뒤) 화면을 홈으로 되돌려 «깜빡임»만 만들었다. */
   }
 
+  /* ★ 코스 카드는 지난번에 받아 둔 목록으로 «먼저» 그린다 — 인터넷 응답을 기다리면 그동안 카드 자리가
+       비어서 아래 내용이 올라갔다 내려오며 깜빡였다(10/15). 새 자료가 오면 다시 그린다. */
+  var picksKey = "kkumgil.picks";
+  try{
+    var saved = JSON.parse(localStorage.getItem(picksKey) || "null");
+    if(saved && saved.courses){ LIST = saved; drawPicks(); }
+  }catch(e){}
   fetch("courses.json", {cache:"no-cache"}).then(function(r){ return r.json(); }).then(function(list){
     LIST = list;
     // 각 코스의 «실제 거리»를 미리 읽어 카드에 띄운다(코스 파일이 유일한 출처).
@@ -1817,6 +1822,7 @@
         .catch(function(){ c.ready = false; c.note = '코스 파일을 못 읽었어요'; });
     }));
   }).then(function(){
+    try{ localStorage.setItem(picksKey, JSON.stringify(LIST)); }catch(e){}
     drawPicks();
     paintPwa();
     if(wantTab === "course") showPane("course");
