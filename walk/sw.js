@@ -7,7 +7,7 @@
      · 내 파일(코스·사진·화면)  → 저장해 둔 것을 «먼저» 주고, 뒤에서 조용히 갱신
      · 카카오 지도 타일         → 저장하지 않는다(약관·용량). 신호 없으면 지도만 안 보인다
    ══════════════════════════════════════════════════════════════ */
-const V = 'kkumgil-v50';
+const V = 'kkumgil-v51';
 const CORE = ['./', './index.html', './courses.json', './course-day1.json', './course-day2.json',
               './manifest.json', './icon-192.png', './icon-512.png', './stamps.json',
               './hero.jpg', './t-poem.jpg', './t-catch.jpg', './t-shirt-dpw2.jpg',
@@ -17,14 +17,9 @@ self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
     const c = await caches.open(V);
     await c.addAll(CORE).catch(() => {});
-    // 사진은 용량이 커서 실패해도 설치를 막지 않는다(한 장씩 따로 담는다)
-    try {
-      const list = await (await fetch('./course-day1.json', { cache: 'no-cache' })).json();
-      const list2 = await (await fetch('./course-day2.json', { cache: 'no-cache' })).json();
-      const photos = [];
-      [list, list2].forEach((d) => (d.points || []).forEach((p) => (p.photos || []).forEach((f) => photos.push('./photos/' + f))));
-      await Promise.all([...new Set(photos)].map((u) => c.add(u).catch(() => {})));
-    } catch (err) { /* 사진은 나중에 받아도 된다 */ }
+    // ★ 사진(6.7MB)은 여기서 받지 않는다(10/15). 설치 중에 한꺼번에 받으면 그동안 코스 목록 같은
+    //   작은 자료가 줄을 서서 첫 화면 카드가 한참 늦게 떴다. 사진은 화면이 다 뜬 뒤 앱이 PRECACHE 로
+    //   한 장씩 천천히 받게 한다(index.html 의 autoPrecache).
     self.skipWaiting();
   })());
 });
@@ -69,7 +64,10 @@ self.addEventListener('message', (e) => {
       const c = await caches.open(V);
       const urls = e.data.urls || [];
       let done = 0;
-      for (const u of urls) { await c.add(u).catch(() => {}); done++; }
+      for (const u of urls) {                       // 하나씩, 이미 있는 건 건너뛴다
+        if (!(await c.match(u))) await c.add(u).catch(() => {});
+        done++;
+      }
       (await self.clients.matchAll()).forEach((cl) => cl.postMessage({ type: 'PRECACHE_DONE', done, total: urls.length }));
     })());
   }

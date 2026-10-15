@@ -1110,14 +1110,14 @@
   function drawPicks(){
     var html = LIST.courses.map(function(c, i){
       var km = c.lengthM ? (c.lengthM/1000).toFixed(1) : null;
-      var on = c.ready && km;
+      var on = c.ready;   // 거리는 코스 파일이 오면 채운다 — 그 전에도 카드는 누를 수 있게
       var sk = PICK_SKIN[i % PICK_SKIN.length];
       return '<button class="pick' + (on ? '' : ' off') + '" data-pick="' + i + '"' +
              (on ? '' : ' disabled') + '>' +
              '<span class="ic" style="background:' + (on ? sk.bg : "#334155") + ';color:' + (on ? sk.ink : "#94A3B8") + '">' +
                (on ? PIN_SVG : '🔒') + '</span>' +
              '<span class="d"><span class="t">' + c.label + '</span>' +
-               '<span class="s">' + c.place + (on ? ' ' + km + 'km' : '') + '</span>' +
+               '<span class="s">' + c.place + (on && km ? ' ' + km + 'km' : '') + '</span>' +
                '<span class="dt">' + (on ? c.date : (c.note || "준비 중")) + '</span></span>' +
              '</button>';
     }).join('');
@@ -1800,6 +1800,19 @@
   });
   if("serviceWorker" in navigator){
     navigator.serviceWorker.register("sw.js").catch(function(){});
+    /* ★ 오프라인용 사진은 화면이 다 뜨고 10초 뒤, 한 장씩 받는다(sw.js 는 순서대로 하나씩 받음).
+         예전엔 설치하자마자 6.7MB 를 한꺼번에 받아 첫 화면 카드가 늦게 떴다(10/15). 이미 받은 사진은 건너뛴다. */
+    setTimeout(function autoPrecache(){
+      if(!navigator.serviceWorker.controller || !LIST){ setTimeout(autoPrecache, 10000); return; }
+      Promise.all(LIST.courses.filter(function(c){ return c.ready; })
+          .map(function(c){ return fetch(c.file).then(function(r){ return r.json(); }); }))
+        .then(function(all){
+          var urls = [];
+          all.forEach(function(d){ (d.points||[]).forEach(function(p){ (p.photos||[]).forEach(function(f){ urls.push("photos/" + f); }); }); });
+          urls = urls.filter(function(v,i,a){ return a.indexOf(v) === i; });
+          navigator.serviceWorker.controller.postMessage({type:"PRECACHE", urls:urls, quiet:true});
+        }).catch(function(){});
+    }, 10000);
     /* ★ 새 버전이 들어와도 «저절로 새로고침하지 않는다»(10/15 사용자: 화면이 한 번 깜빡이며 바뀐다).
          화면·자료는 sw.js 가 «인터넷 먼저»로 주므로 열 때 이미 새 버전이다. 새로고침은 쓸데없이
          앱을 연 지 몇 초 뒤(사진을 다 받은 뒤) 화면을 홈으로 되돌려 «깜빡임»만 만들었다. */
@@ -1813,7 +1826,11 @@
     if(saved && saved.courses){ LIST = saved; drawPicks(); }
   }catch(e){}
   fetch("courses.json", {cache:"no-cache"}).then(function(r){ return r.json(); }).then(function(list){
-    LIST = list;
+    /* 거리(km)는 코스 파일에서 읽는데, 그걸 기다리지 않고 지난번 값으로 카드부터 그린다 */
+    var prev = {};
+    (LIST && LIST.courses || []).forEach(function(c){ if(c.lengthM) prev[c.id] = c.lengthM; });
+    list.courses.forEach(function(c){ if(prev[c.id]) c.lengthM = prev[c.id]; });
+    LIST = list; drawPicks();
     // 각 코스의 «실제 거리»를 미리 읽어 카드에 띄운다(코스 파일이 유일한 출처).
     return Promise.all(LIST.courses.map(function(c){
       if(!c.ready) return null;
