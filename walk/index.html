@@ -246,20 +246,18 @@
   /* 홈 준비물 카드 */
   .teacher[hidden]{display:none}
   .teacher{text-decoration:none;background:#F8FAFC;border:2px dashed #CBD5E1;box-shadow:none}
-  .prepcard img{width:52px;height:52px;border-radius:14px;flex:0 0 auto}
-  .prepcard > span:nth-child(2){flex:1;font-size:18px}
-  .prepcard .go2{font-size:28px;color:var(--sub);font-weight:400}
   .prepcard.done{background:#DCFCE7}
   .st-seg{margin:0 0 10px}
   .route-pick{display:grid;grid-template-columns:1fr;gap:6px;margin:0 0 14px}
   .route-pick button{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-radius:14px;background:var(--panel);border:2px solid var(--line);font-size:15px;text-align:left}
   .route-pick button small{color:var(--sub);font-weight:700;font-size:13px}
   .route-pick button.on{border-color:#0284C7;background:#E0F2FE}
-  .prow{display:flex;gap:10px;align-items:stretch}
-  .prow .prepcard{flex:1 1 auto;min-width:0}
-  .prow .prepcard .s{font-size:13.5px}
-  .guidecard{flex:0 0 84px;flex-direction:column;justify-content:center;gap:4px;padding:10px 6px;text-align:center;text-decoration:none;font-size:15px;line-height:1.25}
-  .guidecard .e{font-size:26px}
+  /* 10/16 사용자 요청: 준비물·선생님 안내도 1·2일차 카드와 같은 반반 크기 */
+  .prow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .prow .pick{min-width:0;min-height:92px}
+  .prow img.ic{object-fit:cover;padding:0}
+  .guidecard{text-decoration:none}
+  .guidecard .ic{background:#EDE9FE;font-size:23px}
   /* 코스 안내 */
   .seg{display:flex;gap:4px;padding:4px;border-radius:16px;background:#E2E8F0;margin-bottom:16px}
   .seg button{flex:1;min-height:48px;border-radius:12px;font-size:16px;font-weight:900;color:#475569}
@@ -455,9 +453,10 @@
 
       <!-- 준비물 + 선생님 안내(10/15 사용자 요청: 1·2일차 카드 아래, 준비물 오른쪽) -->
       <div class="prow">
-        <button class="book prepcard" id="prepCard"><img src="t-prep.jpg" alt="">
-          <span>🎒 준비물 챙기기<span class="s" id="prepCount">눌러서 하나씩 체크해 보세요</span></span><span class="go2">›</span></button>
-        <a class="book guidecard" href="../guide/" target="_blank" rel="noopener"><span class="e">👩‍🏫</span><span>선생님<br>안내</span></a>
+        <button class="pick prepcard" id="prepCard"><img class="ic" src="t-prep.jpg" alt="">
+          <span class="d"><span class="t">준비물</span><span class="s" id="prepCount">눌러서 체크</span></span></button>
+        <a class="pick guidecard" href="../guide/" target="_blank" rel="noopener"><span class="ic">👩‍🏫</span>
+          <span class="d"><span class="t">선생님 안내</span><span class="s">교사용 안내서</span></span></a>
       </div>
 
       <!-- 공모전 미리보기 — 윗줄은 «이미 마감된» 것, 아랫줄은 «행사 당일부터» 하는 것 -->
@@ -1233,7 +1232,7 @@
   function paintPrepCount(){
     if(!PREP) return;
     var all = prepAll(), got = prepSet().filter(function(id){ return all.indexOf(id) >= 0; }).length;
-    $("prepCount").textContent = got ? got + " / " + all.length + " 챙겼어요" : "눌러서 하나씩 체크해 보세요";
+    $("prepCount").textContent = got ? got + " / " + all.length + " 챙김" : "눌러서 체크";
     $("prepCard").classList.toggle("done", got === all.length);
   }
   function showPrep(){
