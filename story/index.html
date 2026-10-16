@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="theme-color" content="#0B4F82">
+<title>꿈길 걷기 앱 이야기</title>
+<meta name="description" content="지점 찍기 답사 앱에서 25km 동반자 앱까지 — 꿈길 걷기 앱을 기획·제작한 과정과 행사 당일 활용 방법(교직원 연수 자료)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F7FB; --card:#FFFFFF; --ink:#13202E; --sub:#4A5B6E; --mute:#7C8B9C; --line:#DDE5EE;
+  --blue:#0B6BCB; --blue-soft:#E3F0FC; --green:#0E9F6E; --green-soft:#E1F6EE; --amber:#C77700; --amber-soft:#FFF3DC;
+  --red:#D93A3A; --red-soft:#FDE8E8; --violet:#6D4AE0; --violet-soft:#EEE9FD; --hero1:#0B4F82; --hero2:#1C8FD1;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E151D; --card:#16212C; --ink:#E7EEF5; --sub:#A9B8C7; --mute:#7F90A1; --line:#26364A;
+    --blue:#5AAEF5; --blue-soft:#13314B; --green:#3BCB95; --green-soft:#123A2D; --amber:#F2B042; --amber-soft:#3B2C10;
+    --red:#F07272; --red-soft:#3D1A1A; --violet:#A891FF; --violet-soft:#2A2147; --hero1:#0A3557; --hero2:#125E8C;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E151D; --card:#16212C; --ink:#E7EEF5; --sub:#A9B8C7; --mute:#7F90A1; --line:#26364A;
+  --blue:#5AAEF5; --blue-soft:#13314B; --green:#3BCB95; --green-soft:#123A2D; --amber:#F2B042; --amber-soft:#3B2C10;
+  --red:#F07272; --red-soft:#3D1A1A; --violet:#A891FF; --violet-soft:#2A2147; --hero1:#0A3557; --hero2:#125E8C;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR",system-ui,-apple-system,sans-serif;line-height:1.7;font-size:16px;word-break:keep-all;overflow-wrap:anywhere}
+a{color:var(--blue)}
+img{max-width:100%;display:block}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+header.hero{background:linear-gradient(135deg,var(--hero1),var(--hero2));color:#fff;padding:56px 0 64px}
+.hero .eyebrow{font-size:14px;letter-spacing:.08em;opacity:.85;font-weight:700}
+.hero h1{font-size:clamp(30px,5.4vw,50px);line-height:1.25;margin:10px 0 14px;font-weight:900}
+.hero p.lead{font-size:clamp(16px,2.2vw,19px);opacity:.95;margin:0;max-width:720px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:30px}
+.stat{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:16px;padding:14px 16px}
+.stat b{display:block;font-size:clamp(24px,3.4vw,32px);font-weight:900;line-height:1.2}
+.stat span{font-size:13px;opacity:.9}
+nav.toc{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line)}
+nav.toc .wrap{display:flex;gap:6px;overflow-x:auto;padding:10px 16px;scrollbar-width:none}
+nav.toc a{flex:0 0 auto;text-decoration:none;color:var(--sub);font-size:14px;font-weight:700;padding:6px 12px;border-radius:999px;background:var(--bg)}
+nav.toc a:hover{color:var(--blue)}
+section{padding:52px 0 8px}
+.num{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:var(--blue);color:#fff;font-weight:900;font-size:16px;margin-right:10px;vertical-align:3px}
+h2{font-size:clamp(23px,3.4vw,30px);margin:0 0 6px;font-weight:900;line-height:1.35}
+h3{font-size:19px;margin:26px 0 8px;font-weight:800}
+p.intro{color:var(--sub);margin:4px 0 18px;font-size:16.5px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 22px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.prob{border-left:5px solid var(--red)}
+.prob b{display:block;font-size:17px;margin-bottom:4px}
+.prob p{margin:0;color:var(--sub);font-size:15px}
+.quote{background:var(--amber-soft);border-radius:16px;padding:18px 22px;margin:18px 0;font-size:17px;font-weight:700}
+.quote small{display:block;font-weight:500;color:var(--sub);font-size:14px;margin-top:4px}
+.pill{display:inline-block;font-size:12.5px;font-weight:800;padding:2px 10px;border-radius:999px;margin-right:4px}
+.pill.g{background:var(--green-soft);color:var(--green)} .pill.r{background:var(--red-soft);color:var(--red)} .pill.b{background:var(--blue-soft);color:var(--blue)} .pill.a{background:var(--amber-soft);color:var(--amber)} .pill.v{background:var(--violet-soft);color:var(--violet)}
+ul.clean{list-style:none;margin:0;padding:0}
+ul.clean li{padding:7px 0;border-bottom:1px dashed var(--line);font-size:15.5px}
+ul.clean li:last-child{border-bottom:0}
+.keep h3,.drop h3{margin-top:0}
+.keep{border-top:5px solid var(--green)} .drop{border-top:5px solid var(--mute)}
+.drop li{color:var(--sub)}
+figure.dia{margin:18px 0 6px;background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+figure.dia a.imglink{display:block;background:#fff}
+figure.dia figcaption{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--line);font-size:14.5px;color:var(--sub)}
+.btn{display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-weight:800;font-size:14px;color:#fff;background:var(--blue);padding:8px 14px;border-radius:10px;white-space:nowrap}
+.timeline{position:relative;margin:10px 0 0;padding-left:22px}
+.timeline:before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.tl{position:relative;padding:0 0 16px}
+.tl:before{content:"";position:absolute;left:-20px;top:8px;width:12px;height:12px;border-radius:50%;background:var(--card);border:3px solid var(--blue)}
+.tl.big:before{background:var(--blue)}
+.tl .d{font-weight:900;color:var(--blue);font-size:14px;margin-right:6px}
+.tl b{font-size:16px}
+.tl p{margin:2px 0 0;color:var(--sub);font-size:14.5px}
+.phones{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.phone{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:8px}
+.phone img{border-radius:16px;border:1px solid var(--line);aspect-ratio:390/844;object-fit:cover;width:100%}
+.phone p{margin:8px 4px 4px;font-size:13.5px;color:var(--sub);line-height:1.5}
+.phone p b{color:var(--ink);display:block;font-size:14.5px}
+.flow{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin:12px 0}
+.flow .st{flex:1 1 150px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.flow .st b{display:block;font-size:15.5px}
+.flow .st span{font-size:13.5px;color:var(--sub)}
+.flow .ar{align-self:center;color:var(--mute);font-weight:900}
+.role{border-top:5px solid var(--blue)}
+.role.t{border-top-color:var(--amber)} .role.h{border-top-color:var(--violet)}
+.role h3{margin-top:0}
+.role ol{margin:0;padding-left:20px}
+.role li{margin:5px 0;font-size:15.5px}
+.lesson{display:flex;gap:14px}
+.lesson .ic{flex:0 0 44px;height:44px;border-radius:12px;background:var(--blue-soft);display:flex;align-items:center;justify-content:center;font-size:22px}
+.lesson b{display:block;font-size:16.5px;margin-bottom:2px}
+.lesson p{margin:0;color:var(--sub);font-size:15px}
+.photo-pair{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;align-items:start}
+.photo-pair img{border-radius:14px;border:1px solid var(--line)}
+.note{font-size:13.5px;color:var(--mute);margin-top:8px}
+footer{padding:48px 0 60px;color:var(--mute);font-size:14px;text-align:center}
+@media (max-width:820px){
+  .grid3,.grid4{grid-template-columns:1fr 1fr}
+  .phones{grid-template-columns:1fr 1fr}
+  .stats{grid-template-columns:1fr 1fr}
+  .photo-pair{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .grid2,.grid3,.grid4{grid-template-columns:1fr}
+  .flow .ar{display:none}
+  .card{padding:16px 16px}
+  section{padding-top:40px}
+}
+@media print{nav.toc{display:none} header.hero{padding:24px 0} section{break-inside:avoid-page}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">교직원 연수 · 2026 제10회 꿈길 걷기 · 인천영종고</div>
+    <h1>꿈길 걷기 앱 이야기<br>지점 찍기에서 25km 동반자까지</h1>
+    <p class="lead">길을 잃은 학생이 있었던 행사를 어떻게 하면 더 안전하고, 덜 맹목적으로 걷게 할 수 있을까 — 그 질문에서 출발해 선생님이 직접 걸으며 기록하고, 그 기록으로 학생 앱을 만든 과정을 정리했습니다.</p>
+    <div class="stats">
+      <div class="stat"><b>6차례</b><span>선생님 현장 답사</span></div>
+      <div class="stat"><b>72곳</b><span>갈림길·화장실·위험 지점</span></div>
+      <div class="stat"><b>30곳</b><span>스탬프(해설+퀴즈)</span></div>
+      <div class="stat"><b>0원</b><span>서버비 · 설치 없음</span></div>
+    </div>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#why">1 왜 만들었나</a><a href="#cut">2 무엇을 뺐나</a><a href="#survey">3 지점 찍기 앱</a><a href="#make">4 만든 과정</a><a href="#structure">5 앱 구조</a><a href="#day">6 행사 당일</a><a href="#lesson">7 배운 점</a>
+</div></nav>
+
+<main class="wrap">
+
+<!-- 1 -->
+<section id="why">
+  <h2><span class="num">1</span>왜 만들었나</h2>
+  <p class="intro">2026년 8월, “학생들에게 내비게이션 앱을 주면 어떨까?”에서 시작했습니다. 4년 동안 행사를 운영하며 쌓인 문제는 네 가지였습니다.</p>
+  <div class="grid2">
+    <div class="card prob"><b>🚨 2년 연속, 길을 잃은 학생</b><p>재작년과 작년 모두 학생이 길을 잃고 반과 떨어진 일이 있었습니다. 가장 먼저 풀어야 할 문제입니다.</p></div>
+    <div class="card prob"><b>😶 맹목적으로 걷는 25km</b><p>앞으로 얼마나 남았는지, 점심·간식은 어디인지 모른 채 앞사람만 따라 걷습니다.</p></div>
+    <div class="card prob"><b>🏛 그냥 지나치는 명소</b><p>계획서 목적 1번이 영종도 역사·문화 체험인데, 용궁사도 영종진도 안내 없이 지나갑니다.</p></div>
+    <div class="card prob"><b>📸 걷는 동안의 활동</b><p>사진전·릴스전·미션처럼 걸으면서 하는 활동을 묶어 줄 도구가 없었습니다.</p></div>
+  </div>
+  <div class="quote">“이 행사에 필요한 건 A에서 B로 가는 길 찾기가 아니다.”<small>코스는 정해져 있고, 산길은 카카오·네이버 어느 지도에도 없습니다. 필요한 건 <b>정해진 코스에서 벗어나지 않게 하는 것</b>과 <b>헷갈리는 갈림길을 미리 보여 주는 것</b>이었습니다.</small></div>
+</section>
+
+<!-- 2 -->
+<section id="cut">
+  <h2><span class="num">2</span>무엇을 넣고, 무엇을 뺐나</h2>
+  <p class="intro">상의할수록 아이디어가 계속 늘어났습니다. 그래서 기준을 하나 세웠습니다.</p>
+  <div class="quote" style="background:var(--blue-soft)">“이 기능 때문에 학생이 걸으면서 폰을 더 보게 되나?” → 그렇다면 뺀다.<small>25km 걷기 앱은 화면을 보는 시간이 짧을수록 좋은 앱입니다. 차도 옆을 걷는 구간도 많습니다.</small></div>
+  <div class="grid2">
+    <div class="card keep">
+      <h3>✅ 꼭 넣은 것 — 안전 3가지</h3>
+      <ul class="clean">
+        <li><span class="pill g">1</span><b>코스 이탈 경보</b> — 코스에서 30m 벗어나면 소리</li>
+        <li><span class="pill g">2</span><b>갈림길 사전 안내</b> — 200m 앞에서 답사 사진을 미리</li>
+        <li><span class="pill g">3</span><b>🆘 내 위치 알리기</b> — “○○ 200m 전, 코스 8.4km 지점”을 문장으로</li>
+        <li><span class="pill b">+</span>화장실·휴식·점심 위치, 스탬프(해설+퀴즈), 사진 미션은 그다음</li>
+      </ul>
+    </div>
+    <div class="card drop">
+      <h3>✋ 뺀 것과 이유</h3>
+      <ul class="clean">
+        <li><b>보물찾기</b> — 당일 아침 25km를 돌며 숨겨야 해서 운영 부담이 더 큼</li>
+        <li><b>학급 순위</b> — 순위가 보이면 서두르고, 걷기 행사에선 그 자체가 위험</li>
+        <li><b>학생 댓글</b> — 걸으며 쓰면 위험, 교실에서 함께 읽는 편이 효과 비슷</li>
+        <li><b>로그인·서버</b> — 로그인이 안 되면 안전 기능까지 막힘. 안전 기능은 로그인 없이</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section id="survey">
+  <h2><span class="num">3</span>시작은 「지점 찍기」 답사 앱</h2>
+  <p class="intro">학생 앱보다 먼저 만든 것은 선생님이 답사할 때 쓰는 작은 앱입니다. 갈림길 안내를 하려면 갈림길이 어디인지, 어떻게 생겼는지부터 알아야 하니까요. <b>재료가 먼저입니다.</b></p>
+  <div class="photo-pair">
+    <div class="card">
+      <h3 style="margin-top:0">이렇게 씁니다</h3>
+      <div class="flow">
+        <div class="st"><b>① 버튼 누르기</b><span>갈림길·명소·화장실·차량진입·위험·휴식</span></div><div class="ar">→</div>
+        <div class="st"><b>② 위치 저장</b><span>GPS 좌표·정확도·시각 자동</span></div><div class="ar">→</div>
+        <div class="st"><b>③ 사진·메모</b><span>갈림길은 방향(왼쪽·오른쪽·직진)</span></div><div class="ar">→</div>
+        <div class="st"><b>④ 내보내기</b><span>지점 JSON + 사진 ZIP</span></div>
+      </div>
+      <ul class="clean">
+        <li>기록은 <b>버튼을 누를 때만</b> 합니다. 8시간 연속 GPS 기록은 배터리가 버티지 못해서, 전체 경로는 등산 앱(램블러)에 맡겼습니다.</li>
+        <li>지도가 안 떠도 기록은 됩니다. 산속에서 지도가 늦게 떠도 답사가 헛수고가 되지 않게 했습니다.</li>
+        <li>9/11 첫 답사: 1시간 49분, 5.8km, 지점 38개, GPS 오차는 모두 ±2~5m였습니다.</li>
+      </ul>
+    </div>
+    <div class="grid2">
+      <div class="phone"><img src="img/p-survey.jpg" alt="지점 찍기 답사 앱 화면: 갈림길·명소·화장실·차량진입·위험·휴식 버튼" loading="lazy"><p><b>지점 찍기 앱</b>버튼 6개가 전부</p></div>
+      <div class="phone"><img src="../walk/photos/d1_s1_06_갈림길_왼쪽.jpg" alt="백운산 갈림길 답사 사진" loading="lazy" style="aspect-ratio:3/4"><p><b>백운산 갈림길 사진</b>육안으로 구분이 안 될 만큼 닮은 갈림길이 10곳 넘게 이어집니다</p></div>
+    </div>
+  </div>
+  <p class="note">답사에서 확인한 것: 백운산 갈림길(06~17번)은 사진으로 봐도 서로 거의 같습니다. “GPS가 알아서 지금 갈림길을 띄워 주는 것”이 꼭 필요하다는 것을 현장이 보여 줬습니다.</p>
+</section>
+
+<!-- 4 -->
+<section id="make">
+  <h2><span class="num">4</span>만든 과정 — 답사 기록이 앱이 되기까지</h2>
+  <p class="intro">기획 → 답사 → 가공 → 배포 → 점검을 한 번에 끝낸 것이 아니라, 고칠 곳이 보이면 다시 걷는 방식으로 여러 번 돌았습니다.</p>
+  <figure class="dia">
+    <a class="imglink" href="d-build.html" target="_blank" rel="noopener"><img src="img/build.jpg" alt="제작 흐름 도식: 2년 연속 길 잃은 학생 → 꼭 필요한 3가지 → 지점 찍기 앱 → 선생님 현장 답사 → 코스 데이터 가공(지도로 그린 길 합침) → 학생 앱 배포 → 재생 테스트·폰 점검 → 다시 답사" loading="lazy"></a>
+    <figcaption><span>도식 ① 제작 흐름 — 누르면 확대·탐색할 수 있는 도식이 열립니다</span><a class="btn" href="d-build.html" target="_blank" rel="noopener">도식 크게 보기 ↗</a></figcaption>
+  </figure>
+
+  <h3>단계마다 한 일</h3>
+  <div class="grid3">
+    <div class="card"><span class="pill v">가공</span><h3 style="margin-top:8px">답사 → 코스 파일</h3><ul class="clean"><li>사진 장당 약 517KB → 100KB로 줄이기 (학생 280명이 데이터로 받음)</li><li>각 지점이 코스 몇 km인지 자동 계산</li><li>도로 구간은 지도(gpx.studio)로 그려 답사 구간 사이를 이음</li></ul></div>
+    <div class="card"><span class="pill b">배포</span><h3 style="margin-top:8px">설치 없는 홈 화면 앱</h3><ul class="clean"><li>앱스토어 없이 QR → 주소 → 「홈 화면에 추가」</li><li>GitHub Pages 정적 웹 = 서버·로그인·서버비 없음</li><li>앱은 개인정보를 저장하지 않음</li></ul></div>
+    <div class="card"><span class="pill r">점검</span><h3 style="margin-top:8px">실제 GPS로 다시 걸어 보기</h3><ul class="clean"><li>답사 때 길을 지나친 기록을 그대로 재생 → 1분 만에 이탈 경보, 오경보 0</li><li>아이폰 홈 화면 앱 깜빡임·느린 화면 수정</li><li>스탬프 GPS 열기가 어긋나 QR 방식으로 바꿈</li></ul></div>
+  </div>
+
+  <h3>타임라인</h3>
+  <div class="card">
+    <div class="timeline">
+      <div class="tl big"><span class="d">2026.8</span><b>첫 상의와 기획</b><p>문제 4가지 정리, “걸으며 폰을 더 보게 되나?” 기준, 안전 3가지로 범위 확정. 구글 폼·시트와 역할 나누기.</p></div>
+      <div class="tl"><span class="d">9/4</span><b>지점 찍기 답사 앱 배포 · 카카오맵 연결</b></div>
+      <div class="tl big"><span class="d">9/11</span><b>1차 답사 — 학교~백운산~용궁사</b><p>지점 38개·사진 44장. 같은 날 갈림길 사진의 방향 표시 방식을 정함.</p></div>
+      <div class="tl"><span class="d">9/14</span><b>학생 앱 첫 버전</b><p>이탈 경보·갈림길 안내·체험 모드. 실제 답사 GPS 1,034점을 재생해 검증.</p></div>
+      <div class="tl"><span class="d">9/15~9/23</span><b>2·3차 답사, 빈 구간은 지도로 그려 연결</b></div>
+      <div class="tl big"><span class="d">10/1~10/3</span><b>1·2일차 코스 · 홈 화면 앱 · 스탬프 · 미션</b><p>준비물·일정표, 공모전 결과, 선생님 현황판(인원 기록)까지.</p></div>
+      <div class="tl"><span class="d">10/12~10/13</span><b>1일차 후반 답사 · 사진전/릴스전 갤러리 · 동판 미션</b></div>
+      <div class="tl big"><span class="d">10/15</span><b>2학년 인천바로알기 스탬프 18곳 · 2일차 마시안~을왕리 답사 반영</b></div>
+      <div class="tl"><span class="d">10/30~31</span><b>행사 당일</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section id="structure">
+  <h2><span class="num">5</span>앱의 구조 — 무엇이 어디에 있나</h2>
+  <p class="intro">학생 폰 안에서 거의 모든 일이 끝납니다. 위치는 폰 안에서만 계산하고, 사진과 기록도 학생 폰에 남습니다. 학교 밖으로 나가는 것은 학생이 직접 보내는 연락과 출품뿐입니다.</p>
+  <figure class="dia">
+    <a class="imglink" href="d-app.html" target="_blank" rel="noopener"><img src="img/app.jpg" alt="앱 구조 도식: 학생 폰이 꿈길 걷기 앱을 열고, 지도·이탈 경보, 갈림길 사진 안내, QR 스탬프·퀴즈, 사진 미션·동판, 내 위치 알리기 다섯 기능이 각각 카카오맵, 코스·사진 파일, 폰 저장, 구글 폼 출품, 전화·문자·단톡과 연결되고, 연락은 선생님·상황실 → 학생 현황판 → 구글 시트로 이어짐" loading="lazy"></a>
+    <figcaption><span>도식 ② 앱 구조</span><a class="btn" href="d-app.html" target="_blank" rel="noopener">도식 크게 보기 ↗</a></figcaption>
+  </figure>
+  <div class="grid3" style="margin-top:14px">
+    <div class="card"><span class="pill b">원칙 1</span><p style="margin:8px 0 0">위치는 <b>폰 안에서만</b> 계산합니다. 학생 위치를 서버로 보내지 않습니다.</p></div>
+    <div class="card"><span class="pill b">원칙 2</span><p style="margin:8px 0 0">안전 기능(지도·경보·갈림길·내 위치)은 <b>로그인 없이</b> 돕니다.</p></div>
+    <div class="card"><span class="pill b">원칙 3</span><p style="margin:8px 0 0">인원 기록·출품은 <b>학교 구글</b>(폼·시트) 안에서만 오갑니다.</p></div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section id="day">
+  <h2><span class="num">6</span>행사 당일, 이렇게 쓰이기를 바랍니다</h2>
+  <p class="intro">앱은 선생님을 대신하지 않습니다. 선생님이 보는 같은 갈림길 사진을 학생도 보고, 위급할 때 학생이 자기 위치를 한 문장으로 말할 수 있게 돕는 도구입니다.</p>
+  <figure class="dia">
+    <a class="imglink" href="d-day.html" target="_blank" rel="noopener"><img src="img/day.jpg" alt="행사 당일 흐름 도식: 학생은 출발 전 → 걷는 중 → 스탬프 지점 → 사진 미션 → 완주 → 행사 뒤, 담임·지도교사는 출발 인원 확인, 선두·후미 길 확인, QR 앞 2~3분, 도착 인원 확인, 위급할 때 내 위치 알리기 → 상황실·현황판" loading="lazy"></a>
+    <figcaption><span>도식 ③ 행사 당일 흐름</span><a class="btn" href="d-day.html" target="_blank" rel="noopener">도식 크게 보기 ↗</a></figcaption>
+  </figure>
+
+  <div class="phones">
+    <div class="phone"><img src="img/p-home.jpg" alt="앱 홈 화면" loading="lazy"><p><b>① 홈</b>1·2일차 카드, 준비물, 선생님 안내</p></div>
+    <div class="phone"><img src="img/p-walk.jpg" alt="길안내 화면: 다음 갈림길까지 370m" loading="lazy"><p><b>② 걷는 중</b>“다음 갈림길까지 370m”, 오른쪽 아래 SOS</p></div>
+    <div class="phone"><img src="img/p-stamp.jpg" alt="용궁사 스탬프 화면" loading="lazy"><p><b>③ 스탬프</b>해설을 읽고, QR을 찍으면 퀴즈가 열림</p></div>
+    <div class="phone"><img src="img/p-survey.jpg" alt="지점 찍기 앱" loading="lazy"><p><b>④ (선생님) 지점 찍기</b>코스가 바뀌면 이 앱으로 다시 걸으면 됨</p></div>
+  </div>
+
+  <h3>누가 무엇을</h3>
+  <div class="grid3">
+    <div class="card role">
+      <h3>🎒 학생</h3>
+      <ol>
+        <li>출발 전 앱 열기 → 「화면 켜두기」 → ▶ 길안내 시작</li>
+        <li>폰은 주머니에. <b>소리가 나면</b> 그때 화면 보기</li>
+        <li>스탬프는 앱 안 「📷 QR 찍기」로 (기본 카메라 ✕)</li>
+        <li>아프거나 길을 잃으면 <b>그 자리에 멈추고</b> 🆘 → 화면의 문장을 그대로 전달</li>
+        <li>행사 뒤 사진전·릴스전 출품, 완주보고서</li>
+      </ol>
+    </div>
+    <div class="card role t">
+      <h3>👩‍🏫 담임·지도교사</h3>
+      <ol>
+        <li>출발 전 반 학생 폰에서 앱이 열리는지 확인</li>
+        <li>불참·중도포기·다시 합류는 <b>현황판 이름 버튼</b>으로</li>
+        <li>선두·후미는 같은 앱 화면으로 갈림길 확인</li>
+        <li>QR 스탬프 앞에서 2~3분만 기다려 주기</li>
+        <li>도착하면 인원 확인, 빠진 학생은 바로 연락</li>
+      </ol>
+    </div>
+    <div class="card role h">
+      <h3>📋 상황실</h3>
+      <ol>
+        <li>현황판으로 반별 걷는 중·중도포기 인원 보기</li>
+        <li>단톡·전화로 온 위치 문장(“○○ 200m 전, 8.4km”)과 지도 링크로 후송차 보내기</li>
+        <li>“움직이지 말고 기다려” 안내 — 이동하면 못 찾음</li>
+      </ol>
+    </div>
+  </div>
+  <div class="quote" style="margin-top:18px">🆘를 눌렀다고 혼내지 않기<small>실수로 눌렀다가 야단맞은 학생은 진짜 필요할 때 누르지 않습니다. 그래서 앱에도 “잘못 눌렀으면 그냥 ×로 닫으면 돼요. 아무 기록도 남지 않아요.”라고 적어 두었습니다. 🆘 화면은 “움직이지 말고 그 자리에서 기다리세요”도 함께 보여 줍니다.</small></div>
+</section>
+
+<!-- 7 -->
+<section id="lesson">
+  <h2><span class="num">7</span>만들면서 배운 점</h2>
+  <p class="intro">다른 행사나 수업에서 앱·디지털 도구를 만들 때도 그대로 쓸 수 있는 것들입니다.</p>
+  <div class="grid2">
+    <div class="card lesson"><div class="ic">🥾</div><div><b>현장 경험이 추측보다 정확하다</b><p>“산과 섬은 통신이 안 될 것”이라는 예상은 틀렸습니다. 4년 동안 걸어 본 선생님의 말이 맞았고, 덕분에 복잡한 오프라인 설계를 덜어냈습니다.</p></div></div>
+    <div class="card lesson"><div class="ic">📍</div><div><b>재료가 먼저, 화면은 나중</b><p>앱의 핵심 내용(갈림길 사진)은 선생님이 걸으며 모은 기록입니다. 지점 찍기 앱을 먼저 만든 것이 가장 잘한 결정이었습니다.</p></div></div>
+    <div class="card lesson"><div class="ic">✂️</div><div><b>넣는 것보다 빼는 것이 어렵다</b><p>“걸으며 폰을 더 보게 되나?” 하나로 계속 늘어나던 아이디어를 안전 3가지로 줄였습니다.</p></div></div>
+    <div class="card lesson"><div class="ic">💬</div><div><b>선생님 도구는 ‘안내 한 줄’이 먼저</b><p>보안을 꼼꼼히 챙긴 현황판이 “로그인이 어렵다”는 이유로 쓰이지 않을 뻔했습니다. 설명이 한 줄로 끝나도록 다시 만들었습니다.</p></div></div>
+    <div class="card lesson"><div class="ic">📱</div><div><b>실제 폰, 실제 길에서 시험</b><p>컴퓨터에서는 멀쩡하던 화면이 아이폰 홈 화면 앱에서 깜빡였습니다. 답사 GPS를 다시 재생해 보는 시험이 가장 믿을 만했습니다.</p></div></div>
+    <div class="card lesson"><div class="ic">🌱</div><div><b>해마다 쌓이는 구조</b><p>올해 학생들의 사진전·릴스전 작품이 내년 앱의 명소 사진이 됩니다. 후배가 선배의 사진을 보며 같은 길을 걷게 됩니다.</p></div></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3 style="margin-top:0">링크 모음</h3>
+    <ul class="clean">
+      <li>🚶 학생 앱 — <a href="../walk/" target="_blank" rel="noopener">today119.github.io/kkumgil/walk</a> (체험: <a href="../walk/?demo=3050" target="_blank" rel="noopener">길안내 체험 모드</a>)</li>
+      <li>📍 지점 찍기 답사 앱 — <a href="../survey/" target="_blank" rel="noopener">today119.github.io/kkumgil/survey</a></li>
+      <li>👩‍🏫 선생님 안내(당일 행동요령·배치·응급 대처) — <a href="../guide/" target="_blank" rel="noopener">today119.github.io/kkumgil/guide</a></li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  인천영종고 꿈길 걷기 프로젝트 · 교직원 연수 자료 (2026. 10.)<br>
+  도식은 Archify로 그렸습니다 · 지도 © 카카오, OpenStreetMap 기여자
+</footer>
+</body>
+</html>
