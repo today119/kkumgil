@@ -44,9 +44,14 @@ SEGMENTS_DAY1 = [
     {"extra": "data/survey-20261013/지점목록.json", "photos": "data/survey-20261013/photos", "skip": ["1", "2", "6"],
      "names": {"3": "차량 진입(족욕장 주차장)", "4": "해구 족욕장", "8": "건널목", "9": "건널목", "10": "건널목"}, "types": {"8": "risk", "9": "risk", "10": "risk"}},
 ]
-# 2일차(무의도) — 9/23 무의도~잠진도 4.8km + 10/15 마시안~을왕리. 잠진도 끝~마시안 북쪽 1km 는 해변을 따라 직선, 을왕리~용유초는 답사 전.
+# 2일차(무의도) — 9/23 무의도~잠진도 4.8km + 10/16 잠진도 끝~마시안 해변 1.1km + 10/15 마시안~을왕리. 을왕리~용유초는 답사 전.
 SEGMENTS_DAY2 = [
-    {"survey": "data/survey-20260923/course_day2_seg1.json", "photos": "data/survey-20260923/photos"},
+    # 55번(직진)은 10/16 1번이 같은 자리·새 사진이라 빼고, 57번은 56번과 같은 모래 비탈이라 뺀다
+    {"survey": "data/survey-20260923/course_day2_seg1.json", "photos": "data/survey-20260923/photos", "skip": ["55", "57"],
+     "names": {"56": "모래 비탈 — 천천히 내려가기"}},
+    # 2026-10-16 잠진도 길 끝 → 마시안 해변 북쪽 답사(4.7~5.9km). 2번은 GPS 오차 418m 이고 3번과 같은 «왼쪽 해변으로»라 뺀다
+    {"extra": "data/survey-20261016/지점목록.json", "photos": "data/survey-20261016/photos", "skip": ["2"],
+     "names": {"1": "갈림길 — 소나무 숲길로 직진", "3": "왼쪽 모래 언덕 내려가 해변으로"}},
     # 2026-10-15 마시안해변(북쪽 끝) → 을왕리 답사. 1~10번은 1일차 기록이 같은 파일에 쌓인 것, 15번은 14번과 같은 자리(사진 없음)
     {"extra": "data/survey-20261015/지점목록.json", "photos": "data/survey-20261015/photos", "skip": [str(i) for i in range(1, 11)] + ["15"],
      "names": {"11": "인도 없음 — 여기부터 경찰 에스코트(돌짜장 앞)", "14": "입구지 정류장(갯벌 풍경)", "16": "안전벽 위 좁은 길 — 한 줄로", "17": "선녀바위 해변",
@@ -57,7 +62,7 @@ SEGMENTS_DAY2 = [
 #   답사 지점·사진은 그대로 살리고, 새 선 위의 몇 km 지점인지만 다시 계산한다.
 #   (선생님이 gpx.studio 에서 뒷구간을 이어 그려 오시면 이 자리에 넣는다)
 FULL_DAY1 = "data/gpx/day1_full_20261013.gpx"  # 10/13 학교 진입 0.5km 를 답사 경로로 교체
-FULL_DAY2 = "data/gpx/day2_full_20261015.gpx"  # 9/23 선 + (해변 직선) + 10/15 답사 트랙
+FULL_DAY2 = "data/gpx/day2_full_20261016.gpx"  # 9/23 선 + 10/16 해변 답사 트랙 + 10/15 답사 트랙
 
 DAYS = {
     1: {"segments": SEGMENTS_DAY1, "title": "꿈길 걷기 1일차", "file": "course-day1.json", "full": FULL_DAY1},
@@ -174,6 +179,8 @@ def load_survey(seg, no):
     files = {nfc(f): f for f in os.listdir(photo_dir)}
     points = []
     for p in data["points"]:
+        if str(p.get("no")) in seg.get("skip", []):
+            continue
         photos = []
         for name in p["photos"]:
             real = files.get(nfc(name))
@@ -185,7 +192,7 @@ def load_survey(seg, no):
             photos.append(out_name)
         points.append({
             "type": p["type"],
-            "name": fix(p["memo"]) or KIND.get(p["type"], p["type"]),
+            "name": fix(seg.get("names", {}).get(str(p.get("no"))) or p["memo"]) or KIND.get(p["type"], p["type"]),
             "m": p["km"] * 1000,
             "lat": p["lat"], "lng": p["lng"],
             "dir": p.get("dir", ""),
