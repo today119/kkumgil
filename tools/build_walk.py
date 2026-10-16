@@ -44,7 +44,7 @@ SEGMENTS_DAY1 = [
     {"extra": "data/survey-20261013/지점목록.json", "photos": "data/survey-20261013/photos", "skip": ["1", "2", "6"],
      "names": {"3": "차량 진입(족욕장 주차장)", "4": "해구 족욕장", "8": "건널목", "9": "건널목", "10": "건널목"}, "types": {"8": "risk", "9": "risk", "10": "risk"}},
 ]
-# 2일차(무의도) — 9/23 무의도~잠진도 4.8km + 10/16 잠진도 끝~마시안 해변 1.1km + 10/15 마시안~을왕리. 을왕리~용유초는 답사 전.
+# 2일차(무의도) — 9/23 무의도~잠진도 4.8km + 10/16 잠진도 끝~마시안 해변 1.1km + 10/15 마시안~을왕리 + 10/16 을왕리~용유초.
 SEGMENTS_DAY2 = [
     # 55번(직진)은 10/16 1번이 같은 자리·새 사진이라 빼고, 57번은 56번과 같은 모래 비탈이라 뺀다
     {"survey": "data/survey-20260923/course_day2_seg1.json", "photos": "data/survey-20260923/photos", "skip": ["55", "57"],
@@ -55,14 +55,16 @@ SEGMENTS_DAY2 = [
     # 2026-10-15 마시안해변(북쪽 끝) → 을왕리 답사. 1~10번은 1일차 기록이 같은 파일에 쌓인 것, 15번은 14번과 같은 자리(사진 없음)
     {"extra": "data/survey-20261015/지점목록.json", "photos": "data/survey-20261015/photos", "skip": [str(i) for i in range(1, 11)] + ["15"],
      "names": {"11": "인도 없음 — 여기부터 경찰 에스코트(돌짜장 앞)", "14": "입구지 정류장(갯벌 풍경)", "16": "안전벽 위 좁은 길 — 한 줄로", "17": "선녀바위 해변",
-               "18": "경찰 에스코트 끝(선녀바위해변)", "20": "휴식", "21": "을왕리해수욕장", "22": "점심 대기·휴식", "23": "점심 식사 장소"}},
+               "18": "경찰 에스코트 끝(선녀바위해변)", "20": "휴식", "21": "을왕리해수욕장", "22": "점심 대기·휴식", "23": "점심 식사 장소",
+               # 10/16 을왕리 → 용유초(같은 파일에 쌓임). 트랙은 25번에서 북쪽 180m 곁가지를 빼고 FULL 에 넣었다
+               "25": "늘목로 59번길 갈림길 — 직진", "29": "동양염전", "31": "동양염전 풍경", "33": "도보 끝 — 용유초 휴식"}},
 ]
 
 # ★ 코스 «전체»를 그린 GPX 가 있으면 그것을 선으로 쓴다.
 #   답사 지점·사진은 그대로 살리고, 새 선 위의 몇 km 지점인지만 다시 계산한다.
 #   (선생님이 gpx.studio 에서 뒷구간을 이어 그려 오시면 이 자리에 넣는다)
 FULL_DAY1 = "data/gpx/day1_full_20261013.gpx"  # 10/13 학교 진입 0.5km 를 답사 경로로 교체
-FULL_DAY2 = "data/gpx/day2_full_20261016.gpx"  # 9/23 선 + 10/16 해변 답사 트랙 + 10/15 답사 트랙
+FULL_DAY2 = "data/gpx/day2_full_20261016b.gpx"  # 9/23 선 + 10/16 해변 + 10/15 마시안~을왕리 + (점심 뒤 되짚기 360m) + 10/16 을왕리~용유초
 
 DAYS = {
     1: {"segments": SEGMENTS_DAY1, "title": "꿈길 걷기 1일차", "file": "course-day1.json", "full": FULL_DAY1},
@@ -155,7 +157,8 @@ def shrink(src, dst):
 
 def project(path, pt):
     """점이 선의 몇 m 지점에 붙는지, 선에서 얼마나 떨어졌는지."""
-    best_d, best_m, run = 1e9, 0.0, 0.0
+    # 같은 길을 되짚는 곳(2일차 점심 뒤)은 두 군데가 거의 똑같이 가깝다 — 3m 안이면 «앞쪽(먼저 지나는 곳)»에 붙인다
+    cands, run = [], 0.0
     for i in range(1, len(path)):
         a, b = path[i - 1], path[i]
         seg = meters(a, b)
@@ -167,10 +170,12 @@ def project(path, pt):
         L = B[0] ** 2 + B[1] ** 2
         t = 0 if L == 0 else max(0.0, min(1.0, (A[0] * B[0] + A[1] * B[1]) / L))
         d = math.hypot(A[0] - B[0] * t, A[1] - B[1] * t)
-        if d < best_d:
-            best_d, best_m = d, run + seg * t
+        cands.append((d, run + seg * t))
         run += seg
-    return best_d, best_m
+    if not cands:
+        return 1e9, 0.0
+    best_d = min(c[0] for c in cands)
+    return best_d, min(m for d, m in cands if d <= best_d + 3)
 
 
 def load_survey(seg, no):
