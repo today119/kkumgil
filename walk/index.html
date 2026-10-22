@@ -227,11 +227,13 @@
   /* 학생들이 만든 안내·안전 영상(10/22 사용자 요청) — 제목 옆 버튼 */
   .hero .ttl{display:flex;align-items:center;justify-content:center;gap:7px}
   .hero .ttl h1{font-size:min(33px,8vw)}
+  /* 빨간 재생 버튼(10/22 사용자: 검은 🎬은 구분이 안 됨) */
   .vidbtn{flex:0 0 auto;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
-    width:46px;height:46px;border-radius:14px;background:#0F172A;color:#fff;margin-top:2px;
-    box-shadow:0 4px 12px rgba(15,23,42,.25)}
-  .vidbtn .e{font-size:21px;line-height:1}
-  .vidbtn .w{font-size:10px;font-weight:800;margin-top:2px;letter-spacing:-.02em}
+    background:none;margin-top:4px;padding:0}
+  .vidbtn .e{display:flex;align-items:center;justify-content:center;width:50px;height:36px;border-radius:11px;
+    background:#FF0000;box-shadow:0 4px 12px rgba(255,0,0,.35)}
+  .vidbtn .e svg{width:18px;height:18px;margin-left:3px}
+  .vidbtn .w{font-size:11px;font-weight:900;color:#E00000;margin-top:3px;letter-spacing:-.02em}
   .vplay{position:relative;width:100%;max-width:640px;margin:0 auto;aspect-ratio:16/9;background:#000;border-radius:14px;overflow:hidden;display:none}
   .vplay.on{display:block}
   .vplay iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
@@ -467,7 +469,7 @@
         <div class="tx">
           <div class="ed">2026 제10회</div>
           <div class="ttl"><h1>꿈길 걷기 프로젝트</h1>
-            <button class="vidbtn" id="vidBtn" aria-label="안내·안전 영상 보기"><span class="e">🎬</span><span class="w">영상</span></button></div>
+            <button class="vidbtn" id="vidBtn" aria-label="안내·안전 영상 보기"><span class="e"><svg viewBox="0 0 18 18"><path d="M3 1.5v15L16.5 9z" fill="#fff"/></svg></span><span class="w">영상</span></button></div>
           <div class="sl">꿈은 바라보는 것이 아니라,<br>걸어가는 것이다</div>
         </div>
       </div>
