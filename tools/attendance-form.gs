@@ -508,6 +508,14 @@ function fmt(d) { return Utilities.formatDate(new Date(d), 'Asia/Seoul', 'HH:mm'
        실행 계정: 나 / 액세스 권한: 「(학교 도메인) 내 모든 사용자」 → 배포 → 웹 앱 URL 복사
    코드를 고친 뒤엔: 「배포 → 배포 관리 → ✏️ → 버전: 새 버전 → 배포」 (주소는 그대로)
    ══════════════════════════════════════════════════════════════ */
+/* 꿈길 앱(공개 웹)이 선생님 위치를 보낸다 — 비번·폰 표시가 주소에 남지 않게 POST 본문으로 */
+function doPost(e) {
+  var q = {};
+  try { q = JSON.parse(e.postData.contents); } catch (err) {}
+  if (q.act === 'tpos') return json_(tpos_(q));
+  return json_({ ok: false, msg: '알 수 없는 요청' });
+}
+
 function doGet() {
   return HtmlService.createHtmlOutput(DASH_HTML)
     .setTitle('꿈길 걷기 현황판')
@@ -544,6 +552,57 @@ function anon_() {
 }
 var NOPIN_MSG = '현황판 비번이 아직 없어요. 시트 메뉴 🚶 → 「🔑 현황판 비번 정하기」를 먼저 해 주세요.';
 
+/* ══ 📡 교사 위치 → 대형 길이 (10/22 사용자 요청) ══
+   ★ 선생님 폰의 꿈길 앱이 1분마다 «코스 몇 km» 를 보낸다(?act=tpos). 학생 위치는 절대 받지 않는다.
+   ★ 시트에 쌓지 않고 스크립트 캐시에만 둔다(6시간 뒤 저절로 사라짐) — 위치 기록이 남지 않게.
+   ★ 앱은 공개 웹이라 «모든 사용자» 배포 + 현황판 비번이 있어야 받는다. */
+function json_(o) {
+  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
+function tpos_(q) {
+  var real = PropertiesService.getScriptProperties().getProperty('pin');
+  if (!real) return { ok: false, msg: '현황판 비번이 아직 없어요.' };
+  var bad = checkPin_(q.pin);
+  if (bad || String(q.pin || '') !== real) return { ok: false, msg: bad || '비번이 맞지 않아요.' };
+  var id = String(q.id || '').replace(/[^\w-]/g, '').slice(0, 16);        // 폰마다 정해지는 표시(성함은 선택)
+  if (!id) return { ok: false, msg: '앱을 새로 고침해 주세요.' };
+  if (q.ping) return { ok: true };
+  if (q.list) return { ok: true, teachers: readTpos_(Number(q.day) || 0) };   // 앱 지도 「👥 대형」
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(5000); } catch (e) { return { ok: false, msg: '잠시 뒤 다시' }; }
+  try {
+    var cache = CacheService.getScriptCache(), m = {};
+    try { m = JSON.parse(cache.get('tpos') || '{}'); } catch (e) {}
+    if (q.off) delete m[id];
+    else m[id] = { name: String(q.name || '').trim().slice(0, 20), role: String(q.role || '').slice(0, 4), day: Number(q.day) || 0,
+                     km: q.km === '' || q.km == null ? null : Number(q.km), len: Number(q.len) || 0,
+                     lat: Number(q.lat) || null, lng: Number(q.lng) || null,
+                     acc: Number(q.acc) || 0, t: Date.now() };
+    cache.put('tpos', JSON.stringify(m), 21600);
+  } finally { lock.releaseLock(); }
+  return { ok: true };
+}
+/* 그날 위치를 보낸 선생님들 — 30분 넘게 소식 없으면 뺀다 */
+function readTpos_(day) {
+  var m = {};
+  try { m = JSON.parse(CacheService.getScriptCache().get('tpos') || '{}'); } catch (e) {}
+  var now = Date.now();
+  var list = Object.keys(m).map(function (k) { var x = m[k]; x.id = k; x.ago = Math.round((now - x.t) / 60000); return x; })
+    .filter(function (x) { return x.day === day && x.ago <= 30 && x.km != null; })
+    .sort(function (a, b) { return b.km - a.km; });
+  /* 성함을 비운 선생님은 자리 이름으로 — 같은 자리가 여럿이면 ①②③ */
+  var cnt = {}, seen = {};
+  list.forEach(function (x) { if (!x.name) cnt[x.role || '선생님'] = (cnt[x.role || '선생님'] || 0) + 1; });
+  list.forEach(function (x) {
+    if (x.name) return;
+    var r = x.role || '선생님';
+    seen[r] = (seen[r] || 0) + 1;
+    x.name = r + (cnt[r] > 1 ? '①②③④⑤⑥⑦⑧⑨'.charAt(seen[r] - 1) : '');
+    x.role = '';
+  });
+  return list;
+}
+
 /* 현황판이 1분마다 부른다 — 폼이 없어도 명단만 있으면 된다 */
 function getStatus(day, pin) {
   var bad = checkPin_(pin);
@@ -569,7 +628,7 @@ function getStatus(day, pin) {
                by: String(p[9] || '').split('@')[0] };
     });
   return { ok: true, title: DAYS[day].title, time: Utilities.formatDate(new Date(), 'Asia/Seoul', 'HH:mm'),
-           total: tot, classes: classes, out: out,
+           total: tot, classes: classes, out: out, teachers: readTpos_(day),
            reasons: REASONS.filter(function (r) { return r !== '결석·개인 사정'; }),
            places: DAYS[day].places.filter(function (p) { return p !== '출발 전'; }) };
 }
@@ -644,6 +703,16 @@ button{font-family:inherit;cursor:pointer}
 .p .nm{font-size:16px;font-weight:900}
 .p .mt{font-size:13px;color:#64748B;font-weight:700;margin-top:1px}
 .empty{background:#fff;border-radius:14px;padding:16px;text-align:center;color:#64748B;font-weight:700}
+.fm{background:#fff;border-radius:16px;padding:13px 14px;margin-top:10px;box-shadow:0 2px 8px rgba(15,23,42,.06)}
+.fm .ln{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;font-weight:800;color:#475569}
+.fm .ln b{font-size:24px;font-weight:900;color:#0B4F82}
+.fm .tr{position:relative;height:30px;margin:14px 6px 4px}
+.fm .tr:before{content:"";position:absolute;left:0;right:0;top:13px;height:4px;border-radius:2px;background:#E2E8F0}
+.fm .sp{position:absolute;top:11px;height:8px;border-radius:4px;background:#7DD3FC}
+.fm .dt{position:absolute;top:6px;width:18px;height:18px;margin-left:-9px;border-radius:50%;border:3px solid #fff;background:#0284C7;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.fm .dt.old{background:#94A3B8}
+.fm .ks{display:flex;justify-content:space-between;font-size:11px;color:#94A3B8;font-weight:800}
+.fm .who{font-size:13px;color:#334155;font-weight:700;margin-top:8px;line-height:1.7}
 .err{background:#FEF3C7;color:#92400E;border-radius:14px;padding:14px;font-weight:700;line-height:1.6}
 /* 반 화면 · 학생 화면 (아래에서 올라오는 판) */
 .sh{position:fixed;inset:0;z-index:20;background:rgba(15,23,42,.45);display:none;align-items:flex-end}
@@ -717,6 +786,7 @@ function draw(R){
   h += '<div class="big"><div><b>' + T.go + '</b><span>참가</span></div>' +
        '<div class="drop"><b>' + T.drop + '</b><span>중도포기</span></div>' +
        '<div class="walk"><b>' + T.walk + '</b><span>지금 걷는 중</span></div></div>';
+  h += formation(S.teachers || []);
   h += '<div class="h">반별 <small>반을 누르면 기록할 수 있어요</small></div><div class="cls">' + S.classes.map(function(c, i){
     return '<button class="c' + (c.drop ? ' alert' : '') + '" data-ci="' + i + '"><div class="n">' + esc(c.label) + '<em>' + c.walk + '</em></div>' +
            '<div class="s">명단 ' + c.list + ' · 불참 ' + c.absent + ' · <i>포기 ' + c.drop + '</i></div></button>';
@@ -732,6 +802,21 @@ function draw(R){
     b.onclick = function(){ var k = b.dataset.who.split('|'); openStudent(k[0], k[1]); };
   });
   if(openCls !== null && $('sh').classList.contains('show') && $('pn').dataset.mode === 'class') openClass(openCls, true);
+}
+
+/* 📡 대형 — 위치를 보낸 선생님들의 코스 km 로 선두~후미 길이를 본다 */
+function formation(T){
+  if(!T.length) return '<div class="fm"><div class="ln">📡 대형 <span style="font-size:13px">위치 보내는 선생님이 아직 없어요 — 꿈길 앱 홈 「선생님 위치 공유」</span></div></div>';
+  var len = T[0].len || 25, hi = T[0], lo = T[T.length - 1], pc = function(k){ return Math.max(0, Math.min(100, k / len * 100)); };
+  var h = '<div class="fm"><div class="ln"><span>📡 대형 길이</span><b>' + (T.length > 1 ? (hi.km - lo.km).toFixed(1) + 'km' : '-') + '</b></div>';
+  h += '<div class="tr"><div class="sp" style="left:' + pc(lo.km) + '%;width:' + (pc(hi.km) - pc(lo.km)) + '%"></div>' +
+       T.map(function(t){ return '<div class="dt' + (t.ago >= 5 ? ' old' : '') + '" style="left:' + pc(t.km) + '%" title="' + esc(t.name) + '"></div>'; }).join('') + '</div>';
+  h += '<div class="ks"><span>출발 0km</span><span>도착 ' + len.toFixed(1) + 'km</span></div><div class="who">' +
+       T.map(function(t, i){
+         var tag = i === 0 ? '🚩 ' : (i === T.length - 1 && T.length > 1 ? '🏁 ' : '· ');
+         return tag + esc(t.role ? t.role + ' ' : '') + esc(t.name) + ' <b>' + t.km.toFixed(1) + 'km</b> <span style="color:#94A3B8">(' + (t.ago < 1 ? '방금' : t.ago + '분 전') + ')</span>';
+       }).join('<br>') + '</div></div>';
+  return h;
 }
 
 /* ── 반 화면: 학생 이름 버튼 — 눌러서 «여러 명 선택» → 아래 줄에서 한꺼번에 처리 ── */
