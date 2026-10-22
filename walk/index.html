@@ -1012,12 +1012,12 @@
               t.ico + ' ' + (p.type === "spot" ? p.name : t.name) + '</div>';
           new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(p.lat, p.lng), content:el, yAnchor:small ? .5 : 1.3, zIndex:5}).setMap(map);
         });
-        /* 🚑 하산 도우미 자리 — 선생님(위치 공유 켠 폰)에게만 보인다. 학생에겐 「여기서 그만」 표지가 되지 않게 */
+        /* 📍 하산 포인트(도우미 대기 자리) — 선생님(위치 공유 켠 폰)에게만 보인다. 학생에겐 「여기서 그만」 표지가 되지 않게 */
         helperMks = (C.helpers || []).map(function(h){
           var el = document.createElement("div");
-          el.style.cssText = "background:#DC2626;color:#fff;font-weight:900;font-size:12px;padding:4px 9px;border-radius:999px;white-space:nowrap;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.5)";
-          el.textContent = "🚑 하산 " + "①②③④⑤⑥"[h.n - 1] + " · 2명";
-          el.onclick = function(){ toast("🚑 하산 도우미 " + "①②③④⑤⑥"[h.n - 1] + " · " + h.name + " (" + (h.m/1000).toFixed(1) + "km) — " + h.desc); };
+          el.style.cssText = "background:#1565C0;color:#fff;font-weight:900;font-size:12px;padding:4px 9px;border-radius:999px;white-space:nowrap;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.5)";
+          el.textContent = "📍 하산 포인트 " + "①②③④⑤⑥"[h.n - 1] + " · 2명 대기";
+          el.onclick = function(){ toast("📍 하산 포인트 " + "①②③④⑤⑥"[h.n - 1] + " · " + h.name + " (" + (h.m/1000).toFixed(1) + "km) — " + h.desc); };
           return new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(h.lat, h.lng), content:el, yAnchor:1.3, zIndex:7});
         });
         var bounds = new kakao.maps.LatLngBounds();
