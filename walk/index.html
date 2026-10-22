@@ -1481,7 +1481,7 @@
 
   /* 안내·안전 영상 — 드라이브(링크 공유) 미리보기로 재생. 학생 얼굴이 나오므로 저장소에는 올리지 않는다 */
   var VIDS = [
-    { id:"1aH7vrNS6qH_s2YsgoAqLy7AQ8Ywd26nV", e:"📱", t:"꿈길 걷기 앱 안내", s:"행사 소개 · 앱 쓰는 법 · 4분 22초" },
+    { yt:"Pub_3Es0Px8", id:"1aH7vrNS6qH_s2YsgoAqLy7AQ8Ywd26nV", e:"📱", t:"꿈길 걷기 앱 안내", s:"행사 소개 · 앱 쓰는 법 · 4분 22초" },
     { id:"12nmTifxTt2xcFkbZ1kqrDpnWx095kipk", e:"⛰️", t:"산길에서 안전", s:"백운산 산길 · 58초" },
     { id:"1jFbres5m1IQoVvWTsbdbQdJcMk5B77jJ", e:"🚸", t:"횡단보도 안전", s:"20초" },
     { id:"1rEDJN80TuEQW_GDut_tUUVLFS9GBgk7J", e:"🍱", t:"식당에서 질서", s:"34초" },
@@ -1503,8 +1503,10 @@
     var b = e.target.closest("[data-vi]"); if(!b) return;
     var v = VIDS[+b.dataset.vi];
     stopVid();
-    $("vidPlay").innerHTML = '<iframe src="https://drive.google.com/file/d/' + v.id +
-      '/preview" allow="autoplay; fullscreen" allowfullscreen></iframe>';
+    /* 유튜브(일부 공개)에 올린 건 유튜브로 — 드라이브 미리보기는 폰에서 재생이 잘 안 됐다(10/22 사용자) */
+    $("vidPlay").innerHTML = v.yt
+      ? '<iframe src="https://www.youtube-nocookie.com/embed/' + v.yt + '?autoplay=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>'
+      : '<iframe src="https://drive.google.com/file/d/' + v.id + '/preview" allow="autoplay; fullscreen" allowfullscreen></iframe>';
     $("vidPlay").classList.add("on");
     $("vidNow").textContent = v.e + " " + v.t; $("vidNow").classList.add("on");
     b.classList.add("cur");
