@@ -621,12 +621,13 @@
     <div class="hintbox" style="margin-top:0">켜 두면 코스 화면이 열려 있는 동안 <b>1분마다 «코스 몇 km»</b>를 현황판에 보내요.
       코스 지도의 <b>👥 대형</b> 버튼으로 다른 선생님 위치와 대형 길이를 볼 수 있어요.<br>
       화면이 꺼지면 멈추니 <b>「화면 켜두기」+ 보조배터리</b>로 걸어 주세요. 위치는 6시간 뒤 저절로 지워져요.</div>
-    <div class="q" style="font-weight:900;margin:16px 2px 6px">성함 <span style="color:var(--sub);font-weight:700">(안 써도 돼요)</span></div>
-    <input id="tpName" maxlength="20" placeholder="비우면 「선두」「후미」로 보여요" style="width:100%;font-size:18px;font-weight:800;padding:12px;border-radius:14px;border:2px solid #CBD5E1">
-    <div class="q" style="font-weight:900;margin:14px 2px 6px">맡은 자리</div>
-    <div class="codeRow" id="tpRole"><button data-r="선두">🚩 선두</button><button data-r="중간">중간</button><button data-r="후미">🏁 후미</button></div>
-    <div class="q" style="font-weight:900;margin:14px 2px 6px">현황판 비번</div>
+    <div class="q" style="font-weight:900;margin:16px 2px 6px">① 현황판 비번</div>
     <input id="tpPin" type="password" inputmode="numeric" maxlength="12" style="width:100%;font-size:22px;font-weight:900;letter-spacing:.3em;text-align:center;padding:12px;border-radius:14px;border:2px solid #CBD5E1">
+    <div class="q" style="font-weight:900;margin:14px 2px 6px">② 성함 <span style="color:var(--sub);font-weight:700">— 두 글자 치면 명단이 떠요</span></div>
+    <input id="tpName" list="tpNames" maxlength="20" autocomplete="off" placeholder="비번을 넣으면 명단에서 골라요" style="width:100%;font-size:18px;font-weight:800;padding:12px;border-radius:14px;border:2px solid #CBD5E1">
+    <datalist id="tpNames"></datalist>
+    <div class="q" style="font-weight:900;margin:14px 2px 6px">③ 맡은 자리</div>
+    <div class="codeRow" id="tpRole"><button data-r="선두">🚩 선두</button><button data-r="중간">중간</button><button data-r="후미">🏁 후미</button></div>
     <div id="tpMsg" style="color:#B91C1C;font-weight:800;font-size:14px;min-height:20px;margin:8px 2px"></div>
     <button class="go" id="tpOn">📡 공유 켜기</button>
     <button class="go ghost" id="tpOff">공유 끄기</button>
@@ -1386,8 +1387,27 @@
     TP.role = b.dataset.r;
     $("tpRole").querySelectorAll("button").forEach(function(x){ x.style.background = x === b ? "#0B4F82" : "#94A3B8"; });
   };
+  /* 비번이 맞으면 서버가 선생님 명단(이름만)을 내려 준다 — 앱 파일에는 이름이 없다 */
+  var tpNames = [], tpPinT = null;
+  $("tpPin").oninput = function(){
+    clearTimeout(tpPinT);
+    var pin = $("tpPin").value.trim();
+    if(pin.length < 4 || !tpUrl) return;
+    tpPinT = setTimeout(function(){
+      TP.pin = pin;
+      tpCall({ping:1}).then(function(r){
+        if(!r.ok){ $("tpMsg").textContent = r.msg || "비번을 확인해 주세요"; return; }
+        tpNames = r.names || [];
+        $("tpNames").innerHTML = tpNames.map(function(n){ return '<option value="' + esc(n) + '">'; }).join("");
+        $("tpMsg").style.color = "#15803D";
+        $("tpMsg").textContent = tpNames.length ? "✅ 비번 확인 — 성함을 골라 주세요" : "✅ 비번 확인";
+        setTimeout(function(){ $("tpMsg").style.color = ""; }, 3000);
+      }).catch(function(){});
+    }, 500);
+  };
   $("tpOn").onclick = function(){
     var name = $("tpName").value.trim(), pin = $("tpPin").value.trim();
+    if(name && tpNames.length && tpNames.indexOf(name) < 0){ $("tpMsg").textContent = "명단에 있는 성함을 골라 주세요"; return; }
     if(!name && !TP.role){ $("tpMsg").textContent = "맡은 자리(선두·중간·후미)를 골라 주세요"; return; }
     if(!pin){ $("tpMsg").textContent = "현황판 비번을 넣어 주세요"; return; }
     TP.name = name; TP.pin = pin;
@@ -1426,9 +1446,10 @@
       if(mapReady){
         T.forEach(function(t){
           if(t.lat == null) return;
-          var el = document.createElement("div");
+          var el = document.createElement(t.phone ? "a" : "div");     // 전화번호는 관리(O) 선생님 폰에만 온다
           el.className = "tlabel" + (t.ago >= 5 ? " old" : "");
-          el.textContent = (t === hi ? "🚩" : t === lo && T.length > 1 ? "🏁" : "") + t.name;
+          if(t.phone){ el.href = "tel:" + t.phone; el.style.textDecoration = "none"; el.style.display = "block"; }
+          el.textContent = (t === hi ? "🚩" : t === lo && T.length > 1 ? "🏁" : "") + t.name + (t.phone ? " 📞" : "");
           var m = new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(t.lat, t.lng), content:el, yAnchor:1.4, zIndex:12});
           m.setMap(map); troopMarks.push(m);
         });
@@ -1442,7 +1463,9 @@
       }
       $("troopBar").innerHTML = (T.length > 1 ? "대형 <b class='len'>" + (hi.km - lo.km).toFixed(1) + "km</b><br>" : "") +
         T.map(function(t){
-          return (t === hi ? "🚩 " : t === lo && T.length > 1 ? "🏁 " : "· ") + esc((t.role ? t.role + " " : "") + t.name) + " " +
+          return (t === hi ? "🚩 " : t === lo && T.length > 1 ? "🏁 " : "· ") +
+                 (t.phone ? "<a href='tel:" + esc(t.phone) + "' style='color:#7DD3FC' onclick='event.stopPropagation()'>" : "") +
+                 esc((t.role ? t.role + " " : "") + t.name) + (t.phone ? " 📞</a>" : "") + " " +
                  t.km.toFixed(1) + "km <span style='color:#94A3B8'>" + (t.ago < 1 ? "방금" : t.ago + "분 전") + "</span>";
         }).join("<br>");
     }).catch(function(){ if(troopOn) $("troopBar").innerHTML = "연결이 약해요 — 잠시 뒤 다시 불러와요"; });

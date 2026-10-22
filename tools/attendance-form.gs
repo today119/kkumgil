@@ -45,6 +45,7 @@ function onOpen() {
     .addSeparator()
     .addItem('🔑 현황판 비번 정하기', 'setPin')
     .addItem('📱 현황판 주소 보기', 'showDashUrl')
+    .addItem('📡 선생님 명단 탭 만들기(위치 공유용)', 'makeTeacherTab')
     .addSeparator()
     .addItem('❓ 사용법', 'showHelp')
     .addToUi();
@@ -559,6 +560,24 @@ var NOPIN_MSG = '현황판 비번이 아직 없어요. 시트 메뉴 🚶 → �
 function json_(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 }
+/* 「선생님」 탭: A 이름 | B 전화(선택) | C 관리(O = 지도에서 이름·전화가 보이는 사람)
+   ★ 이름은 공개 저장소(이 코드)에 쓰지 않는다 — 시트에만 두고, 비번이 맞을 때만 내려 준다. */
+var T_TAB = '선생님';
+function makeTeacherTab() {
+  var ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName(T_TAB);
+  if (!sh) sh = ss.insertSheet(T_TAB);
+  if (!sh.getRange(1, 1).getValue()) sh.getRange(1, 1, 1, 3).setValues([['이름', '전화(선택)', '관리(O)']]).setFontWeight('bold');
+  sh.setFrozenRows(1);
+  SpreadsheetApp.getUi().alert('「선생님」 탭: A열에 이름, B열에 전화(선택), C열에 관리자는 O.\n관리(O) 선생님 폰에서만 지도에 이름·전화가 보여요.');
+}
+function teachers_() {
+  var sh = SpreadsheetApp.getActive().getSheetByName(T_TAB);
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, 3).getDisplayValues()
+    .map(function (r) { return { name: String(r[0]).trim(), phone: String(r[1]).replace(/[^\d]/g, ''), admin: /^[oOㅇ○●✓v]/.test(String(r[2]).trim()) }; })
+    .filter(function (t) { return t.name; });
+}
+
 function tpos_(q) {
   var real = PropertiesService.getScriptProperties().getProperty('pin');
   if (!real) return { ok: false, msg: '현황판 비번이 아직 없어요.' };
@@ -566,8 +585,15 @@ function tpos_(q) {
   if (bad || String(q.pin || '') !== real) return { ok: false, msg: bad || '비번이 맞지 않아요.' };
   var id = String(q.id || '').replace(/[^\w-]/g, '').slice(0, 16);        // 폰마다 정해지는 표시(성함은 선택)
   if (!id) return { ok: false, msg: '앱을 새로 고침해 주세요.' };
-  if (q.ping) return { ok: true };
-  if (q.list) return { ok: true, teachers: readTpos_(Number(q.day) || 0) };   // 앱 지도 「👥 대형」
+  var T = teachers_(), me = String(q.name || '').trim();
+  var mine = T.filter(function (t) { return t.name === me; })[0];
+  if (q.ping) return { ok: true, names: T.map(function (t) { return t.name; }) };
+  if (q.list) {                                                    // 앱 지도 「👥 대형」
+    var L = readTpos_(Number(q.day) || 0, mine && mine.admin);
+    if (mine && mine.admin) L.forEach(function (x) { var t = T.filter(function (y) { return y.name === x.real; })[0]; if (t && t.phone) x.phone = t.phone; });
+    L.forEach(function (x) { delete x.real; });
+    return { ok: true, admin: !!(mine && mine.admin), teachers: L };
+  }
   var lock = LockService.getScriptLock();
   try { lock.waitLock(5000); } catch (e) { return { ok: false, msg: '잠시 뒤 다시' }; }
   try {
@@ -583,7 +609,7 @@ function tpos_(q) {
   return { ok: true };
 }
 /* 그날 위치를 보낸 선생님들 — 30분 넘게 소식 없으면 뺀다 */
-function readTpos_(day) {
+function readTpos_(day, showNames) {
   var m = {};
   try { m = JSON.parse(CacheService.getScriptCache().get('tpos') || '{}'); } catch (e) {}
   var now = Date.now();
@@ -592,7 +618,11 @@ function readTpos_(day) {
     .sort(function (a, b) { return b.km - a.km; });
   /* 성함을 비운 선생님은 자리 이름으로 — 같은 자리가 여럿이면 ①②③ */
   var cnt = {}, seen = {};
-  list.forEach(function (x) { if (!x.name) cnt[x.role || '선생님'] = (cnt[x.role || '선생님'] || 0) + 1; });
+  list.forEach(function (x) {
+    x.real = x.name;
+    if (!showNames) x.name = '';                                   // 이름은 관리(O) 선생님 폰에만
+    if (!x.name) cnt[x.role || '선생님'] = (cnt[x.role || '선생님'] || 0) + 1;
+  });
   list.forEach(function (x) {
     if (x.name) return;
     var r = x.role || '선생님';
@@ -628,7 +658,8 @@ function getStatus(day, pin) {
                by: String(p[9] || '').split('@')[0] };
     });
   return { ok: true, title: DAYS[day].title, time: Utilities.formatDate(new Date(), 'Asia/Seoul', 'HH:mm'),
-           total: tot, classes: classes, out: out, teachers: readTpos_(day),
+           total: tot, classes: classes, out: out,
+           teachers: readTpos_(day, false).map(function (x) { delete x.real; delete x.lat; delete x.lng; return x; }),
            reasons: REASONS.filter(function (r) { return r !== '결석·개인 사정'; }),
            places: DAYS[day].places.filter(function (p) { return p !== '출발 전'; }) };
 }
