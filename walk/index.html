@@ -224,6 +224,28 @@
     -webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 16%,#000 86%,transparent 100%);
             mask-image:linear-gradient(180deg,transparent 0%,#000 16%,#000 86%,transparent 100%)}
   .hero .sh{display:none}
+  /* 학생들이 만든 안내·안전 영상(10/22 사용자 요청) — 제목 옆 버튼 */
+  .hero .ttl{display:flex;align-items:center;justify-content:center;gap:7px}
+  .hero .ttl h1{font-size:min(33px,8vw)}
+  .vidbtn{flex:0 0 auto;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+    width:46px;height:46px;border-radius:14px;background:#0F172A;color:#fff;margin-top:2px;
+    box-shadow:0 4px 12px rgba(15,23,42,.25)}
+  .vidbtn .e{font-size:21px;line-height:1}
+  .vidbtn .w{font-size:10px;font-weight:800;margin-top:2px;letter-spacing:-.02em}
+  .vplay{position:relative;width:100%;max-width:640px;margin:0 auto;aspect-ratio:16/9;background:#000;border-radius:14px;overflow:hidden;display:none}
+  .vplay.on{display:block}
+  .vplay iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .vnow{font-size:16px;font-weight:900;margin:10px 2px 14px;display:none}
+  .vnow.on{display:block}
+  .vlist{display:flex;flex-direction:column;gap:10px}
+  .vitem{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--panel);
+    border:2px solid transparent;border-radius:16px;padding:12px 14px}
+  .vitem.cur{border-color:#0284C7;background:#E0F2FE}
+  .vitem .n{flex:0 0 auto;width:44px;height:44px;border-radius:12px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:24px}
+  .vitem .t{font-size:16px;font-weight:900;color:var(--ink)}
+  .vitem .s{font-size:13px;font-weight:700;color:var(--sub);margin-top:2px}
+  .vnote{font-size:13px;color:var(--sub);line-height:1.5;margin-top:14px}
   .hero .tx{order:-1;position:relative;z-index:1;padding:0 20px;text-align:center}
   .hero .ed{font-size:17px;font-weight:700;color:#334155;letter-spacing:.01em}
   .hero h1{font-size:33px;font-weight:900;color:#0F172A;letter-spacing:-.04em;margin-top:2px}
@@ -444,7 +466,8 @@
         <div class="sh"></div>
         <div class="tx">
           <div class="ed">2026 제10회</div>
-          <h1>꿈길 걷기 프로젝트</h1>
+          <div class="ttl"><h1>꿈길 걷기 프로젝트</h1>
+            <button class="vidbtn" id="vidBtn" aria-label="안내·안전 영상 보기"><span class="e">🎬</span><span class="w">영상</span></button></div>
           <div class="sl">꿈은 바라보는 것이 아니라,<br>걸어가는 것이다</div>
         </div>
       </div>
@@ -557,6 +580,18 @@
 <div class="sheet" id="prepSheet">
   <div class="sheet-head"><h2>🎒 준비물</h2><button class="x" data-close>×</button></div>
   <div class="sheet-body" id="prepBody"></div>
+</div>
+
+<!-- ══ 안내·안전 영상 (학생 제작) ══ -->
+<div class="sheet" id="vidSheet">
+  <div class="sheet-head"><h2>🎬 안내·안전 영상</h2><button class="x" data-close>×</button></div>
+  <div class="sheet-body">
+    <div class="vplay" id="vidPlay"></div>
+    <div class="vnow" id="vidNow"></div>
+    <div class="vlist" id="vidList"></div>
+    <div class="vnote">우리 학교 학생들이 직접 만든 영상이에요. 걷기 전에 꼭 한 번씩 봐 주세요.<br>
+      걷는 중에는 멈춰 선 자리에서만 보세요. 데이터가 걱정되면 와이파이에서 미리 보세요.</div>
+  </div>
 </div>
 
 <div class="sheet" id="photoSheet">
@@ -835,6 +870,9 @@
       if(p) openPhotos(p);
     }
     if(e.target.closest("[data-close]")){
+      stopVid();
+      /* 스탬프 하나를 보다가 × → 앱 홈이 아니라 스탬프판으로(10/22 사용자 요청) */
+      if(e.target.closest("#stampSheet") && $("stampSheet").dataset.back === "1"){ showStampBoard(); markTab("stamp"); $("stampBody").scrollTop = 0; return; }
       document.querySelectorAll(".sheet").forEach(function(s){ s.classList.remove("show"); });
       markTab(underTab());
     }
@@ -1214,6 +1252,7 @@
   /* 선생님 현황판 — 설치 앱에서 누르면 */
   function openTeacherHelp(url){
     $("stampTitle").textContent = "👩‍🏫 선생님 현황판";
+    $("stampSheet").dataset.back = "";  /* 1 = × 누르면 스탬프판으로 */
     $("stampBody").innerHTML =
       '<div class="card"><div class="body" style="font-size:15px;line-height:1.7">' +
       '홈 화면 앱 안에서는 <b>구글 로그인이 사파리와 따로</b>라서 「현재 파일을 열 수 없습니다」가 뜰 수 있어요.<br><br>' +
@@ -1269,6 +1308,38 @@
     });
     $("prepSheet").classList.add("show");
   }
+  /* 안내·안전 영상 — 드라이브(링크 공유) 미리보기로 재생. 학생 얼굴이 나오므로 저장소에는 올리지 않는다 */
+  var VIDS = [
+    { id:"1aH7vrNS6qH_s2YsgoAqLy7AQ8Ywd26nV", e:"📱", t:"꿈길 걷기 앱 안내", s:"행사 소개 · 앱 쓰는 법 · 4분 22초" },
+    { id:"12nmTifxTt2xcFkbZ1kqrDpnWx095kipk", e:"⛰️", t:"산길에서 안전", s:"백운산 산길 · 58초" },
+    { id:"1jFbres5m1IQoVvWTsbdbQdJcMk5B77jJ", e:"🚸", t:"횡단보도 안전", s:"20초" },
+    { id:"1rEDJN80TuEQW_GDut_tUUVLFS9GBgk7J", e:"🍱", t:"식당에서 질서", s:"34초" },
+    { id:"1iDqI0eXazHcWTHM04u5cQDJsjRFZRAiC", e:"🚗", t:"중도포기 요령", s:"더 못 걷겠을 때 · 29초" }
+  ];
+  function stopVid(){
+    if(!$("vidPlay")) return;
+    $("vidPlay").innerHTML = ""; $("vidPlay").classList.remove("on"); $("vidNow").classList.remove("on");
+    document.querySelectorAll(".vitem.cur").forEach(function(b){ b.classList.remove("cur"); });
+  }
+  function showVids(){
+    $("vidList").innerHTML = VIDS.map(function(v, i){
+      return '<button class="vitem" data-vi="' + i + '"><span class="n">' + v.e + '</span><span><div class="t">' +
+        (i + 1) + '. ' + esc(v.t) + '</div><div class="s">' + esc(v.s) + '</div></span></button>';
+    }).join("");
+    $("vidSheet").classList.add("show");
+  }
+  $("vidList").addEventListener("click", function(e){
+    var b = e.target.closest("[data-vi]"); if(!b) return;
+    var v = VIDS[+b.dataset.vi];
+    stopVid();
+    $("vidPlay").innerHTML = '<iframe src="https://drive.google.com/file/d/' + v.id +
+      '/preview" allow="autoplay; fullscreen" allowfullscreen></iframe>';
+    $("vidPlay").classList.add("on");
+    $("vidNow").textContent = v.e + " " + v.t; $("vidNow").classList.add("on");
+    b.classList.add("cur");
+    $("vidSheet").querySelector(".sheet-body").scrollTop = 0;
+  });
+  $("vidBtn").onclick = function(){ closeSheets(); showVids(); };
   $("prepCard").onclick = function(){ closeSheets(); showPrep(); markTab("prep"); };
   /* ?tab=course / prep / stamp / mis — 다른 화면(선생님 현황판 등)의 바로가기로 들어올 때 그 탭을 바로 연다 */
   var wantTab = (location.search.match(/[?&]tab=(\w+)/) || [])[1] || "";
@@ -1290,6 +1361,7 @@
     $("tabs").querySelectorAll("[data-tab]").forEach(function(b){ b.className = (b.dataset.tab === t) ? "on" : ""; });
   }
   function closeSheets(){
+    stopVid();
     if(typeof closeScanner === "function" && scanStream) closeScanner();
     document.querySelectorAll(".sheet").forEach(function(s){ s.classList.remove("show"); });
   }
@@ -1372,6 +1444,7 @@
   function openTile(k){
     var t = TILES[k]; if(!t) return;
     $("stampTitle").textContent = t.emoji + " " + t.title;
+    $("stampSheet").dataset.back = "";  /* 1 = × 누르면 스탬프판으로 */
     $("stampBody").innerHTML =
       (t.img ? '<img src="' + t.img + '" alt="" style="width:100%;border-radius:16px;margin-bottom:12px">' : '') +
       '<div class="card"><div class="body">' +
@@ -1481,6 +1554,7 @@
     if(!STAMPS) return;
     var got = gotSet();
     $("stampTitle").textContent = STAMPS.title || "스탬프 투어";
+    $("stampSheet").dataset.back = "";  /* 1 = × 누르면 스탬프판으로 */
     /* 날짜별로 나눈다 — 2일차(무의도·용유)는 1·2학년이 같이 걷는 날. 지금 걷는 날을 위에 */
     var days = [];
     STAMPS.stamps.forEach(function(s){ if(days.indexOf(s.day) < 0) days.push(s.day); });
@@ -1537,6 +1611,7 @@
     var got = gotSet().indexOf(id) >= 0;
     var opened = openSet().indexOf(id) >= 0;
     $("stampTitle").textContent = s.emoji + " " + s.name;
+    $("stampSheet").dataset.back = "1";  /* 1 = × 누르면 스탬프판으로 */
     var h = '';
     if(got){
       h += '<div class="got-big"><div class="em">' + s.emoji + '</div><div class="t">이미 받은 스탬프예요</div></div>';
@@ -1692,6 +1767,7 @@
   function showMissionBoard(focus){
     if(!STAMPS){ toast("미션을 불러오는 중이에요"); return; }
     $("stampTitle").textContent = "📸 미션 — 동판 · 사진전 · 릴스전";
+    $("stampSheet").dataset.back = "";  /* 1 = × 누르면 스탬프판으로 */
     $("stampBody").innerHTML = misBlock();
     bindMisBlock($("stampBody"));
     $("stampSheet").classList.add("show");
