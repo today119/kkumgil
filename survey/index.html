@@ -221,7 +221,7 @@
     <button class="recenter" id="recenter" title="내 위치로">◎</button>
     <div class="plansel" id="planSel" hidden>
       <span>안내선</span>
-      <button data-plan="">끄기</button><button data-plan="A">우천 A</button><button data-plan="B">우천 B</button><button data-plan="D">우천 D</button><button data-plan="C">원래</button>
+      <button data-plan="">끄기</button><button data-plan="A">우천 A</button><button data-plan="B">우천 B</button><button data-plan="C">원래</button>
     </div>
     <a class="kakaogo" id="kakaoGo" target="_blank" rel="noopener" hidden>카카오맵 길안내 ↗</a>
   </div>
@@ -456,7 +456,7 @@
   function loadPlans(){
     fetch("plans.json?v=" + Date.now()).then(function(r){ return r.json(); }).then(function(d){
       PLANS = d; $("planSel").hidden = false;
-      var q = (location.search.match(/plan=([ABCD])/) || [])[1] || (function(){ try{ return localStorage.getItem("survey.plan") || ""; }catch(e){ return ""; } })();
+      var q = (location.search.match(/plan=([ABC])/) || [])[1] || (function(){ try{ return localStorage.getItem("survey.plan") || ""; }catch(e){ return ""; } })();
       setPlan(q);
       $("planSel").querySelectorAll("button").forEach(function(b){ b.onclick = function(){ setPlan(b.dataset.plan); }; });
     }).catch(function(){});
