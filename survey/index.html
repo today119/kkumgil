@@ -45,6 +45,11 @@
   /* 지도 */
   #mapWrap{flex:1 1 auto;position:relative;min-height:0;background:#0B1220}
   #map{position:absolute;inset:0}
+  /* 안내선(계획 경로) 고르기 — 2026-10-23 우천 코스 답사용 */
+  .plansel{position:absolute;left:8px;top:8px;z-index:5;display:flex;gap:4px;align-items:center;background:rgba(255,255,255,.94);border-radius:10px;padding:4px 6px;box-shadow:0 1px 4px rgba(0,0,0,.25);font-size:12px;color:#0F172A}
+  .plansel span{font-weight:700;margin-right:2px}
+  .plansel button{border:1px solid #CBD5E1;background:#fff;border-radius:7px;padding:4px 7px;font-size:12px;font-weight:700;color:#0F172A}
+  .plansel button.on{background:#0F172A;color:#fff;border-color:#0F172A}
   #mapFallback{
     position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
     gap:10px;text-align:center;padding:24px;color:var(--sub);font-size:15px;line-height:1.6;
@@ -213,6 +218,10 @@
       인터넷이 없어도 <b>지점 기록은 정상 작동</b>합니다.<br>그대로 버튼을 눌러 기록하세요.
     </div>
     <button class="recenter" id="recenter" title="내 위치로">◎</button>
+    <div class="plansel" id="planSel" hidden>
+      <span>안내선</span>
+      <button data-plan="">끄기</button><button data-plan="A">우천 A</button><button data-plan="B">우천 B</button><button data-plan="C">원래</button>
+    </div>
   </div>
 
   <div class="pad">
@@ -435,10 +444,39 @@
           strokeOpacity:.85, strokeStyle:"solid", zIndex:2
         });
         mapReady = true;
-        drawAll(); drawLine();
+        drawAll(); drawLine(); loadPlans();
       }catch(e){ failMap(); }
     });
   }else{ failMap(); }
+
+  /* 안내선 — plans.json 의 계획 경로를 점선으로 깔아 둔다. 주소에 ?plan=A 처럼 주면 바로 그 선 */
+  var PLANS = null, planLine = null, planMarks = [];
+  function loadPlans(){
+    fetch("plans.json?v=" + Date.now()).then(function(r){ return r.json(); }).then(function(d){
+      PLANS = d; $("planSel").hidden = false;
+      var q = (location.search.match(/plan=([ABC])/) || [])[1] || (function(){ try{ return localStorage.getItem("survey.plan") || ""; }catch(e){ return ""; } })();
+      setPlan(q);
+      $("planSel").querySelectorAll("button").forEach(function(b){ b.onclick = function(){ setPlan(b.dataset.plan); }; });
+    }).catch(function(){});
+  }
+  function setPlan(id){
+    try{ localStorage.setItem("survey.plan", id); }catch(e){}
+    $("planSel").querySelectorAll("button").forEach(function(b){ b.classList.toggle("on", b.dataset.plan === id); });
+    if(planLine){ planLine.setMap(null); planLine = null; }
+    planMarks.forEach(function(m){ m.setMap(null); }); planMarks = [];
+    var p = PLANS && PLANS.plans.filter(function(x){ return x.id === id; })[0];
+    if(!p || !mapReady) return;
+    var path = p.path.map(function(q){ return new kakao.maps.LatLng(q[0], q[1]); });
+    planLine = new kakao.maps.Polyline({ map:map, path:path, strokeWeight:7, strokeColor:p.color, strokeOpacity:.75, strokeStyle:"shortdash", zIndex:1 });
+    (PLANS.marks || []).forEach(function(k){
+      var el = document.createElement("div");
+      el.style.cssText = "background:#fff;border:2px solid " + p.color + ";border-radius:8px;padding:1px 6px;font-size:12px;font-weight:700;color:#0F172A;white-space:nowrap";
+      el.textContent = k.name;
+      planMarks.push(new kakao.maps.CustomOverlay({ map:map, position:new kakao.maps.LatLng(k.lat, k.lng), content:el, yAnchor:1.3, zIndex:3 }));
+    });
+    if(!last){ var b = new kakao.maps.LatLngBounds(); path.forEach(function(x){ b.extend(x); }); map.setBounds(b); }
+    toast && toast(p.name);
+  }
 
   function drawMe(){
     if(!mapReady || !last) return;
