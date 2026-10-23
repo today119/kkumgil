@@ -62,6 +62,17 @@
     border:2px solid var(--line);font-size:22px;display:grid;place-items:center;
     box-shadow:0 6px 18px rgba(0,0,0,.45);
   }
+  .recenter.on{background:#2563EB;border-color:#93C5FD}
+  /* 진행 방향 모드 — 내가 가는 쪽이 화면 위 (2026-10-23 답사 피드백) */
+  .navbtn{bottom:74px;font-size:12px;font-weight:800;line-height:1.1;text-align:center}
+  .navbtn b{font-size:20px;display:block}
+  #mapWrap{overflow:hidden}
+  #mapWrap.nav #map{transform:rotate(var(--rot,0deg));transition:transform .3s linear}
+  #mapWrap.nav .upr{transform:rotate(var(--unrot,0deg))}
+  .me{width:26px;height:26px;position:relative;transition:transform .3s linear}
+  .me b{position:absolute;inset:3px;border-radius:50%;background:#2563EB;border:3px solid #fff;box-shadow:0 0 0 3px rgba(37,99,235,.35),0 2px 6px rgba(0,0,0,.5)}
+  .me i{position:absolute;left:50%;top:-13px;margin-left:-9px;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:16px solid #2563EB;display:none}
+  .me.dir i{display:block}
 
   /* 버튼 그리드 */
   .pad{
@@ -218,7 +229,8 @@
       <b>지도를 불러오지 못했습니다</b>
       인터넷이 없어도 <b>지점 기록은 정상 작동</b>합니다.<br>그대로 버튼을 눌러 기록하세요.
     </div>
-    <button class="recenter" id="recenter" title="내 위치로">◎</button>
+    <button class="recenter on" id="recenter" title="내 위치 따라가기">◎</button>
+    <button class="recenter navbtn" id="navBtn" title="가는 방향이 위로"><b>🧭</b>방향</button>
     <div class="plansel" id="planSel" hidden>
       <span>안내선</span>
       <button data-plan="">끄기</button><button data-plan="A">우천 A</button><button data-plan="B">우천 B</button><button data-plan="C">원래</button>
@@ -440,7 +452,12 @@
           center: new kakao.maps.LatLng(37.4938, 126.5210),  // 영종도 부근
           level: 4
         });
-        kakao.maps.event.addListener(map, "dragstart", function(){ follow = false; });
+        kakao.maps.event.addListener(map, "dragstart", function(){ setFollow(false); });
+        kakao.maps.event.addListener(map, "dragend", function(){   // 손 떼고 15초 지나면 다시 나를 따라감
+          clearTimeout(followTimer);
+          followTimer = setTimeout(function(){ setFollow(true); centerOnMe(); }, 15000);
+        });
+        kakao.maps.event.addListener(map, "zoom_changed", function(){ if(nav) centerOnMe(); });
         line = new kakao.maps.Polyline({
           map:map, path:[], strokeWeight:6, strokeColor:"#38BDF8",
           strokeOpacity:.85, strokeStyle:"solid", zIndex:2
@@ -476,6 +493,7 @@
     planLine = new kakao.maps.Polyline({ map:map, path:path, strokeWeight:7, strokeColor:p.color, strokeOpacity:.95, zIndex:2 });
     (PLANS.marks || []).concat(p.marks || []).forEach(function(k){
       var el = document.createElement("div");
+      el.className = "upr";
       el.style.cssText = "background:#fff;border:2px solid " + p.color + ";border-radius:8px;padding:1px 6px;font-size:12px;font-weight:700;color:#0F172A;white-space:nowrap";
       el.textContent = k.name;
       planMarks.push(new kakao.maps.CustomOverlay({ map:map, position:new kakao.maps.LatLng(k.lat, k.lng), content:el, yAnchor:1.3, zIndex:3 }));
@@ -488,7 +506,9 @@
     if(!mapReady || !last) return;
     var pos = new kakao.maps.LatLng(last.lat, last.lng);
     if(!meMarker){
-      meMarker = new kakao.maps.Marker({position:pos, map:map, zIndex:10});
+      meEl = document.createElement("div"); meEl.className = "me"; meEl.innerHTML = "<i></i><b></b>";
+      meMarker = new kakao.maps.CustomOverlay({position:pos, content:meEl, map:map, xAnchor:.5, yAnchor:.5, zIndex:10});
+      scheduleView();
       meCircle = new kakao.maps.Circle({
         center:pos, radius:last.acc, map:map,
         strokeWeight:2, strokeColor:"#0EA5E9", strokeOpacity:.8,
@@ -497,7 +517,7 @@
     }else{
       meMarker.setPosition(pos); meCircle.setPosition(pos); meCircle.setRadius(last.acc);
     }
-    if(follow) map.setCenter(pos);
+    if(follow) centerOnMe();
   }
   function drawLine(){
     if(!mapReady || !line) return;
@@ -509,7 +529,7 @@
     markers = [];
     points.forEach(function(p, i){
       var t = TYPES[p.type] || TYPES.spot;
-      var el = '<div style="background:'+t.color+';color:#fff;font-weight:800;font-size:12px;'+
+      var el = '<div class="upr" style="background:'+t.color+';color:#fff;font-weight:800;font-size:12px;'+
                'padding:4px 8px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.5)">'+
                (i+1)+' '+t.ico+'</div>';
       var ov = new kakao.maps.CustomOverlay({
@@ -526,6 +546,7 @@
     $("led").className = "led " + ledClass(last.acc);
     $("gpsText").innerHTML = '정확도 <span class="acc">' + last.acc + 'm</span>' +
       (last.acc > ACC_OK ? " · 잠시 기다리세요" : (last.acc <= ACC_GOOD ? " · 좋음" : " · 보통"));
+    gpsCourse(p, last);
     drawMe();
     addTrack(last);
   }
@@ -608,9 +629,105 @@
     b.addEventListener("click", function(){ addPoint(b.dataset.type); });
   });
   $("recenter").onclick = function(){
-    follow = true;
-    if(mapReady && last) map.setCenter(new kakao.maps.LatLng(last.lat, last.lng));
+    setFollow(true); askCompass();
+    centerOnMe();
   };
+
+  /* ---------- 진행 방향 모드(내비처럼 내가 가는 쪽이 위) ----------
+     카카오 지도는 회전 기능이 없어서 지도 판(#map)을 대각선 크기로 키운 뒤 CSS로 돌린다.
+     방향은 휴대폰 나침반 우선, 없으면 GPS 이동 방향. 돌린 동안엔 손으로 끌기를 막는다(끌기 방향이 틀어지므로). */
+  var nav = false, heading = null, rot = 0, meRot = 0, meEl = null;
+  var compassOn = false, compassAsked = false, courseFrom = null, followTimer = null, centeredHd = null;
+  var RAD = Math.PI / 180;
+  function angDiff(a, b){ var d = (a - b) % 360; if(d > 180) d -= 360; if(d < -180) d += 360; return d; }
+  function bearing(a, b){
+    var y = Math.sin((b.lng - a.lng) * RAD) * Math.cos(b.lat * RAD);
+    var x = Math.cos(a.lat * RAD) * Math.sin(b.lat * RAD) - Math.sin(a.lat * RAD) * Math.cos(b.lat * RAD) * Math.cos((b.lng - a.lng) * RAD);
+    return (Math.atan2(y, x) / RAD + 360) % 360;
+  }
+  function setFollow(on){
+    follow = on; clearTimeout(followTimer);
+    $("recenter").classList.toggle("on", on);
+  }
+  function setHeading(h, k){
+    heading = heading === null ? h : (heading + angDiff(h, heading) * k + 360) % 360;
+    scheduleView();
+    if(nav && follow && (centeredHd === null || Math.abs(angDiff(heading, centeredHd)) > 8)) centerOnMe();
+  }
+  function onCompass(e){
+    var h = null;
+    if(typeof e.webkitCompassHeading === "number") h = e.webkitCompassHeading;          // 아이폰
+    else if(e.absolute && typeof e.alpha === "number") h = 360 - e.alpha;               // 안드로이드
+    if(h === null || isNaN(h)) return;
+    h += (screen.orientation && screen.orientation.angle) || window.orientation || 0;   // 가로로 들었을 때
+    compassOn = true;
+    setHeading((h + 360) % 360, .2);
+  }
+  function askCompass(){
+    if(compassAsked) return;
+    var D = window.DeviceOrientationEvent;
+    if(!D) return;
+    if(typeof D.requestPermission === "function"){                                     // 아이폰은 버튼 누를 때 허락받아야 함
+      D.requestPermission().then(function(s){
+        if(s === "granted"){ compassAsked = true; window.addEventListener("deviceorientation", onCompass); }
+      }).catch(function(){});
+    }else{
+      compassAsked = true;
+      window.addEventListener("ondeviceorientationabsolute" in window ? "deviceorientationabsolute" : "deviceorientation", onCompass);
+    }
+  }
+  function gpsCourse(p, pos){                                                          // 나침반이 없을 때만 GPS 이동 방향
+    if(compassOn || pos.acc > ACC_OK) return;
+    var c = p.coords;
+    if(typeof c.heading === "number" && !isNaN(c.heading) && (c.speed || 0) > .6){ setHeading(c.heading, .6); courseFrom = pos; return; }
+    if(!courseFrom){ courseFrom = pos; return; }
+    if(dist(courseFrom, pos) >= 12){ setHeading(bearing(courseFrom, pos), .6); courseFrom = pos; }
+  }
+  var viewQueued = false;
+  function scheduleView(){ if(!viewQueued){ viewQueued = true; requestAnimationFrame(applyView); } }
+  function applyView(){
+    viewQueued = false;
+    if(nav && heading !== null) rot += angDiff(-heading, rot); else if(!nav) rot = 0;
+    var w = $("mapWrap");
+    w.style.setProperty("--rot", rot + "deg");
+    w.style.setProperty("--unrot", (-rot) + "deg");
+    if(meEl){
+      meEl.classList.toggle("dir", heading !== null);
+      if(heading !== null){ meRot += angDiff(heading, meRot); meEl.style.transform = "rotate(" + meRot + "deg)"; }
+    }
+  }
+  var navSize = "";
+  function sizeNavMap(){                                                               // 돌려도 모서리가 비지 않게 대각선 크기로
+    var w = $("mapWrap").clientWidth, h = $("mapWrap").clientHeight, st = $("map").style;
+    var d = Math.ceil(Math.sqrt(w * w + h * h)), key = nav ? w + "x" + h : "";
+    if(!w || key === navSize) return;
+    navSize = key;
+    st.width = nav ? d + "px" : ""; st.height = nav ? d + "px" : "";
+    st.left = nav ? (w - d) / 2 + "px" : ""; st.top = nav ? (h - d) / 2 + "px" : "";
+    st.right = nav ? "auto" : ""; st.bottom = nav ? "auto" : "";
+    if(mapReady) map.relayout();
+  }
+  function centerOnMe(){
+    if(!mapReady || !last) return;
+    sizeNavMap();
+    var pos = new kakao.maps.LatLng(last.lat, last.lng);
+    if(!nav || heading === null){ map.setCenter(pos); return; }
+    var pj = map.getProjection(), pt = pj.containerPointFromCoords(pos);           // 나를 화면 아래쪽에 두고 앞을 넓게
+    var d = $("mapWrap").clientHeight * .25, r = heading * RAD;
+    map.setCenter(pj.coordsFromContainerPoint(new kakao.maps.Point(pt.x + Math.sin(r) * d, pt.y - Math.cos(r) * d)));
+    centeredHd = heading;
+  }
+  $("navBtn").onclick = function(){
+    nav = !nav;
+    $("mapWrap").classList.toggle("nav", nav);
+    $("navBtn").classList.toggle("on", nav);
+    askCompass();
+    if(mapReady) map.setDraggable(!nav);
+    if(nav) setFollow(true);
+    sizeNavMap(); scheduleView(); centerOnMe();
+    toast(nav ? "🧭 가는 방향이 위 — 지도가 나를 따라 돕니다\n(다시 누르면 북쪽이 위)" : "북쪽이 위로 돌아왔습니다");
+  };
+  window.addEventListener("resize", function(){ sizeNavMap(); });
 
   /* ---------- 토스트 ---------- */
   var toastTimer = null;
