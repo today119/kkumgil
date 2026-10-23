@@ -474,7 +474,7 @@
     var path = p.path.map(function(q){ return new kakao.maps.LatLng(q[0], q[1]); });
     planCase = new kakao.maps.Polyline({ map:map, path:path, strokeWeight:12, strokeColor:"#FFFFFF", strokeOpacity:.95, zIndex:1 });
     planLine = new kakao.maps.Polyline({ map:map, path:path, strokeWeight:7, strokeColor:p.color, strokeOpacity:.95, zIndex:2 });
-    (PLANS.marks || []).forEach(function(k){
+    (PLANS.marks || []).concat(p.marks || []).forEach(function(k){
       var el = document.createElement("div");
       el.style.cssText = "background:#fff;border:2px solid " + p.color + ";border-radius:8px;padding:1px 6px;font-size:12px;font-weight:700;color:#0F172A;white-space:nowrap";
       el.textContent = k.name;
