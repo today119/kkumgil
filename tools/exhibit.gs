@@ -93,26 +93,32 @@ function eRows(kind) {
     var H = v[0].map(function (x) { return String(x).replace(/\s+/g, ''); });
     var col = function (re) { for (var i = 0; i < H.length; i++) if (re.test(H[i])) return i; return -1; };
     var cHide = H.indexOf('숨김'), cBest = H.indexOf('우수작');
-    var cNo = col(/학번/), cMail = col(/이메일/), cName = col(/^\d*\.?이름$|^\d*\.?성명$/), cMis = col(/미션|장소|어디서/),
-        cTitle = col(/제목/), cDesc = col(/설명|소개/), cTeam = col(/함께|모둠/), cKind = col(/종류/);
-    if (cName < 0) cName = col(/이름|성명/);
-    var cFile = -1;
-    for (var i = 0; i < H.length && cFile < 0; i++)
-      for (var r = 1; r < v.length; r++) if (/drive\.google\.com\/open\?id=/.test(String(v[r][i]))) { cFile = i; break; }
-    if (cFile < 0) return;
+    /* 10/23 폼에 「참여자 구분」(교사/학생) 분기가 생겨 같은 질문이 교사 칸·학생 칸으로 두 번 나온다 → 줄마다 채워진 칸을 쓴다 */
+    var cols = function (re) { var a = []; for (var i = 0; i < H.length; i++) if (re.test(H[i])) a.push(i); return a; };
+    var pick = function (r, a) { for (var i = 0; i < a.length; i++) { var x = String(r[a[i]] == null ? '' : r[a[i]]).trim(); if (x) return x; } return ''; };
+    var cNo = cols(/학번/), cMail = cols(/이메일/), cName = cols(/^\d*\.?이름$|^\d*\.?성명$/), cMis = cols(/미션|장소|어디서/),
+        cTitle = cols(/제목/), cDesc = cols(/설명|소개/), cTeam = cols(/함께|모둠/), cKind = cols(/종류/), cWho = cols(/참여자구분|제출자/), cDept = cols(/^부서$/);
+    if (!cName.length) cName = cols(/이름|성명/);
+    var cFile = [];
+    for (var i = 0; i < H.length; i++)
+      for (var r = 1; r < v.length; r++) if (/drive\.google\.com\/open\?id=/.test(String(v[r][i]))) { cFile.push(i); break; }
+    if (!cFile.length) return;
     v.slice(1).forEach(function (r, k) {
-      var ids = (String(r[cFile]).match(/id=[\w-]+/g) || []).map(function (s) { return s.slice(3); });
+      var ids = [];
+      cFile.forEach(function (c) { (String(r[c]).match(/id=[\w-]+/g) || []).forEach(function (s) { ids.push(s.slice(3)); }); });
       if (!ids.length) return;
-      var mail = cMail >= 0 ? String(r[cMail]) : '', m = mail.match(/s\d\d(\d)(\d\d)\d\d@/), who = '';
-      if (!m && cNo >= 0) m = String(r[cNo]).replace(/\D/g, '').match(/^(\d)(\d\d)\d\d$/);     // 학생 계정이 아니면 적어 낸 학번으로
-      if (m) who = m[1] + '학년 ' + Number(m[2]) + '반 ';
-      who += eMask(cName >= 0 ? r[cName] : '');
+      var mail = pick(r, cMail), m = mail.match(/s\d\d(\d)(\d\d)\d\d@/), who = '';
+      var tch = /교사|선생/.test(pick(r, cWho)) || E_TEACHER.test(mail);
+      if (!m && !tch && cNo.length) m = pick(r, cNo).replace(/\D/g, '').match(/^(\d)(\d\d)\d\d$/);     // 학생 계정이 아니면 적어 낸 학번으로
+      if (tch) who = '선생님 ';
+      else if (m) who = m[1] + '학년 ' + Number(m[2]) + '반 ';
+      who += eMask(pick(r, cName));
       out.push({
-        kind: t.kind, tab: t.sh.getName(), row: k + 2, ids: ids, who: who.trim(),
+        kind: t.kind, tab: t.sh.getName(), row: k + 2, ids: ids, who: who.trim(), tch: tch,
         hidden: cHide >= 0 && r[cHide] === true, best: cBest >= 0 && r[cBest] === true,
-        mission: cMis >= 0 ? String(r[cMis]) : '', title: cTitle >= 0 ? String(r[cTitle]) : '',
-        desc: cDesc >= 0 ? String(r[cDesc]) : '', team: cTeam >= 0 ? String(r[cTeam]) : '',
-        sort: cKind >= 0 ? String(r[cKind]) : ''
+        mission: pick(r, cMis), title: pick(r, cTitle),
+        desc: pick(r, cDesc), team: pick(r, cTeam),
+        sort: pick(r, cKind)
       });
     });
   });
@@ -182,7 +188,7 @@ function eVoteSheet() {
 function eCands(rows) {
   var o = {};
   ['photo', 'reels'].forEach(function (k) {
-    var vis = rows.filter(function (x) { return x.kind === k && !x.hidden; });
+    var vis = rows.filter(function (x) { return x.kind === k && !x.hidden && !x.tch; });   // 선생님 작품은 투표·시상 제외
     var best = vis.filter(function (x) { return x.best; });
     (best.length ? best : vis).forEach(function (x) { o[x.ids[0]] = k; });
   });
