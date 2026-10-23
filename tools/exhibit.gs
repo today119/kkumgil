@@ -291,10 +291,35 @@ function eHide(tab, row, id, hide) {
   return { ok: true, row: r + 1 };
 }
 
+/* JPEG EXIF 방향값(274) — 원본 앞 128KB 만 받아 읽는다. 못 읽으면 1 */
+function eOrient(id, H) {
+  try {
+    var h = { headers: { Authorization: H.headers.Authorization, Range: 'bytes=0-131071' }, muteHttpExceptions: true };
+    var b = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + id + '?alt=media', h).getContent();
+    var u = function (i) { return b[i] & 255; };
+    if (u(0) !== 0xFF || u(1) !== 0xD8) return 1;
+    for (var p = 2; p + 4 < b.length;) {
+      if (u(p) !== 0xFF) return 1;
+      var mk = u(p + 1), len = u(p + 2) * 256 + u(p + 3);
+      if (mk === 0xE1 && u(p + 4) === 0x45 && u(p + 5) === 0x78) {            // "Exif"
+        var t = p + 10, le = u(t) === 0x49;
+        var r16 = function (i) { return le ? u(i) + u(i + 1) * 256 : u(i) * 256 + u(i + 1); };
+        var r32 = function (i) { return le ? r16(i) + r16(i + 2) * 65536 : r16(i) * 65536 + r16(i + 2); };
+        var ifd = t + r32(t + 4), n = r16(ifd);
+        for (var k = 0; k < n; k++) { var e = ifd + 2 + k * 12; if (r16(e) === 274) return r16(e + 8); }
+        return 1;
+      }
+      if (mk === 0xDA) return 1;
+      p += 2 + len;
+    }
+  } catch (e) {}
+  return 1;
+}
 /* 썸네일 — 드라이브 thumbnailLink 를 서버가 받아 data: 로 */
 function eThumb(id, big) {
-  if (!eCanSee(id)) return '';
-  var key = 'th' + (big ? 'B' : '') + id, c = CacheService.getScriptCache(), hit = c.get(key);
+  var see = eCanSee(id);
+  if (!see) return '';
+  var key = 'th2' + (big ? 'B' : '') + id, c = CacheService.getScriptCache(), hit = c.get(key);
   if (hit) return hit;
   var tok = ScriptApp.getOAuthToken(), H = { headers: { Authorization: 'Bearer ' + tok }, muteHttpExceptions: true };
   var meta = JSON.parse(UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + id + '?fields=thumbnailLink', H).getContentText() || '{}');
@@ -306,6 +331,9 @@ function eThumb(id, big) {
   if (!blob) { try { blob = DriveApp.getFileById(id).getThumbnail(); } catch (e) {} }
   if (!blob) return '';
   var out = 'data:' + (blob.getContentType() || 'image/jpeg') + ';base64,' + Utilities.base64Encode(blob.getBytes());
+  /* 드라이브 미리보기는 EXIF 「좌우·상하 반전」 방향값(2·4·5·7 — 전면 카메라 반전 설정)을 무시해 사진이 뒤집혀 나온다(10/23).
+     원본 앞부분만 받아 방향값을 읽고, 앞에 「o4|」 처럼 붙여 주면 화면(eFix)이 캔버스로 바로 세운다 */
+  if (see.k === 'photo') { var o = eOrient(id, H); if (o === 2 || o === 4 || o === 5 || o === 7) out = 'o' + o + '|' + out; }
   if (out.length < 95000) c.put(key, out, 21600);
   return out;
 }
@@ -452,7 +480,23 @@ function eClient(S) {
   }
   var io = ('IntersectionObserver' in window) ? new IntersectionObserver(function (es2) { es2.forEach(function (e) { if (e.isIntersecting) { io.unobserve(e.target); th(e.target); } }); }, { rootMargin: '300px' }) : null;
   function lazy(el) { io ? io.observe(el) : th(el); }
-  function th(el) { google.script.run.withSuccessHandler(function (u) { if (u) el.style.backgroundImage = 'url("' + u + '")'; }).eThumb(el.dataset.id, false); }
+  /* 서버가 「o4|data:…」 로 주면 EXIF 반전 방향대로 캔버스에서 바로 세운다 */
+  function eFix(u, cb) {
+    var m = /^o(\d)\|/.exec(u || ''); if (!m) { cb(u); return; }
+    var o = +m[1], src = u.slice(m[0].length), img = new Image();
+    img.onload = function () {
+      var w = img.naturalWidth, h = img.naturalHeight, sw = o > 4, c = document.createElement('canvas');
+      c.width = sw ? h : w; c.height = sw ? w : h;
+      var g = c.getContext('2d');
+      var M = { 2: [-1, 0, 0, 1, w, 0], 4: [1, 0, 0, -1, 0, h], 5: [0, 1, 1, 0, 0, 0], 7: [0, -1, -1, 0, h, w] }[o];
+      if (M) g.transform.apply(g, M);
+      g.drawImage(img, 0, 0);
+      try { cb(c.toDataURL('image/jpeg', .9)); } catch (e) { cb(src); }
+    };
+    img.onerror = function () { cb(src); };
+    img.src = src;
+  }
+  function th(el) { google.script.run.withSuccessHandler(function (u) { eFix(u, function (u) { if (u) el.style.backgroundImage = 'url("' + u + '")'; }); }).eThumb(el.dataset.id, false); }
   function op(x) {
     var b = $('ovb');
     $('ovp').innerHTML = '<b>' + es(x.title) + '</b><br>' + es(x.who) + (x.team ? ' · ' + es(x.team) : '') + (x.desc ? '<br>' + es(x.desc) : '');
@@ -466,10 +510,10 @@ function eClient(S) {
       }).withFailureHandler(function () { b.innerHTML = '<p>재생할 수 없어요</p>'; }).ePlay(x.ids[0]);
     } else {
       var i = 0, sh = function () {
-        google.script.run.withSuccessHandler(function (u) {
+        google.script.run.withSuccessHandler(function (u0) { eFix(u0, function (u) {
           b.innerHTML = u ? '<img src="' + u + '">' + (x.ids.length > 1 ? '<p>' + (i + 1) + ' / ' + x.ids.length + ' · 눌러서 다음</p>' : '') : '<p>사진을 못 불러왔어요</p>';
           var im = b.querySelector('img'); if (im && x.ids.length > 1) im.onclick = function () { i = (i + 1) % x.ids.length; sh(); };
-        }).eThumb(x.ids[i], true);
+        }); }).eThumb(x.ids[i], true);
       };
       sh();
     }
