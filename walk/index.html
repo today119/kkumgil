@@ -280,6 +280,14 @@
   .hero + .picks{position:relative;z-index:2;margin-top:-78px}
 
   /* 공모전 미리보기 — 그림처럼 썸네일 버튼 3개 */
+  /* 10/26 사용자: 포스터가 첫 화면을 채워 «아래에 메뉴가 더 있는 줄 모른다» → 통통 튀는 안내. 한 번 내려 보면 다시 안 뜸 */
+  #moreHint{position:absolute;left:50%;bottom:14px;z-index:5;transform:translateX(-50%);display:none;align-items:center;gap:6px;
+    padding:11px 18px;border-radius:999px;background:#0F172A;color:#fff;font-size:15px;font-weight:800;white-space:nowrap;
+    box-shadow:0 6px 18px rgba(15,23,42,.35);animation:mhBob 1.4s ease-in-out infinite;font-family:inherit}
+  #moreHint.show{display:flex}
+  #moreHint b{font-size:18px;line-height:1}
+  @keyframes mhBob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-8px)}}
+  @media (prefers-reduced-motion:reduce){#moreHint{animation:none}}
   .trow{font-size:17px;font-weight:900;color:var(--ink);margin:6px 0 -6px 4px}
   .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 14px;padding:0 4px}
   /* 타일 이름은 그림 밖, 아래에 «같은 크기»로 — 그림에 박으면 타일마다 크기가 달라 읽기 어렵다 */
@@ -488,6 +496,7 @@
 </div>
 
 <div id="intro">
+  <button id="moreHint" type="button"><b>⌄</b>아래로 내리면 메뉴가 더 있어요</button>
   <div id="introScroll">
 
     <!-- ══ 홈 — 대회 포스터 ══ -->
@@ -514,7 +523,7 @@
       </div>
 
       <!-- 공모전 미리보기 — 윗줄은 «이미 마감된» 것, 아랫줄은 «행사 당일부터» 하는 것 -->
-      <div class="trow">🚩 행사 당일부터</div>
+      <div class="trow" id="homeMore">🚩 행사 당일부터</div>
       <div class="tiles">
         <button class="tilebtn" data-tile="photo"><span class="tile"><img src="t-photo.jpg" alt=""></span><span class="tcap">사진전</span></button>
         <button class="tilebtn" data-tile="reels"><span class="tile"><img src="t-reels.jpg" alt=""></span><span class="tcap">릴스전</span></button>
@@ -1701,7 +1710,28 @@
     $("paneCourse").hidden = (which !== "course");
     $("introScroll").scrollTop = 0;
     markTab(which);
+    moreHint();
   }
+  /* «아래에 더 있어요» — 홈 맨 위에 있을 때만, 한 번이라도 내려 봤으면 다시 안 뜸 */
+  var MH = "kkumgil.sawMore";
+  function sawMore(){ try{ return localStorage.getItem(MH) === "1"; }catch(e){ return false; } }
+  function moreHint(){
+    var sc = $("introScroll");
+    var on = !sawMore() && !$("paneHome").hidden && sc.scrollTop < 40 &&
+             sc.scrollHeight > sc.clientHeight + 80;
+    $("moreHint").classList.toggle("show", on);
+  }
+  $("introScroll").addEventListener("scroll", function(){
+    if(!$("paneHome").hidden && this.scrollTop > 120){ try{ localStorage.setItem(MH, "1"); }catch(e){} }
+    moreHint();
+  }, {passive:true});
+  $("moreHint").onclick = function(){
+    var sc = $("introScroll"), t = $("homeMore");
+    var y = t ? t.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 12 : sc.clientHeight * .7;
+    try{ sc.scrollTo({top:y, behavior:"smooth"}); }catch(e){ sc.scrollTop = y; }
+  };
+  window.addEventListener("load", function(){ setTimeout(moreHint, 300); });
+  window.addEventListener("resize", moreHint);
   $("tabs").querySelectorAll("[data-tab]").forEach(function(b){
     b.onclick = function(){
       var t = b.dataset.tab;
