@@ -1780,8 +1780,8 @@
       worksHtml(t) +
       /* 사진전·릴스전 타일: 출품이 먼저(사용자 지적 10/12 — 「미션 보러 가기」만 있어 어디서 내는지 몰랐다) */
       (t.mis ? (STAMPS ? subBtn(t.mis, t.mis === "reels" ? "릴스전" : "사진전") : '') +
-        '<button class="subbtn gal-b" style="width:100%;font-family:inherit;border-color:#E2E8F0;color:#475569" id="tileMis">📸 미션 보러 가기' +
-        '<small>' + (t.mis === "reels" ? '15초 찍기' : '명소별 사진 미션·동판 미션') + '</small></button>' : '');
+        '<button class="subbtn gal-b" style="width:100%;font-family:inherit;border-color:#E2E8F0;color:#475569" id="tileMis">🏅 동판 미션 보기' +
+        '<small>' + (t.mis === "reels" ? '릴스전 출품' : '사진전 출품·동판 미션') + '</small></button>' : '');
     if(t.mis) $("tileMis").onclick = function(){ showMissionBoard(t.mis); markTab("mis"); };
     $("stampSheet").classList.add("show");
   }
@@ -1959,7 +1959,6 @@
              return '<button data-ch="' + i + '">' + String.fromCharCode(9312+i) + ' ' + c + '</button>';
            }).join('') + '<div id="hint"></div></div>';
     }
-    if(s.mission) h += misCard(s.id, s.mission);
     h += '<button class="go" style="width:100%;margin-top:6px" id="toBoard">🏅 스탬프판 보기</button>';
     $("stampBody").innerHTML = h;
     $("toBoard").onclick = showStampBoard;
@@ -1981,7 +1980,6 @@
               '<div class="got-big"><div class="em">' + s.emoji + '</div>' +
               '<div class="t">스탬프 획득!</div></div>' +
               '<div class="card"><div class="body">' + (s.quiz.after || "잘했어요!") + '</div></div>' +
-              (s.mission ? misCard(s.id, s.mission) : '') +
               '<button class="go" style="width:100%" id="toBoard2">🏅 스탬프판 보기 (' + dayCount(s.day) + ')</button>';
             $("toBoard2").onclick = showStampBoard;
             bindMis($("stampBody"));
@@ -2014,29 +2012,17 @@
       '<input type="file" accept="image/*,video/*" capture="environment" id="cam_' + id + '">' +
       '<button data-mis="' + id + '">' + (done ? '✅ 찍었어요 — 다시 찍기' : '📷 카메라 열기') + '</button></div>';
   }
-  /* 미션 묶음 한 덩어리 — 스탬프판 아래에도, 미션 탭에도 같은 걸 쓴다 */
-  /* 미션 탭 — 두 공모전을 «따로» 보여 준다.
-       📷 사진전: 명소마다 정해진 미션(누르면 그 명소 화면에서 카메라)
-       🎬 릴스전: 코스 어디서든 15초 — 장소가 없어서 바로 카메라 */
+  /* 미션 탭 — 동판 미션 + 두 공모전 출품 */
   function misBlock(){
-    var photo = STAMPS.stamps.filter(function(x){ return x.mission && !x.grade; });
-    var got = misSet(), pd = photo.filter(function(x){ return got.indexOf(x.id) >= 0; }).length;
+    /* 10/26 사용자: 명소별 사진 미션은 오해를 부른다(사진전 출품과 헷갈림) → 앱 미션 삭제.
+       남는 건 동판 미션 + 사진전·릴스전 출품 버튼뿐 */
     return plaqueBlock() +
-      '<div class="mis-h" id="misPhoto" style="margin-top:22px">📷 사진 미션<span>' + pd + ' / ' + photo.length + '</span></div>' +
-      '<div class="mis-sub">명소마다 정해진 장면이 있어요. 눌러서 그 자리에서 찍어요.</div>' +
-      photo.map(function(x){
-        var d = got.indexOf(x.id) >= 0;
-        return '<button class="misrow' + (d ? ' done' : '') + '" data-misgo="' + x.id + '">' +
-          '<span class="e">' + x.mission.emoji + '</span>' +
-          '<span class="k">' + x.mission.title + '<small>' + x.name + ' · ' + x.mission.who + '</small></span>' +
-          '<span class="c">' + (d ? '✅' : '⬜') + '</span></button>';
-      }).join('') +
+      '<div class="mis-h" id="misPhoto" style="margin-top:22px">📷 사진전</div>' +
+      '<div class="mis-sub">코스에서 찍은 사진 중 마음에 드는 걸 골라 올려요.</div>' +
       subBtn("photo", "사진전") +
       '<div class="mis-h" id="misReels" style="margin-top:22px">🎬 릴스전</div>' +
-      '<div class="mis-sub">장소는 상관없어요. 걷는 동안 아무 때나 15초.</div>' +
-      (STAMPS.missions_free||[]).map(function(m){ return misCard(m.id, m); }).join('') +
-      subBtn("reels", "릴스전") +
-      '<div class="card" style="margin-top:14px"><div class="body" style="font-size:14px">' + (STAMPS.mission_note || '') + '</div></div>';
+      '<div class="mis-sub">장소는 상관없어요. 걷는 동안 찍은 15초 영상을 올려요.</div>' +
+      subBtn("reels", "릴스전");
   }
   /* 출품 — 앱은 폼(구글 폼 파일 업로드)으로 보내기만 한다. stamps.json 의 submit.<종류> 에 주소를 넣으면 버튼이 켜진다 */
   /* 작품 보기 — 출품 시트의 앱스 스크립트 웹앱(tools/exhibit.gs). 선생님이 「공개」 체크한 것만 뜬다 */
