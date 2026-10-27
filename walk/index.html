@@ -67,10 +67,12 @@
     position:absolute;right:12px;z-index:6;border-radius:50%;display:grid;place-items:center;
     box-shadow:0 6px 18px rgba(0,0,0,.45);
   }
-  .recenter{bottom:88px;width:50px;height:50px;background:var(--panel);border:2px solid var(--line);font-size:22px}
+  /* 10/27 사용자: 오른쪽 둥근 버튼이 겹침(스탬프만 위에서 재고 나머지는 아래에서 재서, 지도가 짧은 폰에서 포개짐)
+     → 모두 54px 같은 크기, 아래에서부터 62px 간격으로 한 줄: SOS 12 · 내 위치 74 · 방향 136 · 스탬프 198 · (교사)대형 260 */
+  .recenter{bottom:74px;width:54px;height:54px;background:var(--panel);border:2px solid var(--line);font-size:22px}
   .recenter.on{background:#2563EB;border-color:#93C5FD}
   /* 🧭 내비 모드 — 내가 가는 쪽이 화면 위 (10/23 답사 피드백: 방향이 헷갈리고 지도가 나를 안 따라옴) */
-  .navbtn{bottom:150px;font-size:11px;font-weight:800;line-height:1.05;text-align:center;color:var(--ink)}
+  .navbtn{bottom:136px;font-size:11px;font-weight:800;line-height:1.05;text-align:center;color:var(--ink)}
   .navbtn b{font-size:19px;display:block}
   #mapWrap{overflow:hidden}
   #mapWrap.nav #map{transform:rotate(var(--rot,0deg));transition:transform .3s linear}
@@ -81,7 +83,7 @@
   .me.dir i{display:block}
   .fab[hidden]{display:none}   /* .fab 의 display:grid 가 hidden 을 이겨서 학생 폰에도 보였다(10/22 발견) */
   /* 👥 대형 — 위치 공유를 켠 선생님 폰에만 */
-  .troop{bottom:212px;width:50px;height:50px;background:#0B4F82;border:2px solid #7DD3FC;color:#fff;font-size:18px;line-height:1}
+  .troop{bottom:260px;width:54px;height:54px;background:#0B4F82;border:2px solid #7DD3FC;color:#fff;font-size:18px;line-height:1}
   .troop b{display:block;font-size:10px;margin-top:-6px}
   .troop.on{background:#F59E0B;border-color:#FEF3C7}
   .troopbar{position:absolute;left:10px;right:86px;bottom:14px;z-index:7;display:none;background:rgba(11,18,32,.92);color:#fff;
@@ -92,7 +94,7 @@
     border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)}
   .tlabel.old{background:#64748B}
   .tposDot{font-size:13px;font-weight:800;color:#7DD3FC;white-space:nowrap}
-  .sos{bottom:14px;width:64px;height:64px;background:#DC2626;border:3px solid #FCA5A5;
+  .sos{bottom:12px;width:54px;height:54px;background:#DC2626;border:3px solid #FCA5A5;
     font-size:15px;font-weight:900;color:#fff;letter-spacing:-.02em;line-height:1}
 
   /* 경고 띠 */
@@ -209,8 +211,8 @@
   .codeRow input{flex:1;min-width:0;font-size:22px;font-weight:800;letter-spacing:.3em;text-align:center;padding:12px;border-radius:14px;border:2px solid #CBD5E1}
   .codeRow button{flex:0 0 auto;padding:0 22px;border-radius:14px;font-weight:800;font-size:17px;background:#0EA5E9;color:#fff;border:0}
   .hintbox{background:#FEF3C7;color:#92400E;border-radius:14px;padding:12px 14px;margin-top:10px;font-size:14px;line-height:1.6}
-  .stamp-btn{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 96px);z-index:20;
-    min-width:52px;height:52px;border-radius:26px;background:var(--panel2);font-size:20px;font-weight:900;
+  .stamp-btn{position:absolute;right:12px;bottom:198px;z-index:20;
+    width:54px;height:54px;border-radius:50%;padding:0;line-height:1.1;background:var(--panel2);font-size:20px;font-weight:900;
     box-shadow:0 6px 18px rgba(0,0,0,.4)}
   .stamp-btn b{font-size:13px;display:block;margin-top:-2px;color:var(--sub)}
 
