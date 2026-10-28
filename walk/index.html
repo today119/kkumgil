@@ -1612,8 +1612,23 @@
     $("stampSheet").dataset.back = "";
     $("stampBody").innerHTML =
       '<a href="tel:119" class="go" style="display:block;text-align:center;text-decoration:none;background:#C62828;line-height:56px;margin-bottom:10px">📞 119 바로 걸기</a>' +
-      '<a href="emergency.jpg" target="_blank" rel="noopener"><img src="emergency.jpg" alt="아픈 학생·중도포기자 대응 한 장 요약" style="width:100%;border-radius:12px;border:1px solid var(--line,#E2E8F0)"></a>' +
-      '<div style="text-align:center;font-size:12.5px;color:var(--sub);margin-top:4px">그림을 누르면 크게 볼 수 있어요</div>' +
+      (function(){
+        var row = function(n, c, t, d){ return '<div style="display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:12px;background:#fff;border:1px solid #E2E8F0;margin-top:8px">' +
+          '<b style="flex:none;width:30px;height:30px;border-radius:8px;background:' + c + ';color:#fff;display:grid;place-items:center;font-size:17px">' + n + '</b>' +
+          '<div style="font-size:16px;line-height:1.45"><b>' + t + '</b>' + (d ? '<div style="color:#475569;font-size:14.5px;margin-top:2px">' + d + '</div>' : '') + '</div></div>'; };
+        var arrow = function(t){ return '<div style="font-size:13.5px;color:#B91C1C;font-weight:700;margin:6px 0 0 6px">▼ ' + t + '</div>'; };
+        return '<div style="padding:12px;border-radius:12px;background:#FEF2F2;border:2px solid #DC2626;font-size:16px;line-height:1.45">' +
+            '<b style="color:#B91C1C">🚨 위급하면 바로 119</b><div style="font-size:14.5px;margin-top:2px">쓰러짐·가슴통증·숨참·머리 부상<br>→ 움직이지 말고 119 → 단톡방</div></div>' +
+          row(1, '#2E7D32', '물 마시고 쉬기', '괜찮으면 함께 걷기') +
+          arrow('10분 쉬어도 못 걸으면') +
+          row(2, '#E67E22', '담임 확인 → 1명이 인솔', '순번: 안전요원 → 부담임 → 담임<br>⛰ 백운산: 하산 포인트 ①② 담당에게 인계<br>🚐 그 밖: 가까운 차량에 태우기<br>인솔자는 바로 반으로') +
+          row(3, '#1E5BB8', '학교 → 보건교사 확인', '') +
+          row(4, '#6B21A8', '보건교사 판단', '교실 잔류 · 조퇴 · 병원(보호자)') +
+          arrow('학생 원하고 보건교사 OK면') +
+          row(5, '#0F766E', '차량으로 다음 지점 합류', '담임에게 직접 인계') +
+          '<div style="margin-top:10px;padding:12px;border-radius:12px;background:#FEF9C3;font-size:15px;line-height:1.5">✔ 혼자 두지 않기 · 혼자 보내지 않기<br>✔ 넘길 때마다 단톡방에<br>&nbsp;&nbsp;&nbsp;<b>이름 · 장소 · 시각</b></div>' +
+          '<a href="emergency.jpg" target="_blank" rel="noopener" style="display:block;text-align:center;font-size:13.5px;color:var(--sub);margin-top:8px">🖼 한 장 요약 그림으로 보기</a>';
+      })() +
       '<a href="../guide/" target="_blank" rel="noopener" class="go" style="display:block;text-align:center;text-decoration:none;line-height:52px;margin-top:10px;background:#EEF2FF;color:#3730A3">👩‍🏫 교사용 안내서 전체 보기</a>';
     $("stampSheet").classList.add("show");
     $("stampBody").scrollTop = 0;
