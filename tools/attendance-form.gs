@@ -1203,10 +1203,12 @@ var REPORT_SRC = { '1': '13fDWhb1ydY_b_rRq1qW9ySbXVxBBvFbyktfAijHQxGU', '2': '1Y
 var REPORT_FOLDER = '2026 꿈길 걷기 탐방보고서';
 var REPORT_ACCT = 's26{학번}@yeongjong.icehs.kr';
 var REPORT_SHARE = false;
+var REPORT_PHOTO_FORM = 'https://forms.gle/JFcjDAXxuvhboxZh8';   // 앱 stamps.json submit.photo 와 같은 사진전 폼
 var REPORT_PLACES = {
-  '1': ['백운산·용궁사', '하늘도시', '영종진·구읍뱃터', '씨사이드파크·인천대교', '기타'],
-  '2': ['인천의 대학', '개항장 일대', '인천의 오늘과 미래(송도)', '기타']
+  '1': ['백운산·용궁사', '하늘도시', '씨사이드파크·인천대교'],   // 10/28 영종진·구읍뱃터는 실제로 안 감
+  '2': ['인천의 대학', '개항장 일대', '인천의 오늘과 미래(송도)']
 };
+var REPORT_PLACES2 = ['무의대교·잠진도', '마시안해변', '선녀바위·을왕리', '용유 염전'];   // 2일차 희망자만
 function reportPlans_() {
   var out = {};
   Object.keys(REPORT_SRC).forEach(function (g) {
@@ -1223,12 +1225,13 @@ function reportPlans_() {
   return out;
 }
 function reportList_() {
-  var R = readRoster(1), plans = reportPlans_(), list = [];
+  var R = readRoster(1), plans = reportPlans_(), list = [], d2 = {};
+  try { var R2 = readRoster(2); R2.classes.forEach(function (c) { R2.byClass[c].forEach(function (s) { d2[c + '|' + s.no] = 1; }); }); } catch (e) {}
   R.classes.forEach(function (c) {
     var p = c.split('-');
     R.byClass[c].forEach(function (s) {
       var no = p[0] + ('0' + p[1]).slice(-2) + ('0' + s.no).slice(-2);
-      list.push({ no: no, name: s.name, plan: plans[no] || null });
+      list.push({ no: no, name: s.name, plan: plans[no] || null, day2: !!d2[c + '|' + s.no] });
     });
   });
   return list;
@@ -1259,9 +1262,9 @@ function reportDoc_(s) {
   var blank = function (n) { for (var i = 0; i < n; i++) plain(b.appendParagraph(' ')); };
   var p0 = b.getChild(0).asParagraph(); p0.setText('2026 제10회 꿈길 걷기 탐방보고서'); p0.setHeading(DocumentApp.ParagraphHeading.TITLE);
   b.appendParagraph(grade + '학년 ' + cls + '반 ' + num + '번  ' + s.name + (P.job ? '   ·   희망 진로: ' + P.job : '')).editAsText().setBold(true);
-  H('내가 고른 랜드마크');
-  guide('하나만 남기고 나머지는 지우세요.');
-  plain(b.appendParagraph((REPORT_PLACES[grade] || REPORT_PLACES['1']).join('   /   ')));
+  H(grade === '1' ? '📍 가장 기억에 남는 영종도 랜드마크' : '📍 가장 기억에 남는 탐방 장소');   // 10/28 사용자: «내가 고른» → «기억에 남는»
+  guide('하나만 남기고 나머지는 지우세요. 작품집에서 이 장소의 장(章)에 실려요.');
+  plain(b.appendParagraph((REPORT_PLACES[grade] || REPORT_PLACES['1']).concat(s.day2 ? REPORT_PLACES2 : [], ['기타: ']).join('   /   ')));
   H('① 가기 전에 — 나의 탐방계획서');
   guide(s.plan ? '7월에 내가 쓴 계획서예요. 고치지 말고 그대로 두세요.' : '제출한 계획서가 없어요. 무엇을 보고 싶었는지 짧게 적어 보세요.');
   var t = b.appendTable([['장소 특징 조사', String(P.place || '')], ['진로 연계 계획', String(P.plan || '')]]);
@@ -1273,10 +1276,16 @@ function reportDoc_(s) {
   H('② 다녀와서 — 실제로 보고 알게 된 것');
   guide('②~③은 ④ 글을 쓰기 위한 «탐방 기록»이에요. 짧게 메모하듯 써도 돼요. 계획서에서 보려던 것을 실제로 봤나요? 무엇을, 어디서, 어떻게 봤는지.');
   blank(4);
-  H('📷 사진 (2~4장)');
-  guide('스탬프·사진전 사진을 넣으세요. 폰 구글 문서 앱: ＋ → 이미지. 사진 아래에 한 줄 설명(어디서, 무엇). 인쇄용 원본은 앱 «사진전»으로도 올려 주세요(문서 속 사진은 작아져요). 친구 얼굴은 허락받은 사진만.');
-  var ph = b.appendTable([['사진 1\n\n\n\n설명:', '사진 2\n\n\n\n설명:']]).setBorderColor('#CBD5E1');
-  ph.editAsText().setItalic(false).setForegroundColor('#64748B').setFontSize(10);
+  if (s.day2) {                                                   // 10/28 사용자: 2일차 내용 — 희망자 문서에만
+    H('②-2 2일차 무의도·용유에서');
+    guide('무의대교·잠진도·마시안해변·선녀바위·을왕리·염전 가운데 기억에 남는 장면, 해변 플로깅·스탬프 투어에서 알게 된 것.');
+    blank(3);
+  }
+  /* 10/28 사용자: 사진은 문서에 넣지 말고 사진전 설문지로 — 원본 화질로 모이고 작품집·사진전에 함께 쓴다 */
+  H('📷 사진은 «사진전» 설문지로 내요');
+  guide('문서에 넣으면 사진이 작아져서 작품집에 못 써요. 아래 링크(학교 계정)로 원본을 올려 주세요. 친구 얼굴은 허락받은 사진만.');
+  var lk = plain(b.appendParagraph('👉 사진 제출하기 (꿈길 걷기 사진전)'));
+  lk.editAsText().setLinkUrl(REPORT_PHOTO_FORM).setBold(true).setForegroundColor('#1D4ED8').setUnderline(true);
   H('③ 내 꿈(진로)과 이어지는 점');
   guide('계획서에 쓴 내 진로와 오늘 본 것이 어떻게 이어졌나요?');
   blank(3);
@@ -1286,9 +1295,19 @@ function reportDoc_(s) {
   plain(b.appendParagraph('제목: ')).editAsText().setBold(true).setFontSize(13);
   blank(6);
   H('📚 작품집 싣기 동의');
-  guide('해당하는 곳의 □ 를 ■ 로 바꾸세요.');
-  plain(b.appendParagraph('□ 내 글과 사진을 꿈길 걷기 작품집에 실어도 돼요.'));
-  plain(b.appendParagraph('□ 작품집에 내 이름(학년·반·이름)을 밝혀도 돼요.  (안 고르면 «○학년 학생»으로 실려요)'));
+  guide('항목마다 «동의» 또는 «미동의» 칸 하나에 ✔ 표시하세요. (이름을 밝히지 않으면 «○학년 학생»으로 실려요)');
+  var ag = b.appendTable([['항목', '동의', '미동의'], ['내 글과 사진을 꿈길 걷기 작품집에 싣기', '', ''], ['작품집에 내 이름(학년·반·이름) 밝히기', '', '']]);   // 10/28 사용자: 동의·미동의 두 칸 표
+  ag.setBorderColor('#94A3B8');
+  for (var r = 0; r < ag.getNumRows(); r++) {
+    ag.getRow(r).getCell(0).setWidth(300);
+    ag.getRow(r).getCell(1).setWidth(70); ag.getRow(r).getCell(2).setWidth(70);
+    for (var k = 0; k < 3; k++) {
+      var cl = ag.getRow(r).getCell(k);
+      if (cl.getText()) cl.editAsText().setItalic(false).setForegroundColor('#000000').setFontSize(10).setBold(r === 0);
+      if (r === 0) cl.setBackgroundColor('#F1F5F9');
+      if (k > 0) cl.getChild(0).asParagraph().setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    }
+  }
   doc.saveAndClose();
   var file = DriveApp.getFileById(doc.getId());
   file.moveTo(reportFolder_(reportFolder_(null, REPORT_FOLDER), grade + '학년 ' + cls + '반'));
@@ -1303,7 +1322,7 @@ function reportRun_(max, withPlan) {
   var list = reportList_(), sh = reportIndex_(), t0 = Date.now(), n = 0;
   var done = {};
   if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 1).getDisplayValues().forEach(function (r) { done[r[0]] = 1; });
-  var todo = list.filter(function (x) { return !done[x.no] && (!withPlan || x.plan); });
+  var todo = list.filter(function (x) { return !done[x.no] && (!withPlan || (x.plan && x.day2)); });
   var orphan = DriveApp.getRootFolder().searchFiles("title contains '꿈길 걷기 탐방보고서' and mimeType = 'application/vnd.google-apps.document'");
   while (orphan.hasNext()) orphan.next().setTrashed(true);       // 중간에 멈춰 폴더로 못 옮긴 문서(휴지통으로)
   for (var i = 0; i < todo.length && n < max; i++) {
