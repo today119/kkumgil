@@ -523,7 +523,7 @@
           <span class="d"><span class="t">준비물</span><span class="s" id="prepCount">눌러서 체크</span></span></button>
         <!-- 10/28 사용자: «선생님 안내» → «환자 발생 시 응급», 누르면 한 장 대응 요령(교사용 안내서는 그 아래 링크) -->
         <button class="pick guidecard" id="emergBtn"><span class="ic">🚑</span>
-          <span class="d"><span class="t">환자 발생 시 응급</span><span class="s">대응 요령 한 장</span></span></button>
+          <span class="d"><span class="t">환자 발생 시</span><span class="s">대응 요령 한 장</span></span></button>
       </div>
 
       <!-- 공모전 미리보기 — 윗줄은 «이미 마감된» 것, 아랫줄은 «행사 당일부터» 하는 것 -->
@@ -1608,7 +1608,7 @@
   $("tposBtn").onclick = function(){ closeSheets(); openTpos(); };
   /* 🚑 환자 발생 시 응급 — 교직원 안전교육 «한 장 요약»(꿈길걷기_환자대응_한장) 그대로. 119·5단계·백운산 하산 포인트 */
   $("emergBtn").onclick = function(){
-    $("stampTitle").textContent = "🚑 환자 발생 시 응급";
+    $("stampTitle").textContent = "🚑 환자 발생 시";
     $("stampSheet").dataset.back = "";
     $("stampBody").innerHTML =
       '<a href="tel:119" class="go" style="display:block;text-align:center;text-decoration:none;background:#C62828;line-height:56px;margin-bottom:10px">📞 119 바로 걸기</a>' +
