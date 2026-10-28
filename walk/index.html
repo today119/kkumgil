@@ -2344,16 +2344,15 @@
     paintPwa();
     if(wantTab === "course") showPane("course");
     if(LIST.teacher && LIST.teacher.url){
-      $("teacherBtn").href = LIST.teacher.url; $("teacherBtn").hidden = false;
       tpUrl = LIST.teacher.url.replace(/\/a\/macros\/[^/]+\//, "/macros/");   // 학교 로그인 없이 받는 주소
+      /* 10/28 사용자: 안내 판의 버튼 2개가 헷갈림 → «바로 열고 현황판에서 비번만». 배포가 「모든 사용자」+비번이라
+         로그인 없는 주소(/macros/)로 열면 홈 화면 앱에서도 구글 로그인 문제가 없다 */
+      $("teacherBtn").href = tpUrl; $("teacherBtn").hidden = false;
       $("tposBtn").hidden = false; tpPaint();
       /* ★ 홈 화면에 설치한 앱(아이폰)에서는 바깥 링크가 «앱 안 미리보기 창»으로 열린다.
            그 창은 사파리와 구글 로그인이 따로라 학교 계정이 안 맞아 「현재 파일을 열 수 없습니다」가 뜬다(10/2 실제 발생).
            → 설치 앱에서는 바로 열지 않고 안내 판을 먼저 띄운다. 사파리에서 연 현황판을 «따로» 홈 화면에 추가하는 게 정답. */
-      $("teacherBtn").onclick = function(e){
-        if(!standalone) return;            // 사파리·크롬에서 연 경우엔 그냥 새 탭으로
-        e.preventDefault(); openTeacherHelp(LIST.teacher.url);
-      };
+      /* (예전 안내 판 openTeacherHelp 은 더 쓰지 않는다) */
     }
     /* 주소로 코스를 지정할 수 있다 — QR 을 코스별로 따로 뿌릴 때 쓴다. ?day=1 / ?day=2 */
     var m = location.search.match(/[?&]day=(\d+)/);
