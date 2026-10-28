@@ -325,6 +325,7 @@
   .ci-top span{font-size:14px;font-weight:900;padding:5px 11px;border-radius:999px;background:#E0F2FE;color:#075985}
   .ci-name{font-size:24px;font-weight:900;letter-spacing:-.04em;margin:6px 0 12px;line-height:1.3}
   .ci-map{width:100%;border-radius:16px;display:block;border:1px solid var(--line)}
+  .ci-grp{width:100%;border-collapse:collapse;font-size:13px;margin:4px 0 6px}.ci-grp th{background:#F1F5F9;color:#475569;font-weight:800;padding:6px 4px;text-align:left}.ci-grp td{padding:6px 4px;border-bottom:1px solid #E2E8F0;vertical-align:top}.ci-grp td:last-child,.ci-grp th:last-child{text-align:right;white-space:nowrap}.ci-grp tr.bus td{background:#EFF6FF;color:#1E40AF;font-weight:800;padding:4px}.ci-sub{font-size:12.5px;color:var(--sub);margin-bottom:8px}
   .ci-route{display:flex;flex-wrap:wrap;align-items:center;gap:4px 2px;margin:12px 0 4px;font-size:15px;font-weight:800;line-height:1.6}
   .ci-route i{font-style:normal;color:#94A3B8;margin:0 3px}
   .ci-route .bus{color:#64748B;font-weight:700}
@@ -1428,7 +1429,13 @@
             (c.route ? '<div class="ci-route">' + c.route.map(function(r){
                 return /^\(/.test(r) ? '<span class="bus">' + esc(r) + '</span>' : '<span>' + esc(r) + '</span>';
               }).join('<i>→</i>') + '</div>' : '') +
-            '<div class="ci-h">🕘 일정</div>' + schRows(c.schedule || []);
+            '<div class="ci-h">🕘 일정</div>' + schRows(c.schedule || []) +
+            /* 10/28 사용자: 2일차 조편성도 코스 안내에 — 그룹·반·지도교사·인원만(학생 이름은 앱에 넣지 않는다) */
+            (c.groups ? '<div class="ci-h">👥 조편성</div><table class="ci-grp"><tr><th>그룹</th><th>학년·반</th><th>지도교사</th><th>인원</th></tr>' +
+              c.groups.map(function(g, k){
+                var bus = (k === 0 || c.groups[k-1][0] !== g[0]) ? '<tr class="bus"><td colspan="4">🚌 ' + esc(g[0]) + '</td></tr>' : '';
+                return bus + '<tr><td><b>' + esc(g[1]) + '</b></td><td>' + esc(g[2]) + '</td><td>' + esc(g[3]) + '</td><td>' + g[4] + '</td></tr>';
+              }).join('') + '</table>' + (c.groupsNote ? '<div class="ci-sub">' + esc(c.groupsNote) + '</div>' : '') : '');
     if(c.note) h += '<div class="ci-warn">📍 앱 길안내: ' + esc(c.note) + '</div>';
     var ok = c.ready && c.lengthM;
     h += '<div class="ci-go">' +
