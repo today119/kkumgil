@@ -37,6 +37,7 @@ function onOpen() {
     .addSeparator()
     .addItem('집계 새로 고치기', 'refreshAll')
     .addItem('📥 참가 조사 가져오기', 'importSurvey')
+    .addItem('👥 2일차 그룹표 가져오기(조편성)', 'importGroups2')
     .addItem('명단 확인하기', 'checkRoster')
     .addSeparator()
     .addItem('🏅 스탬프 인증 폼 만들기', 'makeStampForm')
@@ -119,7 +120,7 @@ function importSurvey() {
   try { refreshAll(); } catch (e) {}
   var by = function (list) { var o = {}; list.forEach(function (s) { o[s.cls] = (o[s.cls] || 0) + 1; }); return Object.keys(o).sort(classOrder).map(function (c) { return c + ' ' + o[c]; }).join(' · '); };
   ui.alert('📥 가져왔어요',
-    '【1일차】 1학년 ' + S.d1.length + '명 · 불참 ' + n + '명' + (n ? ' (현황판에 「불참」으로 미리 넣었어요)' : '') + '\n' +
+    '【1일차】 1·2학년 ' + S.d1.length + '명 · 불참 ' + n + '명' + (n ? ' (현황판에 「불참」으로 미리 넣었어요)' : '') + '\n' +
     S.d1.filter(function (s) { return !s.go1; }).map(function (s) { return s.cls + ' ' + s.name + (s.why ? '(' + s.why + ')' : ''); }).join(', ') + '\n\n' +
     '【2일차】 신청 ' + S.d2.length + '명\n' + by(S.d2) + '\n\n' +
     '조사 시트가 바뀌면 이 버튼을 다시 누르면 돼요.', ui.ButtonSet.OK);
@@ -143,7 +144,7 @@ function readSurvey(tabs) {
       if (!nm) return;
       var yes = function (c) { return c >= 0 && /^(TRUE|O|○|◯|V|✓|✔|Y|예|참가|신청)$/i.test(String(row[c]).trim()); };
       var s = { cls: cls, no: Number(row[cNo]) || 0, name: nm, go1: yes(c1), go2: yes(c2), why: cWhy >= 0 ? String(row[cWhy] || '').trim() : '' };
-      if (grade === '1') d1.push(s);
+      d1.push(s);   // 10/28 2학년(인천바로알기)도 현황판 1일차 명단에 — 담임이 불참·조퇴를 같은 화면에서 기록
       if (s.go2) d2.push(s);
     });
   });
@@ -312,7 +313,7 @@ function makeForm(day) {
     .setAllowResponseEdits(false)
     .setProgressBar(false);
   try { form.setRequireLogin(true); } catch (e) {}     // 학교 계정만
-  try { form.setCollectEmail(true); } catch (e) {}     // 누가 찍었는지
+  try { form.setEmailCollectionType(FormApp.EmailCollectionType.VERIFIED); } catch (e) { try { form.setCollectEmail(true); } catch (e2) {} }   // 10/28 «확인됨» = 로그인 계정 자동(학생이 이메일 안 적음)     // 누가 찍었는지
 
   // 1쪽: 반 고르기 → 그 반 쪽으로
   var classItem = form.addMultipleChoiceItem().setTitle('반').setRequired(true);
@@ -634,6 +635,74 @@ function readTpos_(day, showNames) {
 }
 
 /* 현황판이 1분마다 부른다 — 폼이 없어도 명단만 있으면 된다 */
+/* ══ 2일차 그룹(10/28 사용자 «2일차는 그룹별 담당 교사가 현황판에 나와야 통제하기 좋다») ══
+   ★ 2일차는 반이 아니라 10개 그룹(지도교사 2~3명)으로 걷는다 → 현황판 카드도 그룹으로 묶어 보여 준다.
+   ★ 기록(기록_2일차)은 예전처럼 «진짜 반» 으로 남긴다 — 그룹은 보여 주는 방법일 뿐이라 집계·동판은 그대로.
+   ★ 그룹표는 「그룹_2일차」 탭(그룹 | 지도교사 | 학번 | 이름). 조편성이 바뀌면 그 탭만 고치면 된다.
+   1일차 반 카드에는 담당 교사(DAY1_T)를 붙인다. */
+var GROUP_SRC = '1QMGGtrEmRzSfojxrzpDFUt1klSyksJ8jMH8JTYeCkEs';   // 「2026_꿈길걷기_2일차_조편성」
+var DAY1_T = { '1-1': '김희연·양장관', '1-2': '송창석·문필재', '1-3': '임하은·박정은', '1-4': '김은서·박삼병', '1-5': '정우철·박현미',
+               '1-6': '고은화·김효곤', '1-7': '이은정·김진범', '1-8': '이은지·서정주', '1-9': '윤영은·오희찬', '1-10': '진소라·김양선' };
+
+/* 조편성 시트 → 「그룹_2일차」 탭. 편집기에서 실행해도 된다(화면 알림 없음) */
+function importGroups2() {
+  var g = SpreadsheetApp.openById(GROUP_SRC).getSheets()[0].getDataRange().getDisplayValues();
+  var rows = [['그룹', '지도교사', '학번', '이름']];
+  g.forEach(function (r) {
+    var no = String(r[1]).trim();
+    if (!/^\d+$/.test(no)) return;
+    var re = /(\d{5})\s*([^\d]+)/g, m;
+    while ((m = re.exec(String(r[5])))) rows.push([no + '그룹', String(r[3]).trim(), m[1], m[2].trim()]);
+  });
+  var ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName('그룹_2일차') || ss.insertSheet('그룹_2일차');
+  sh.clear();
+  sh.getRange('C:C').setNumberFormat('@');
+  sh.getRange(1, 1, rows.length, 4).setValues(rows);
+  sh.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#E0F2FE');
+  sh.setFrozenRows(1);
+  Logger.log('그룹_2일차: ' + (rows.length - 1) + '명');
+  return rows.length - 1;
+}
+function readGroups2_() {
+  var sh = SpreadsheetApp.getActive().getSheetByName('그룹_2일차');
+  if (!sh) return null;
+  var v = sh.getDataRange().getDisplayValues(), G = { order: [], t: {}, of: {} };
+  v.slice(1).forEach(function (r) {
+    var g = String(r[0]).trim(), hb = String(r[2]).trim();
+    if (!g || !/^\d{5}$/.test(hb)) return;
+    if (G.order.indexOf(g) < 0) { G.order.push(g); G.t[g] = String(r[1]).trim(); }
+    G.of[hb.charAt(0) + '-' + Number(hb.slice(1, 3)) + '|' + Number(hb.slice(3))] = g;
+  });
+  return G.order.length ? G : null;
+}
+/* computeStatus 결과(사람 단위)를 그룹으로 묶는다. map[그룹][표시이름] = {c: 진짜 반, lab: 반 안 표시이름} */
+function groupStatus_(S, G) {
+  var by = {}, order = G.order.slice();
+  S.people.forEach(function (p) {
+    var g = G.of[p[7] + '|' + Number(p[1])] || '미배정';
+    if (order.indexOf(g) < 0) order.push(g);
+    (by[g] = by[g] || []).push({ c: p[7], cl: p[0], lab: p[8], st: p[3] });
+  });
+  var map = {}, classes = [];
+  order.forEach(function (g) {
+    var L = by[g] || [], cnt = {};
+    L.forEach(function (x) { cnt[x.lab] = (cnt[x.lab] || 0) + 1; });
+    var absent = 0, drop = 0;
+    map[g] = {};
+    var students = L.map(function (x) {
+      var nm = cnt[x.lab] > 1 ? x.lab + '(' + x.c + ')' : x.lab;
+      map[g][nm] = { c: x.c, lab: x.lab, cl: x.cl };
+      if (x.st === '불참') absent++;
+      if (x.st === '중도포기') drop++;
+      return { name: nm, st: x.st };
+    });
+    if (!L.length) return;
+    var go = L.length - absent;
+    classes.push({ cls: g, label: g, teachers: G.t[g] || '', list: L.length, absent: absent, go: go, drop: drop, walk: go - drop, students: students });
+  });
+  return { classes: classes, map: map };
+}
+
 function getStatus(day, pin) {
   var bad = checkPin_(pin);
   if (bad === 'NOPIN') return { ok: false, msg: NOPIN_MSG };
@@ -651,14 +720,24 @@ function getStatus(day, pin) {
     var c = R.classes[i];
     return { cls: c, label: t[0], list: t[1], absent: t[2], go: t[3], drop: t[4], walk: t[5], students: byCls[c] || [] };
   });
+  var G = day === 2 ? readGroups2_() : null, GS = G ? groupStatus_(S, G) : null, gOf = {};
+  if (GS) {
+    classes = GS.classes;
+    Object.keys(GS.map).forEach(function (g) { Object.keys(GS.map[g]).forEach(function (nm) { var x = GS.map[g][nm]; gOf[x.c + '|' + x.lab] = { g: g, nm: nm }; }); });
+  } else if (day === 1) {
+    classes.forEach(function (c) { c.teachers = DAY1_T[c.cls] || ''; });
+  }
   var out = S.people.filter(function (p) { return p[3] !== '걷는 중'; })
     .sort(function (a, b) { return (b[4] || 0) - (a[4] || 0); })
     .map(function (p) {
-      return { cls: p[7], label: p[0], name: p[8], st: p[3], time: p[4] ? fmt(p[4]) : '', place: p[5], reason: p[6],
+      var o = { cls: p[7], label: p[0], name: p[8], st: p[3], time: p[4] ? fmt(p[4]) : '', place: p[5], reason: p[6],
                by: String(p[9] || '').split('@')[0] };
+      var x = gOf[p[7] + '|' + p[8]];
+      if (x) { o.cls = x.g; o.name = x.nm; o.label = x.g + ' · ' + p[0]; }
+      return o;
     });
   return { ok: true, title: DAYS[day].title, time: Utilities.formatDate(new Date(), 'Asia/Seoul', 'HH:mm'),
-           total: tot, classes: classes, out: out,
+           total: tot, classes: classes, out: out, unit: GS ? '그룹별' : '반별',
            teachers: readTpos_(day, false).map(function (x) { delete x.real; delete x.lat; delete x.lng; return x; }),
            reasons: REASONS.filter(function (r) { return r !== '결석·개인 사정'; }),
            places: DAYS[day].places.filter(function (p) { return p !== '출발 전'; }) };
@@ -672,11 +751,21 @@ function record(day, pin, cls, names, status, reason, place, byName) {
   if (real && String(pin || '') !== real) return { ok: false, need: 'pin', msg: checkPin_(pin) || '비번을 다시 넣어 주세요.' };
   day = Number(day) === 2 ? 2 : 1;
   if (STATUS.indexOf(status) < 0) return { ok: false, msg: '알 수 없는 상황이에요.' };
-  var R = readRoster(day), list = R.byClass[cls];
-  if (!list) return { ok: false, msg: '명단에 없는 반이에요.' };
-  var labels = list.map(function (s) { return choiceLabel(list, s); });
-  var bad = names.filter(function (n) { return labels.indexOf(n) < 0; });
-  if (!names.length || bad.length) return { ok: false, msg: '명단에 없는 학생이에요: ' + bad.join(', ') };
+  var R = readRoster(day), pairs;
+  if (day === 2 && /그룹$/.test(cls)) {                    // 그룹 카드에서 온 기록 → 진짜 반으로 바꿔 적는다
+    var G = readGroups2_(), M = G ? groupStatus_(computeStatus(R, []), G).map[cls] : null;
+    if (!M) return { ok: false, msg: '그룹표에 없는 그룹이에요.' };
+    var badG = names.filter(function (n) { return !M[n]; });
+    if (!names.length || badG.length) return { ok: false, msg: '그룹에 없는 학생이에요: ' + badG.join(', ') };
+    pairs = names.map(function (n) { return [M[n].c, M[n].lab]; });
+  } else {
+    var list = R.byClass[cls];
+    if (!list) return { ok: false, msg: '명단에 없는 반이에요.' };
+    var labels = list.map(function (s) { return choiceLabel(list, s); });
+    var bad = names.filter(function (n) { return labels.indexOf(n) < 0; });
+    if (!names.length || bad.length) return { ok: false, msg: '명단에 없는 학생이에요: ' + bad.join(', ') };
+    pairs = names.map(function (n) { return [cls, n]; });
+  }
   var who = '';
   try { who = Session.getActiveUser().getEmail(); } catch (e) {}
   if (!who) who = String(byName || '').slice(0, 20);      // 로그인 없이 쓸 때는 처음에 적은 성함
@@ -684,7 +773,7 @@ function record(day, pin, cls, names, status, reason, place, byName) {
   lock.waitLock(10000);
   try {
     var sh = logSheet(day, true), now = new Date();
-    var rows = names.map(function (n) { return [now, cls, n, status, reason || '', place || '', who]; });
+    var rows = pairs.map(function (x) { return [now, x[0], x[1], status, reason || '', place || '', who]; });
     sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
     SpreadsheetApp.flush();
   } finally { lock.releaseLock(); }
@@ -818,8 +907,10 @@ function draw(R){
        '<div class="drop"><b>' + T.drop + '</b><span>중도포기</span></div>' +
        '<div class="walk"><b>' + T.walk + '</b><span>지금 걷는 중</span></div></div>';
   h += formation(S.teachers || []);
-  h += '<div class="h">반별 <small>반을 누르면 기록할 수 있어요</small></div><div class="cls">' + S.classes.map(function(c, i){
+  var U = S.unit || '반별';
+  h += '<div class="h">' + U + ' <small>' + (U === '그룹별' ? '그룹' : '반') + '을 누르면 기록할 수 있어요</small></div><div class="cls">' + S.classes.map(function(c, i){
     return '<button class="c' + (c.drop ? ' alert' : '') + '" data-ci="' + i + '"><div class="n">' + esc(c.label) + '<em>' + c.walk + '</em></div>' +
+           (c.teachers ? '<div class="s" style="color:#1E3A8A">👩‍🏫 ' + esc(c.teachers) + '</div>' : '') +
            '<div class="s">명단 ' + c.list + ' · 불참 ' + c.absent + ' · <i>포기 ' + c.drop + '</i></div></button>';
   }).join('') + '</div>';
   h += '<div class="h">빠진 학생 ' + S.out.length + '명</div>';
@@ -859,7 +950,7 @@ function openClass(i, keep){
   var c = S.classes[i];
   if(openCls !== i || !keep) sel = {};
   openCls = i;
-  var h = '<div class="top"><h2>' + esc(c.label) + '</h2><button class="x" data-x>×</button></div>' +
+  var h = '<div class="top"><h2>' + esc(c.label) + (c.teachers ? ' <small style="font-size:13px;color:#64748B">👩‍🏫 ' + esc(c.teachers) + '</small>' : '') + '</h2><button class="x" data-x>×</button></div>' +
           '<div class="sub">걷는 중 ' + c.walk + ' · 불참 ' + c.absent + ' · 포기 ' + c.drop + ' — 학생을 골라 주세요(여러 명 가능)</div><div class="names">' +
           c.students.map(function(s){
             var k = s.st === '불참' ? 'absent' : s.st === '중도포기' ? 'drop' : '';
@@ -973,7 +1064,7 @@ function makeStampForm() {
     .setConfirmationMessage('인증했어요 🏅  수고 많았어요!')
     .setAllowResponseEdits(false).setProgressBar(false);
   try { form.setRequireLogin(true); } catch (e) {}
-  try { form.setCollectEmail(true); } catch (e) {}
+  try { form.setEmailCollectionType(FormApp.EmailCollectionType.VERIFIED); } catch (e) { try { form.setCollectEmail(true); } catch (e2) {} }   // 10/28 «확인됨» = 로그인 계정 자동(학생이 이메일 안 적음)
   var a = form.addTextItem().setTitle('스탬프 기록').setRequired(true);
   var b = form.addTextItem().setTitle('확인값').setRequired(true);
   form.setDestination(FormApp.DestinationType.SPREADSHEET, ss.getId());
