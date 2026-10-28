@@ -1271,20 +1271,24 @@ function reportDoc_(s) {
     t.getRow(i).getCell(1).editAsText().setItalic(false).setForegroundColor('#000000').setBold(false).setFontSize(10);
   }
   H('② 다녀와서 — 실제로 보고 알게 된 것');
-  guide('계획서에서 보려던 것을 실제로 봤나요? 무엇을, 어디서, 어떻게 봤는지 구체적으로.');
+  guide('②~③은 ④ 글을 쓰기 위한 «탐방 기록»이에요. 짧게 메모하듯 써도 돼요. 계획서에서 보려던 것을 실제로 봤나요? 무엇을, 어디서, 어떻게 봤는지.');
   blank(4);
   H('📷 사진 (2~4장)');
-  guide('스탬프·사진전 사진을 넣으세요. 폰 구글 문서 앱: ＋ → 이미지. 사진 아래에 한 줄 설명(어디서, 무엇).');
+  guide('스탬프·사진전 사진을 넣으세요. 폰 구글 문서 앱: ＋ → 이미지. 사진 아래에 한 줄 설명(어디서, 무엇). 인쇄용 원본은 앱 «사진전»으로도 올려 주세요(문서 속 사진은 작아져요). 친구 얼굴은 허락받은 사진만.');
   var ph = b.appendTable([['사진 1\n\n\n\n설명:', '사진 2\n\n\n\n설명:']]).setBorderColor('#CBD5E1');
   ph.editAsText().setItalic(false).setForegroundColor('#64748B').setFontSize(10);
-  H('③ 계획과 달라진 점');
-  guide('못 한 것, 뜻밖에 발견한 것, 생각이 바뀐 것.');
+  H('③ 내 꿈(진로)과 이어지는 점');
+  guide('계획서에 쓴 내 진로와 오늘 본 것이 어떻게 이어졌나요?');
   blank(3);
-  H('④ 내 꿈(진로)과 이어지는 점');
-  blank(3);
-  H('⑤ 한 줄 소감');
-  guide('작품집에 실릴 수 있어요. 나만 쓸 수 있는 한 문장으로.');
-  blank(1);
+  /* 10/28 사용자: 마지막 «한 줄 소감» 대신 «제목 + 글» — ②~④ 기록을 바탕으로 작품집에 그대로 실을 한 편 */
+  H('✍️ ④ 작품집에 실릴 글 — 제목 + 글');
+  guide('②~③에 적은 것을 바탕으로 «한 편의 글»로 다시 써요. 600~900자(작품집 A5 1~2쪽). 장면 → 생각 → 내 꿈 순서로 쓰면 읽기 좋아요. 이 글이 그대로 작품집에 실려요.');
+  plain(b.appendParagraph('제목: ')).editAsText().setBold(true).setFontSize(13);
+  blank(6);
+  H('📚 작품집 싣기 동의');
+  guide('해당하는 곳의 □ 를 ■ 로 바꾸세요.');
+  plain(b.appendParagraph('□ 내 글과 사진을 꿈길 걷기 작품집에 실어도 돼요.'));
+  plain(b.appendParagraph('□ 작품집에 내 이름(학년·반·이름)을 밝혀도 돼요.  (안 고르면 «○학년 학생»으로 실려요)'));
   doc.saveAndClose();
   var file = DriveApp.getFileById(doc.getId());
   file.moveTo(reportFolder_(reportFolder_(null, REPORT_FOLDER), grade + '학년 ' + cls + '반'));
