@@ -1255,26 +1255,28 @@ function reportDoc_(s) {
   b.setMarginTop(50).setMarginBottom(50).setMarginLeft(56).setMarginRight(56);
   var H = function (t) { return b.appendParagraph(t).setHeading(DocumentApp.ParagraphHeading.HEADING2); };
   var guide = function (t) { var p = b.appendParagraph(t); p.editAsText().setItalic(true).setForegroundColor('#64748B').setFontSize(10); return p; };
-  var blank = function (n) { for (var i = 0; i < n; i++) b.appendParagraph(''); };
-  b.getChild(0).asParagraph().setText('2026 제10회 꿈길 걷기 탐방보고서').setHeading(DocumentApp.ParagraphHeading.TITLE);
+  var plain = function (p) { p.editAsText().setItalic(false).setBold(false).setForegroundColor('#000000').setFontSize(11); return p; };   // 앞 줄(안내 글) 서식이 따라오지 않게
+  var blank = function (n) { for (var i = 0; i < n; i++) plain(b.appendParagraph(' ')); };
+  var p0 = b.getChild(0).asParagraph(); p0.setText('2026 제10회 꿈길 걷기 탐방보고서'); p0.setHeading(DocumentApp.ParagraphHeading.TITLE);
   b.appendParagraph(grade + '학년 ' + cls + '반 ' + num + '번  ' + s.name + (P.job ? '   ·   희망 진로: ' + P.job : '')).editAsText().setBold(true);
   H('내가 고른 랜드마크');
   guide('하나만 남기고 나머지는 지우세요.');
-  b.appendParagraph((REPORT_PLACES[grade] || REPORT_PLACES['1']).join('   /   '));
+  plain(b.appendParagraph((REPORT_PLACES[grade] || REPORT_PLACES['1']).join('   /   ')));
   H('① 가기 전에 — 나의 탐방계획서');
   guide(s.plan ? '7월에 내가 쓴 계획서예요. 고치지 말고 그대로 두세요.' : '제출한 계획서가 없어요. 무엇을 보고 싶었는지 짧게 적어 보세요.');
   var t = b.appendTable([['장소 특징 조사', String(P.place || '')], ['진로 연계 계획', String(P.plan || '')]]);
   t.setBorderColor('#CBD5E1');
   for (var i = 0; i < t.getNumRows(); i++) {
-    t.getRow(i).getCell(0).setWidth(110).setBackgroundColor('#F1F5F9').editAsText().setBold(true).setFontSize(10);
-    t.getRow(i).getCell(1).editAsText().setFontSize(10);
+    t.getRow(i).getCell(0).setWidth(110).setBackgroundColor('#F1F5F9').editAsText().setItalic(false).setForegroundColor('#000000').setBold(true).setFontSize(10);
+    t.getRow(i).getCell(1).editAsText().setItalic(false).setForegroundColor('#000000').setBold(false).setFontSize(10);
   }
   H('② 다녀와서 — 실제로 보고 알게 된 것');
   guide('계획서에서 보려던 것을 실제로 봤나요? 무엇을, 어디서, 어떻게 봤는지 구체적으로.');
   blank(4);
   H('📷 사진 (2~4장)');
   guide('스탬프·사진전 사진을 넣으세요. 폰 구글 문서 앱: ＋ → 이미지. 사진 아래에 한 줄 설명(어디서, 무엇).');
-  b.appendTable([['사진 1\n\n\n\n설명:', '사진 2\n\n\n\n설명:']]).setBorderColor('#CBD5E1');
+  var ph = b.appendTable([['사진 1\n\n\n\n설명:', '사진 2\n\n\n\n설명:']]).setBorderColor('#CBD5E1');
+  ph.editAsText().setItalic(false).setForegroundColor('#64748B').setFontSize(10);
   H('③ 계획과 달라진 점');
   guide('못 한 것, 뜻밖에 발견한 것, 생각이 바뀐 것.');
   blank(3);
@@ -1293,11 +1295,13 @@ function reportDoc_(s) {
   }
   return { url: doc.getUrl(), shared: shared, title: title };
 }
-function reportRun_(max) {
+function reportRun_(max, withPlan) {
   var list = reportList_(), sh = reportIndex_(), t0 = Date.now(), n = 0;
   var done = {};
   if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 1).getDisplayValues().forEach(function (r) { done[r[0]] = 1; });
-  var todo = list.filter(function (x) { return !done[x.no]; });
+  var todo = list.filter(function (x) { return !done[x.no] && (!withPlan || x.plan); });
+  var orphan = DriveApp.getRootFolder().searchFiles("title contains '꿈길 걷기 탐방보고서' and mimeType = 'application/vnd.google-apps.document'");
+  while (orphan.hasNext()) orphan.next().setTrashed(true);       // 중간에 멈춰 폴더로 못 옮긴 문서(휴지통으로)
   for (var i = 0; i < todo.length && n < max; i++) {
     if (Date.now() - t0 > 5 * 60 * 1000) break;
     var r = reportDoc_(todo[i]);
@@ -1308,5 +1312,13 @@ function reportRun_(max) {
   Logger.log(msg);
   return msg;
 }
-function reportPreviewOne() { return reportRun_(1); }
+function reportPreviewOne() { return reportRun_(1, true); }   // 미리 보기는 계획서를 낸 학생으로
+/* 처음부터 다시 — 만든 보고서를 모두 휴지통으로 보내고 「보고서 목록」을 비운다(휴지통에서 30일 안에 되살릴 수 있다) */
+function reportResetAll() {
+  var it = DriveApp.getFoldersByName(REPORT_FOLDER), n = 0;
+  while (it.hasNext()) { var f = it.next(); f.setTrashed(true); n++; }
+  var sh = SpreadsheetApp.getActive().getSheetByName('보고서 목록');
+  if (sh) SpreadsheetApp.getActive().deleteSheet(sh);
+  Logger.log('폴더 ' + n + '개 휴지통, 목록 탭 삭제');
+}
 function reportMakeAll() { return reportRun_(9999); }
