@@ -316,7 +316,7 @@
   .prow .pick{min-width:0;min-height:92px}
   .prow img.ic{object-fit:cover;padding:0}
   .guidecard{text-decoration:none}
-  .guidecard .ic{background:#EDE9FE;font-size:23px}
+  .guidecard .ic{background:#FEE2E2;font-size:23px}
   /* 코스 안내 */
   .seg{display:flex;gap:4px;padding:4px;border-radius:16px;background:#E2E8F0;margin-bottom:16px}
   .seg button{flex:1;min-height:48px;border-radius:12px;font-size:16px;font-weight:900;color:#475569}
@@ -521,8 +521,9 @@
       <div class="prow">
         <button class="pick prepcard" id="prepCard"><img class="ic" src="t-prep.jpg" alt="">
           <span class="d"><span class="t">준비물</span><span class="s" id="prepCount">눌러서 체크</span></span></button>
-        <a class="pick guidecard" href="../guide/" target="_blank" rel="noopener"><span class="ic">👩‍🏫</span>
-          <span class="d"><span class="t">선생님 안내</span><span class="s">교사용 안내서</span></span></a>
+        <!-- 10/28 사용자: «선생님 안내» → «환자 발생 시 응급», 누르면 한 장 대응 요령(교사용 안내서는 그 아래 링크) -->
+        <button class="pick guidecard" id="emergBtn"><span class="ic">🚑</span>
+          <span class="d"><span class="t">환자 발생 시 응급</span><span class="s">대응 요령 한 장</span></span></button>
       </div>
 
       <!-- 공모전 미리보기 — 윗줄은 «이미 마감된» 것, 아랫줄은 «행사 당일부터» 하는 것 -->
@@ -545,7 +546,7 @@
         <span>학생 작품집<span class="s">걸으며 쓴 글과 사진을 모은 책</span></span></button>
 
       <a class="book teacher" id="teacherBtn" target="_blank" rel="noopener" hidden><span class="e">👩‍🏫</span>
-        <span>선생님용 · 학생 확인<span class="s">학교 계정으로 들어가요 — 참가·중도포기 현황</span></span></a>
+        <span>선생님용 · 학생 확인<span class="s">현황판 비번으로 들어가요 — 참가·중도포기 현황</span></span></a>
 
       <button class="book teacher" id="tposBtn" hidden style="width:100%;margin-top:10px"><span class="e">📡</span>
         <span>선생님 위치 공유<span class="s" id="tposSub">선두·후미 선생님 — 지도에서 대형을 봐요</span></span></button>
@@ -1605,6 +1606,18 @@
     toast("위치 공유를 껐어요");
   };
   $("tposBtn").onclick = function(){ closeSheets(); openTpos(); };
+  /* 🚑 환자 발생 시 응급 — 교직원 안전교육 «한 장 요약»(꿈길걷기_환자대응_한장) 그대로. 119·5단계·백운산 하산 포인트 */
+  $("emergBtn").onclick = function(){
+    $("stampTitle").textContent = "🚑 환자 발생 시 응급";
+    $("stampSheet").dataset.back = "";
+    $("stampBody").innerHTML =
+      '<a href="tel:119" class="go" style="display:block;text-align:center;text-decoration:none;background:#C62828;line-height:56px;margin-bottom:10px">📞 119 바로 걸기</a>' +
+      '<a href="emergency.jpg" target="_blank" rel="noopener"><img src="emergency.jpg" alt="아픈 학생·중도포기자 대응 한 장 요약" style="width:100%;border-radius:12px;border:1px solid var(--line,#E2E8F0)"></a>' +
+      '<div style="text-align:center;font-size:12.5px;color:var(--sub);margin-top:4px">그림을 누르면 크게 볼 수 있어요</div>' +
+      '<a href="../guide/" target="_blank" rel="noopener" class="go" style="display:block;text-align:center;text-decoration:none;line-height:52px;margin-top:10px;background:#EEF2FF;color:#3730A3">👩‍🏫 교사용 안내서 전체 보기</a>';
+    $("stampSheet").classList.add("show");
+    $("stampBody").scrollTop = 0;
+  };
 
   /* 👥 대형 — 지도에 선생님 이름표 + 맨 앞~맨 뒤 구간을 칠한다. 켜 둔 동안 30초마다 새로 */
   var troopOn = false, troopTimer = null, troopMarks = [], troopLine = null;
