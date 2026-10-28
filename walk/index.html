@@ -1941,9 +1941,10 @@
         ? '<div class="card" style="margin-top:14px;background:#064E3B"><h3 style="color:#fff">🎉 ' + d + '일차 다 모았습니다!</h3>' +
           '<div class="body" style="color:#D1FAE5">' + (STAMPS.certify ? '아래 버튼으로 인증을 제출하세요.' : '이 화면을 캡처해서 선생님께 보여 주세요.') + '</div></div>' + certBtn(d) : '');
     }).join('') +
-      '<div class="card" style="margin-top:14px"><div class="body">명소에 붙은 <b>QR 을 찍으면</b> 문제가 열려요.' +
-      (g2 ? '<br>2학년 인천바로알기는 QR 대신 <b>스탬프를 눌러 그 자리에서 사진을 찍으면</b> 문제가 열려요.' : '') + '</div>' +
-      '<button class="go" style="width:100%;margin-top:10px" data-scan>📷 QR 찍기</button></div>' +
+      /* 10/28 사용자: 1학년도 QR 대신 사진(현장에 QR 들고 가기 불편 + 사진전 사진도 생김) → 모든 스탬프 open:"photo". QR 은 예비 */
+      '<div class="card" style="margin-top:14px"><div class="body"><b>스탬프를 누르고 그 자리에서 사진을 찍으면</b> 문제가 열려요.<br>' +
+      '<small style="color:var(--sub)">찍은 사진은 사진전에 낼 수 있어요. QR 안내판이 있는 곳은 QR 로 열어도 돼요.</small></div>' +
+      '<button style="margin-top:8px;width:100%;background:none;border:0;color:var(--sub);font-size:13px;text-decoration:underline" data-scan>QR 로 열기</button></div>' +
       '';   // 미션은 미션 탭에만 둔다(스탬프판 아래에 같이 뜨면 두 가지가 섞여 보였다 — 사용자 지적 10/2)
     $("stampBody").querySelectorAll("[data-st]").forEach(function(b){
       b.onclick = function(){ openStamp(b.dataset.st, true); };
@@ -1957,6 +1958,24 @@
     bindScan($("stampBody"));
     bindMisBlock($("stampBody"));
     $("stampSheet").classList.add("show");
+  }
+
+  /* 스탬프 사진 — 앱은 갖고만 있다가(새로고침하면 사라짐) 학생이 원하면 갤러리에 저장하게 해 준다.
+     아이폰은 공유 시트의 «이미지 저장» 이 사진 앱에 넣는 유일한 길이다. 안 되면 파일 내려받기. */
+  var SHOTS = {};
+  function saveShot(f, name){
+    if(!f) return;
+    var nm = '꿈길_' + String(name).replace(/\s+/g, '') + '.' + ((f.type || '').split('/')[1] || 'jpg');
+    try{
+      var file = new File([f], nm, {type: f.type || 'image/jpeg'});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        navigator.share({files:[file]}).catch(function(){});
+        return;
+      }
+    }catch(e){}
+    var a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = nm;
+    document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 3000);
+    toast('사진을 내려받았어요');
   }
 
   /* 명소 하나 — 해설 + 퀴즈.  board=true 면 스탬프판에서 눌러 들어온 것 */
@@ -1977,13 +1996,19 @@
          '<div class="body">' + s.desc + '</div></div>';
     if(!got && !opened && s.open === "photo"){
       h += '<div class="card lock"><h3>📷 이곳에서 사진을 찍으면 문제가 열려요</h3>' +
-           '<div class="body">' + (s.shot || s.name + '이(가) 보이게 한 컷 찍어 보세요.') + '<br><small style="color:var(--sub)">사진은 내 폰 갤러리에만 남아요. 앱이나 서버로 보내지 않아요.</small></div>' +
+           '<div class="body">' + (s.shot || s.name + '이(가) 보이게 한 컷 찍어 보세요.') + '<br><small style="color:var(--sub)">카메라로 바로 찍거나, 폰 카메라로 찍어 둔 사진을 골라도 돼요. 앱이나 서버로 보내지 않아요.</small></div>' +
+           /* capture 를 빼야 «카메라 / 사진 보관함» 을 고를 수 있다(10/28) — capture 로 찍은 사진은 아이폰 갤러리에 안 남아 사진전에 못 낸다 */
            '<label class="go" style="display:block;text-align:center;width:100%;margin-top:10px;line-height:56px">📷 사진 찍고 문제 열기' +
-           '<input type="file" accept="image/*" capture="environment" id="shotIn" style="display:none"></label></div>';
+           '<input type="file" accept="image/*" id="shotIn" style="display:none"></label>' +
+           (s.code ? '<button data-scan style="margin-top:10px;width:100%;background:none;border:0;color:var(--sub);font-size:13px;text-decoration:underline">QR 안내판이 있으면 QR 로 열어도 돼요</button>' : '') + '</div>';
     } else if(!got && !opened){
       h += '<div class="card lock"><h3>🔒 문제는 이곳 QR 을 찍으면 열려요</h3>' +
            '<div class="body">' + s.name + '에 붙은 QR 안내판을 찾아 보세요.</div>' +
            '<button class="go" style="width:100%;margin-top:10px" data-scan>📷 QR 찍기</button></div>';
+    }
+    if(!got && opened && SHOTS[id]){
+      h += '<div class="card" style="text-align:center"><div class="body" style="margin-bottom:8px">방금 찍은 사진은 <b>사진전</b>에 낼 수 있어요. 갤러리에 없으면 저장해 두세요.</div>' +
+           '<button class="go" style="width:100%" id="shotSave">💾 이 사진 갤러리에 저장</button></div>';
     }
     if(!got && opened){
       h += '<div class="card quiz" id="quizBox"><h3>❓ ' + s.quiz.q + '</h3>' +
@@ -1995,8 +2020,9 @@
     $("stampBody").innerHTML = h;
     $("toBoard").onclick = showStampBoard;
     if($("shotIn")) $("shotIn").onchange = function(){
-      if(this.files && this.files.length){ unlock(s.id); openStamp(s.id, fromBoard); }
+      if(this.files && this.files.length){ SHOTS[s.id] = this.files[0]; unlock(s.id); openStamp(s.id, fromBoard); }
     };
+    if($("shotSave")) $("shotSave").onclick = function(){ saveShot(SHOTS[s.id], s.name); };
     bindScan($("stampBody"));
     bindMis($("stampBody"));
     if(!got && opened){
