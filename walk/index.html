@@ -1978,6 +1978,11 @@
     toast('사진을 내려받았어요');
   }
 
+  function blankDesc(s){
+    var t = s.desc, L = s.blank || [s.quiz.choices[s.quiz.answer]];
+    L.forEach(function(w){ if(w) t = t.split(w).join('<span style="display:inline-block;min-width:3.2em;border-bottom:2px solid var(--sub);color:transparent">' + '＿'.repeat(Math.min(6, Math.max(2, w.length))) + '</span>'); });
+    return t;
+  }
   /* 명소 하나 — 해설 + 퀴즈.  board=true 면 스탬프판에서 눌러 들어온 것 */
   function openStamp(id, fromBoard){
     if(!STAMPS) return;
@@ -1993,10 +1998,9 @@
     }
     h += '<div class="card"><h3>' + s.emoji + ' ' + s.name + '</h3>' +
          (s.photo ? '<img src="photos/' + s.photo + '" style="width:100%;border-radius:14px;margin:4px 0 10px">' : '') +
-         /* 10/28 사용자 «해설 바로 아래 문제라 너무 쉽다» → 받기 전엔 해설을 접어 두고 문제부터. 맞히면 펼쳐 보여 준다 */
-         (got ? '<div class="body">' + s.desc + '</div>'
-              : '<details class="desc-fold"><summary style="cursor:pointer;font-weight:800;color:var(--sub);padding:6px 0">📖 해설 읽고 풀기 <small style="font-weight:500">(모르겠으면 눌러 보세요)</small></summary><div class="body" style="margin-top:6px">' + s.desc + '</div></details>') +
-         '</div>';
+         /* 10/28 사용자: 해설 → 퀴즈 순서는 그대로, 받기 전엔 해설 속 «답» 을 빈칸으로. 맞히면 빈칸이 채워진 해설을 보여 준다.
+            빈칸 = stamps.json 의 blank(없으면 정답 보기 글자 그대로) */
+         '<div class="body">' + (got ? s.desc : blankDesc(s)) + '</div></div>';
     if(!got && !opened && s.open === "photo"){
       h += '<div class="card lock"><h3>📷 이곳에서 사진을 찍으면 문제가 열려요</h3>' +
            '<div class="body">' + (s.shot || s.name + '이(가) 보이게 한 컷 찍어 보세요.') + '<br><small style="color:var(--sub)">카메라로 바로 찍거나, 폰 카메라로 찍어 둔 사진을 골라도 돼요. 앱이나 서버로 보내지 않아요.</small></div>' +
@@ -2041,7 +2045,7 @@
               '<div class="got-big"><div class="em">' + s.emoji + '</div>' +
               '<div class="t">스탬프 획득!</div></div>' +
               '<div class="card"><div class="body">' + (s.quiz.after || "잘했어요!") + '</div></div>' +
-              '<div class="card"><h3>📖 ' + s.name + ' 이야기</h3><div class="body">' + s.desc + '</div></div>' +
+              '<div class="card"><h3>📖 ' + s.name + ' 이야기 <small style="font-weight:500;color:var(--sub)">(빈칸 채움)</small></h3><div class="body">' + s.desc + '</div></div>' +
               '<button class="go" style="width:100%" id="toBoard2">🏅 스탬프판 보기 (' + dayCount(s.day) + ')</button>';
             $("toBoard2").onclick = showStampBoard;
             bindMis($("stampBody"));
