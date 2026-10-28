@@ -1029,10 +1029,17 @@
         kakao.maps.event.addListener(map, "dragstart", function(){ setFollow(false); });
         kakao.maps.event.addListener(map, "dragend", function(){   // 손 떼고 15초 지나면 다시 나를 따라감
           clearTimeout(followTimer);
-          followTimer = setTimeout(function(){ if(!troopOn){ setFollow(true); centerOnMe(); } }, 15000);
+          followTimer = setTimeout(function(){ if(!troopOn){ if(navPaused){ navPaused = false; setNav(true, true); } setFollow(true); centerOnMe(); } }, 15000);
         });
         kakao.maps.event.addListener(map, "zoom_changed", function(){ if(nav && follow) centerOnMe(); });
         map.setDraggable(!nav);
+        var browse = function(){ if(nav){ navPaused = true; setNav(false, true); setFollow(false); toast("지도 둘러보기 — 15초 뒤 길안내 화면으로 돌아가요"); } };
+        if(!$("map").dataset.br){                      // 코스를 다시 불러도 한 번만 건다
+          $("map").dataset.br = "1";
+          $("map").addEventListener("touchstart", function(){ window.__kkBrowse && window.__kkBrowse(); }, {capture:true, passive:true});
+          $("map").addEventListener("mousedown", function(){ window.__kkBrowse && window.__kkBrowse(); }, true);
+        }
+        window.__kkBrowse = browse;
         new kakao.maps.Polyline({map:map, path:path, strokeWeight:8, strokeColor:"#38BDF8", strokeOpacity:.9, zIndex:2});
         doneLine = new kakao.maps.Polyline({map:map, path:[], strokeWeight:8, strokeColor:"#64748B", strokeOpacity:.95, zIndex:3});
         snapLine = new kakao.maps.Polyline({map:map, path:[], strokeWeight:4, strokeColor:"#EF4444", strokeStyle:"shortdash", zIndex:4});
@@ -1065,7 +1072,8 @@
     });
   }
   var helperMks = [];
-  function paintHelpers(){ helperMks.forEach(function(m){ m.setMap(TP && TP.on && mapReady ? map : null); }); }
+  /* 10/28 사용자: 선생님은 다 보여야 — 위치 공유를 켜지 않아도 «현황판 비번»을 한 번 확인한 폰(TP.ok)이면 보인다 */
+  function paintHelpers(){ helperMks.forEach(function(m){ m.setMap(TP && (TP.on || TP.ok) && mapReady ? map : null); }); }
   function drawMe(){
     if(!mapReady || !state.pos) return;
     var pos = new kakao.maps.LatLng(state.pos.lat, state.pos.lng);
@@ -1095,6 +1103,7 @@
   }
   $("recenter").onclick = function(){
     if(troopOn) troopOff();
+    if(navPaused){ navPaused = false; setNav(true, true); }   // 둘러보다 «내 위치» 누르면 바로 길안내 화면으로
     setFollow(true); askCompass();
     centerOnMe();
   };
@@ -1193,9 +1202,12 @@
     map.setCenter(pj.coordsFromContainerPoint(new kakao.maps.Point(pt.x + Math.sin(r) * d, pt.y - Math.cos(r) * d)));
     centeredHd = heading;
   }
-  function setNav(on){
+  /* 10/28 사용자: 길안내(내비 모드) 중 지도를 손으로 옮겨 보려 하면 안 움직였다(돌아간 지도라 끌기를 막아 둠).
+     → 지도를 만지는 순간 잠깐 «북쪽 위» 둘러보기로 바꿔 끌 수 있게 하고, 15초 뒤(또는 🧭) 내비 화면으로 돌아온다 */
+  var navPaused = false;
+  function setNav(on, quiet){
     nav = on;
-    try{ localStorage.setItem("kkumgil.nav", on ? "1" : "0"); }catch(e){}
+    if(!quiet){ navPaused = false; try{ localStorage.setItem("kkumgil.nav", on ? "1" : "0"); }catch(e){} }
     $("mapWrap").classList.toggle("nav", nav);
     $("navBtn").classList.toggle("on", nav);
     if(mapReady) map.setDraggable(!nav);
@@ -1565,6 +1577,7 @@
       TP.pin = pin;
       tpCall({ping:1}).then(function(r){
         if(!r.ok){ $("tpMsg").textContent = r.msg || "비번을 확인해 주세요"; return; }
+        TP.ok = true; tpSave(); paintHelpers();          // 비번 맞으면 이 폰은 «선생님 폰» — 하산 포인트가 보인다
         tpNames = r.names || [];
         $("tpNames").innerHTML = tpNames.map(function(n){ return '<option value="' + esc(n) + '">'; }).join("");
         $("tpMsg").style.color = "#15803D";
@@ -1582,7 +1595,7 @@
     $("tpMsg").textContent = "확인 중…";
     tpCall({ping:1}).then(function(r){
       if(!r.ok){ $("tpMsg").textContent = r.msg || "확인하지 못했어요"; return; }
-      TP.on = true; tpLast = 0; tpSave(); tpPaint(); closeSheets(); markTab(underTab());
+      TP.on = true; TP.ok = true; tpLast = 0; tpSave(); tpPaint(); paintHelpers(); closeSheets(); markTab(underTab());
       toast("📡 공유를 켰어요. 코스 화면을 열어 두면 1분마다 보내요", 4000);
     }).catch(function(){ $("tpMsg").textContent = "현황판 서버에 연결하지 못했어요. 인터넷을 확인하거나 담당 선생님께 알려 주세요."; });
   };
