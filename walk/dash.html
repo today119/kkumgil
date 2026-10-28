@@ -1,0 +1,274 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#F1F5FA;color:#0F172A;-webkit-text-size-adjust:100%}
+button{font-family:inherit;cursor:pointer}
+.hd{position:sticky;top:0;z-index:5;background:#0B4F82;color:#fff;padding:14px 16px 12px}
+.hd h1{font-size:19px;font-weight:900}
+.hd .t{font-size:13px;opacity:.85;margin-top:2px}
+.seg{display:flex;gap:4px;background:rgba(255,255,255,.18);border-radius:12px;padding:3px;margin-top:10px}
+.seg button{flex:1;border:0;background:none;color:#fff;font-size:15px;font-weight:800;padding:9px;border-radius:9px}
+.seg button.on{background:#fff;color:#0B4F82}
+.rf{border:0;background:rgba(255,255,255,.18);color:#fff;font-size:13px;font-weight:800;padding:5px 10px;border-radius:999px;float:right}
+.wrap{padding:14px 14px 100px}
+.big{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.big div{background:#fff;border-radius:16px;padding:12px 6px;text-align:center;box-shadow:0 2px 8px rgba(15,23,42,.06)}
+.big b{display:block;font-size:30px;font-weight:900;line-height:1.15}
+.big span{font-size:13px;font-weight:800;color:#64748B}
+.big .walk b{color:#15803D}.big .drop b{color:#B91C1C}
+.h{font-size:16px;font-weight:900;margin:20px 2px 8px;display:flex;justify-content:space-between;align-items:baseline}
+.h small{font-size:13px;color:#0284C7;font-weight:800}
+.cls{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.c{border:0;text-align:left;background:#fff;border-radius:14px;padding:10px 12px;box-shadow:0 2px 8px rgba(15,23,42,.05);color:inherit}
+.c .n{font-size:16px;font-weight:900;display:flex;justify-content:space-between;align-items:baseline}
+.c .n em{font-style:normal;font-size:20px;color:#15803D}
+.c .s{font-size:13px;color:#64748B;font-weight:700;margin-top:2px}
+.c .s i{font-style:normal;color:#B91C1C}
+.c.alert{outline:2px solid #FCA5A5}
+.p{border:0;width:100%;text-align:left;background:#fff;border-radius:14px;padding:11px 13px;margin-bottom:7px;display:flex;gap:10px;align-items:center;box-shadow:0 2px 8px rgba(15,23,42,.05);color:inherit}
+.tg{flex:0 0 auto;font-size:12px;font-weight:900;padding:4px 8px;border-radius:999px}
+.tg.d{background:#FEE2E2;color:#B91C1C}.tg.a{background:#E2E8F0;color:#334155}
+.p .nm{font-size:16px;font-weight:900}
+.p .mt{font-size:13px;color:#64748B;font-weight:700;margin-top:1px}
+.empty{background:#fff;border-radius:14px;padding:16px;text-align:center;color:#64748B;font-weight:700}
+.fm{background:#fff;border-radius:16px;padding:13px 14px;margin-top:10px;box-shadow:0 2px 8px rgba(15,23,42,.06)}
+.fm .ln{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;font-weight:800;color:#475569}
+.fm .ln b{font-size:24px;font-weight:900;color:#0B4F82}
+.fm .tr{position:relative;height:30px;margin:14px 6px 4px}
+.fm .tr:before{content:"";position:absolute;left:0;right:0;top:13px;height:4px;border-radius:2px;background:#E2E8F0}
+.fm .sp{position:absolute;top:11px;height:8px;border-radius:4px;background:#7DD3FC}
+.fm .dt{position:absolute;top:6px;width:18px;height:18px;margin-left:-9px;border-radius:50%;border:3px solid #fff;background:#0284C7;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.fm .dt.old{background:#94A3B8}
+.fm .ks{display:flex;justify-content:space-between;font-size:11px;color:#94A3B8;font-weight:800}
+.fm .who{font-size:13px;color:#334155;font-weight:700;margin-top:8px;line-height:1.7}
+.err{background:#FEF3C7;color:#92400E;border-radius:14px;padding:14px;font-weight:700;line-height:1.6}
+/* 반 화면 · 학생 화면 (아래에서 올라오는 판) */
+.sh{position:fixed;inset:0;z-index:20;background:rgba(15,23,42,.45);display:none;align-items:flex-end}
+.sh.show{display:flex}
+.pn{width:100%;max-height:92vh;overflow:auto;background:#F8FAFC;border-radius:22px 22px 0 0;padding:16px 14px 26px}
+.pn .top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.pn .top h2{font-size:20px;font-weight:900;flex:1}
+.pn .top .x{border:0;background:#E2E8F0;width:40px;height:40px;border-radius:12px;font-size:22px}
+.pn .sub{font-size:14px;color:#64748B;font-weight:700;margin:-6px 0 12px}
+.names{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.nb{border:2px solid #E2E8F0;background:#fff;border-radius:14px;padding:12px 4px;font-size:16px;font-weight:800;color:#0F172A;line-height:1.2}
+.nb small{display:block;font-size:11px;font-weight:800;margin-top:3px;color:#94A3B8}
+.nb.absent{background:#F1F5F9;color:#94A3B8;border-color:#E2E8F0}
+.nb.drop{background:#FEE2E2;border-color:#FCA5A5;color:#991B1B}
+.nb.drop small{color:#B91C1C}
+.nb.on{background:#DBEAFE;border-color:#2563EB;color:#1D4ED8;box-shadow:0 0 0 2px #2563EB inset}
+.bar{display:none;position:sticky;bottom:-26px;margin:14px -14px -26px;padding:12px 14px 18px;background:#fff;border-top:1px solid #E2E8F0;box-shadow:0 -6px 16px rgba(15,23,42,.08)}
+.bar .bt{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:16px}
+.bar .clr{border:0;background:#F1F5F9;border-radius:999px;padding:6px 12px;font-weight:800;color:#475569}
+.acts.three{grid-template-columns:1fr 1fr 1fr}
+.q{font-size:15px;font-weight:900;margin:14px 2px 8px;color:#334155}
+.acts{display:grid;gap:8px}
+.acts.two{grid-template-columns:1fr 1fr}
+.ab{border:0;border-radius:16px;padding:16px 10px;font-size:18px;font-weight:900;background:#fff;color:#0F172A;box-shadow:0 2px 8px rgba(15,23,42,.08)}
+.ab.red{background:#DC2626;color:#fff}.ab.gray{background:#475569;color:#fff}.ab.green{background:#16A34A;color:#fff}
+.ab.sm{font-size:16px;padding:14px 8px}
+/* 아래 바로가기 — 꿈길 앱의 하단 탭과 같은 모양. 현황판은 구글 쪽 화면이라 «앱 주소로» 이동한다 */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-top:1px solid #DBE4EF;box-shadow:0 -4px 14px rgba(15,23,42,.06);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:64px;color:#667A91;font-size:14px;font-weight:800;text-decoration:none}
+.tabs a .e{font-size:22px;line-height:1}
+.tabs a.on{color:#0284C7}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#0F172A;color:#fff;font-weight:800;padding:12px 18px;border-radius:999px;z-index:40;display:none}
+.pin{max-width:340px;margin:40px auto 0;background:#fff;border-radius:20px;padding:24px 20px;text-align:center;box-shadow:0 6px 20px rgba(15,23,42,.08)}
+.pin h2{font-size:20px;font-weight:900;margin-bottom:6px}.pin p{font-size:14px;color:#64748B;font-weight:700;line-height:1.5}
+.pin input{width:100%;margin-top:16px;font-size:30px;font-weight:900;letter-spacing:.4em;text-align:center;padding:12px;border:2px solid #CBD5E1;border-radius:14px}
+.pin button{width:100%;margin-top:10px;font-size:18px;font-weight:900;padding:14px;border:0;border-radius:14px;background:#0B4F82;color:#fff}
+.pin .m{margin-top:10px;color:#B91C1C;font-weight:800;font-size:14px;min-height:20px}
+</style><title>꿈길 걷기 현황판</title>
+<link rel="manifest" href="manifest.json">
+</head><body>
+<div class="hd"><button class="rf" id="rf">↻ 새로고침</button><h1>🚶 꿈길 걷기 현황판</h1><div class="t" id="tm">불러오는 중…</div>
+<div class="seg"><button data-d="1" class="on">1일차</button><button data-d="2">2일차</button></div></div>
+<div class="wrap" id="w"></div>
+<nav class="tabs">
+  <a href="./" ><span class="e">🏠</span>홈</a>
+  <a href="./?tab=course" ><span class="e">🗺</span>코스</a>
+  <a href="./?tab=prep" ><span class="e">🎒</span>준비물</a>
+  <a href="./?tab=stamp" ><span class="e">🏅</span>스탬프</a>
+  <a class="on" href="#" onclick="load();return false"><span class="e">👩‍🏫</span>현황판</a>
+</nav>
+<div class="sh" id="sh"><div class="pn" id="pn"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+/* google.script.run 대신 — 같은 이름으로 불러서 doPost 로 보낸다(구글 로그인 쿠키 없이) */
+var EXEC = "https://script.google.com/macros/s/AKfycbxECmgM0La6te2FQYOd2KIBiCzq9jJRPt4UV3mmACh8b_0R8UKAx1rCNg9f-zkdM7Ho/exec";
+function gsr_(){
+  var ok = function(){}, fail = function(){}, o = {
+    withSuccessHandler: function(f){ ok = f; return o; },
+    withFailureHandler: function(f){ fail = f; return o; },
+    getStatus: function(day, pin){ call({act: 'status', day: day, pin: pin}); },
+    record: function(day, pin, cls, names, st, reason, place, me){
+      call({act: 'record', day: day, pin: pin, cls: cls, names: names, st: st, reason: reason, place: place, me: me}); }
+  };
+  function call(b){
+    fetch(EXEC, {method: 'POST', body: JSON.stringify(b)})
+      .then(function(r){ return r.json(); })
+      .then(ok, function(){ fail({message: '인터넷 연결을 확인해 주세요'}); });
+  }
+  return o;
+}
+var google = {script: {}};
+Object.defineProperty(google.script, 'run', {get: gsr_});
+</script>
+<script>
+var day = 1, pin = '', me = '', S = null, openCls = null, busy = false;
+try { pin = localStorage.getItem('kk_pin') || ''; me = localStorage.getItem('kk_me') || ''; } catch (e) {}
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function toast(m){ var t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.k); toast.k = setTimeout(function(){ t.style.display = 'none'; }, 2200); }
+
+function load(){
+  if(busy) return;
+  $('tm').textContent = '불러오는 중…';
+  google.script.run.withSuccessHandler(draw).withFailureHandler(function(e){
+    $('w').innerHTML = '<div class="err">불러오지 못했어요: ' + esc(e.message) + '</div>';
+  }).getStatus(day, pin);
+}
+function draw(R){
+  if(R.need === 'pin'){ askPin(R.msg); return; }
+  if(!R.ok){ $('w').innerHTML = '<div class="err">' + esc(R.msg) + '</div>'; $('tm').textContent = ''; return; }
+  S = R;
+  $('tm').textContent = S.title + ' · ' + S.time + ' 기준 · 1분마다 갱신';
+  var T = S.total, h = '';
+  h += '<div class="big"><div><b>' + T.go + '</b><span>참가</span></div>' +
+       '<div class="drop"><b>' + T.drop + '</b><span>중도포기</span></div>' +
+       '<div class="walk"><b>' + T.walk + '</b><span>지금 걷는 중</span></div></div>';
+  h += formation(S.teachers || []);
+  var U = S.unit || '반별';
+  h += '<div class="h">' + U + ' <small>' + (U === '그룹별' ? '그룹' : '반') + '을 누르면 기록할 수 있어요</small></div><div class="cls">' + S.classes.map(function(c, i){
+    return '<button class="c' + (c.drop ? ' alert' : '') + '" data-ci="' + i + '"><div class="n">' + esc(c.label) + '<em>' + c.walk + '</em></div>' +
+           (c.teachers ? '<div class="s" style="color:#1E3A8A">👩‍🏫 ' + esc(c.teachers) + '</div>' : '') +
+           '<div class="s">명단 ' + c.list + ' · 불참 ' + c.absent + ' · <i>포기 ' + c.drop + '</i></div></button>';
+  }).join('') + '</div>';
+  h += '<div class="h">빠진 학생 ' + S.out.length + '명</div>';
+  h += S.out.length ? S.out.map(function(p){
+    return '<button class="p" data-who="' + esc(p.cls) + '|' + esc(p.name) + '"><span class="tg ' + (p.st === '중도포기' ? 'd' : 'a') + '">' + esc(p.st) + '</span><div><div class="nm">' +
+           esc(p.label) + ' ' + esc(p.name) + '</div><div class="mt">' + [p.time, p.place, p.reason, p.by].filter(Boolean).map(esc).join(' · ') + '</div></div></button>';
+  }).join('') : '<div class="empty">아직 없어요 👍</div>';
+  $('w').innerHTML = h;
+  $('w').querySelectorAll('[data-ci]').forEach(function(b){ b.onclick = function(){ openClass(+b.dataset.ci); }; });
+  $('w').querySelectorAll('[data-who]').forEach(function(b){
+    b.onclick = function(){ var k = b.dataset.who.split('|'); openStudent(k[0], k[1]); };
+  });
+  if(openCls !== null && $('sh').classList.contains('show') && $('pn').dataset.mode === 'class') openClass(openCls, true);
+}
+
+/* 📡 대형 — 위치를 보낸 선생님들의 코스 km 로 선두~후미 길이를 본다 */
+function formation(T){
+  if(!T.length) return '<div class="fm"><div class="ln">📡 대형 <span style="font-size:13px">위치 보내는 선생님이 아직 없어요 — 꿈길 앱 홈 「선생님 위치 공유」</span></div></div>';
+  var len = T[0].len || 25, hi = T[0], lo = T[T.length - 1], pc = function(k){ return Math.max(0, Math.min(100, k / len * 100)); };
+  var h = '<div class="fm"><div class="ln"><span>📡 대형 길이</span><b>' + (T.length > 1 ? (hi.km - lo.km).toFixed(1) + 'km' : '-') + '</b></div>';
+  h += '<div class="tr"><div class="sp" style="left:' + pc(lo.km) + '%;width:' + (pc(hi.km) - pc(lo.km)) + '%"></div>' +
+       T.map(function(t){ return '<div class="dt' + (t.ago >= 5 ? ' old' : '') + '" style="left:' + pc(t.km) + '%" title="' + esc(t.name) + '"></div>'; }).join('') + '</div>';
+  h += '<div class="ks"><span>출발 0km</span><span>도착 ' + len.toFixed(1) + 'km</span></div><div class="who">' +
+       T.map(function(t, i){
+         var tag = i === 0 ? '🚩 ' : (i === T.length - 1 && T.length > 1 ? '🏁 ' : '· ');
+         return tag + esc(t.role ? t.role + ' ' : '') + esc(t.name) + ' <b>' + t.km.toFixed(1) + 'km</b> <span style="color:#94A3B8">(' + (t.ago < 1 ? '방금' : t.ago + '분 전') + ')</span>';
+       }).join('<br>') + '</div></div>';
+  return h;
+}
+
+/* ── 반 화면: 학생 이름 버튼 — 눌러서 «여러 명 선택» → 아래 줄에서 한꺼번에 처리 ── */
+var sel = {};
+function clsByKey(k){ for(var i = 0; i < S.classes.length; i++) if(S.classes[i].cls === k) return i; return -1; }
+function selNames(){ return Object.keys(sel).filter(function(k){ return sel[k]; }); }
+function who(c, names){ return esc(c.label) + ' ' + esc(names[0]) + (names.length > 1 ? ' 외 ' + (names.length - 1) + '명' : ''); }
+function openClass(i, keep){
+  var c = S.classes[i];
+  if(openCls !== i || !keep) sel = {};
+  openCls = i;
+  var h = '<div class="top"><h2>' + esc(c.label) + (c.teachers ? ' <small style="font-size:13px;color:#64748B">👩‍🏫 ' + esc(c.teachers) + '</small>' : '') + '</h2><button class="x" data-x>×</button></div>' +
+          '<div class="sub">걷는 중 ' + c.walk + ' · 불참 ' + c.absent + ' · 포기 ' + c.drop + ' — 학생을 골라 주세요(여러 명 가능)</div><div class="names">' +
+          c.students.map(function(s){
+            var k = s.st === '불참' ? 'absent' : s.st === '중도포기' ? 'drop' : '';
+            return '<button class="nb ' + k + (sel[s.name] ? ' on' : '') + '" data-nm="' + esc(s.name) + '">' + (sel[s.name] ? '✓ ' : '') + esc(s.name) +
+                   (k ? '<small>' + esc(s.st) + '</small>' : '') + '</button>';
+          }).join('') + '</div><div class="bar" id="bar"></div>';
+  show(h, 'class');
+  $('pn').querySelectorAll('[data-nm]').forEach(function(b){
+    b.onclick = function(){ sel[b.dataset.nm] = !sel[b.dataset.nm]; openClass(i, true); };
+  });
+  paintBar(c);
+}
+function paintBar(c){
+  var n = selNames(), bar = $('bar'); if(!bar) return;
+  if(!n.length){ bar.style.display = 'none'; return; }
+  bar.style.display = 'block';
+  bar.innerHTML = '<div class="bt"><b>' + n.length + '명 선택</b><button class="clr" id="clr">선택 해제</button></div>' +
+    '<div class="acts three"><button class="ab red sm" data-st="중도포기">🚑 중도포기</button>' +
+    '<button class="ab gray sm" data-st="불참">🚫 불참</button><button class="ab green sm" data-st="다시 합류">↩ 걷는 중</button></div>';
+  $('clr').onclick = function(){ sel = {}; openClass(openCls, true); };
+  bar.querySelectorAll('[data-st]').forEach(function(b){
+    b.onclick = function(){
+      var st = b.dataset.st, names = selNames();
+      if(st === '중도포기') askReason(c, names);
+      else save(c, names, st, '', st === '불참' ? '출발 전' : '');
+    };
+  });
+}
+/* 빠진 학생 목록에서 이름을 누르면 → 그 반 화면에서 그 학생이 골라진 채로 */
+function openStudent(cls, name){
+  var i = clsByKey(cls); if(i < 0) return;
+  openCls = i; sel = {}; sel[name] = true;
+  openClass(i, true);
+}
+function askReason(c, names){
+  var h = '<div class="top"><h2>' + who(c, names) + '</h2><button class="x" data-back>‹</button></div>' +
+          '<div class="q">🚑 중도포기 이유</div><div class="acts two">' +
+          S.reasons.map(function(r){ return '<button class="ab sm" data-r="' + esc(r) + '">' + esc(r) + '</button>'; }).join('') + '</div>';
+  show(h, 'student');
+  $('pn').querySelector('[data-back]').onclick = function(){ openClass(openCls, true); };
+  $('pn').querySelectorAll('[data-r]').forEach(function(b){ b.onclick = function(){ askPlace(c, names, b.dataset.r); }; });
+}
+function askPlace(c, names, reason){
+  var h = '<div class="top"><h2>' + who(c, names) + '</h2><button class="x" data-back>‹</button></div>' +
+          '<div class="sub">이유: ' + esc(reason) + '</div><div class="q">📍 어디쯤인가요?</div><div class="acts two">' +
+          S.places.map(function(p){ return '<button class="ab sm" data-p="' + esc(p) + '">' + esc(p) + '</button>'; }).join('') + '</div>';
+  show(h, 'student');
+  $('pn').querySelector('[data-back]').onclick = function(){ askReason(c, names); };
+  $('pn').querySelectorAll('[data-p]').forEach(function(b){ b.onclick = function(){ save(c, names, '중도포기', reason, b.dataset.p); }; });
+}
+function save(c, names, st, reason, place){
+  busy = true;
+  $('pn').innerHTML = '<div class="empty">저장하는 중…</div>';
+  google.script.run.withSuccessHandler(function(R){
+    busy = false;
+    if(R && R.need === 'pin'){ hide(); askPin(R.msg); return; }
+    if(!R || !R.ok){ toast((R && R.msg) || '저장하지 못했어요'); openClass(openCls, true); return; }
+    toast('✅ ' + c.label + ' ' + names.length + '명 — ' + (st === '다시 합류' ? '걷는 중' : st));
+    sel = {};
+    draw(R.status);
+    var i = clsByKey(c.cls); if(i >= 0) openClass(i, true);
+  }).withFailureHandler(function(e){
+    busy = false; toast('저장하지 못했어요: ' + e.message); openClass(openCls, true);
+  }).record(day, pin, c.cls, names, st, reason, place, me);
+}
+
+function show(h, mode){ $('pn').innerHTML = h; $('pn').dataset.mode = mode; $('sh').classList.add('show');
+  var x = $('pn').querySelector('[data-x]'); if(x) x.onclick = hide; }
+function hide(){ $('sh').classList.remove('show'); openCls = null; }
+$('sh').onclick = function(e){ if(e.target === $('sh')) hide(); };
+
+/* 비번 — 확인은 구글 서버에서 한다. 맞으면 이 폰에 기억 */
+function askPin(msg){
+  $('tm').textContent = '';
+  $('w').innerHTML = '<div class="pin"><h2>🔒 선생님 확인</h2><p>선생님들이 같이 쓰는 비밀번호를 넣어 주세요.</p>' +
+    '<input id="pi" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="비번">' +
+    '<input id="pm" type="text" autocomplete="name" maxlength="20" placeholder="성함 (기록에 남아요)" value="' + esc(me) + '" style="letter-spacing:0;font-size:20px">' +
+    '<button id="pb">확인</button><div class="m">' + esc(msg || '') + '</div></div>';
+  var go = function(){ pin = $('pi').value.trim(); me = $('pm').value.trim(); try { localStorage.setItem('kk_pin', pin); localStorage.setItem('kk_me', me); } catch (e) {} load(); };
+  $('pb').onclick = go;
+  $('pi').onkeydown = $('pm').onkeydown = function(e){ if(e.key === 'Enter') go(); };
+  $('pi').focus();
+}
+document.querySelectorAll('[data-d]').forEach(function(b){
+  b.onclick = function(){ day = +b.dataset.d; hide(); document.querySelectorAll('[data-d]').forEach(function(x){ x.className = x === b ? 'on' : ''; }); load(); };
+});
+$('rf').onclick = load;
+setInterval(function(){ if(!$('sh').classList.contains('show') || $('pn').dataset.mode === 'class') load(); }, 60000);
+load();
+</script></body></html>

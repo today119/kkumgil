@@ -515,6 +515,9 @@ function doPost(e) {
   var q = {};
   try { q = JSON.parse(e.postData.contents); } catch (err) {}
   if (q.act === 'tpos') return json_(tpos_(q));
+  /* 10/28 앱 안 현황판(walk/dash.html) — 구글 계정 여러 개 로그인된 폰에서 웹앱이 안 열려서 자료만 여기로 */
+  if (q.act === 'status') return json_(getStatus(Number(q.day) || 1, q.pin));
+  if (q.act === 'record') return json_(record(Number(q.day) || 1, q.pin, q.cls, q.names || [], q.st, q.reason, q.place, q.me));
   return json_({ ok: false, msg: '알 수 없는 요청' });
 }
 
