@@ -69,7 +69,8 @@ button{font-family:inherit;cursor:pointer}
 .geo{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;font-weight:800}
 .geo button{border:0;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:900;background:#FCD34D;color:#422006;white-space:nowrap}
 .geo button.on{background:#16A34A;color:#fff}
-.geo span{opacity:.9;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.geo span{flex:1;opacity:.9;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.geo .fz{flex:none;background:rgba(255,255,255,.2);color:#fff;padding:7px 10px}
 .arr{position:fixed;left:12px;right:12px;top:12px;z-index:20;background:#F59E0B;color:#fff;border-radius:20px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);display:none}
 .arr.on{display:block;animation:pop .3s}
 @keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
@@ -83,7 +84,7 @@ button{font-family:inherit;cursor:pointer}
   <div class="t" id="sub"></div>
   <div class="seg"><button data-d="prep">📋 준비</button><button data-d="1">1일차 1학년</button><button data-d="g2">1일차 2학년</button><button data-d="2">2일차</button></div>
   <div class="bar"><i id="bar"></i></div>
-  <div class="geo"><button id="geoBtn">📍 도착 알림 켜기</button><span id="geoTx">스탬프 지점 150m 안에 들어가면 알려 줘요</span></div>
+  <div class="geo"><button id="geoBtn">📍 도착 알림 켜기</button><span id="geoTx">스탬프 지점 150m 안에 들어가면 알려 줘요</span><button class="fz" id="fzDn" aria-label="글자 작게">가−</button><button class="fz" id="fzUp" aria-label="글자 크게">가+</button></div>
 </div>
 <div class="arr" id="arr"></div>
 <div class="who" id="who"></div>
@@ -388,7 +389,7 @@ $('restore').onclick = function () {
   if (!confirm(DAYS[day] + '에서 고친 내용(메시지·일정)을 모두 버리고 처음 내용으로 돌릴까요?')) return;
   delete DATA[day]; ED = null; saveData(); render();
 };
-function scrollNow() { var n = document.querySelector('.card.now'); if (n) window.scrollTo({top: n.offsetTop - 150, behavior: 'smooth'}); }
+function scrollNow() { var n = document.querySelector('.card.now'); if (n) window.scrollTo({top: n.getBoundingClientRect().top + window.scrollY - 160, behavior: 'smooth'}); }
 
 /* 📍 도착 알림(10/29) — 선두 선생님 폰이 스탬프 지점 150m 안에 들어가면 진동·소리 + «스탬프 카드 보내기».
    웹페이지라 화면이 꺼지거나 다른 앱으로 가면 위치가 멈춘다 → 켜 두는 동안 화면 꺼짐 방지(wakeLock). */
@@ -421,7 +422,7 @@ $('arr').onclick = function (ev) {
   var a = b.dataset.arr, x = list().filter(function (y) { return y.id === b.dataset.id; })[0];
   $('arr').classList.remove('on');
   if (a === 'send' && x) share(x, x.msgs[0]);
-  if (a === 'go' && x) { var i = list().indexOf(x), c = $('c' + i); if (c) window.scrollTo({top: c.offsetTop - 150, behavior: 'smooth'}); }
+  if (a === 'go' && x) { var i = list().indexOf(x), c = $('c' + i); if (c) window.scrollTo({top: c.getBoundingClientRect().top + window.scrollY - 160, behavior: 'smooth'}); }
 };
 function onGeo(p) {
   var lat = p.coords.latitude, lng = p.coords.longitude, acc = p.coords.accuracy;
@@ -465,6 +466,12 @@ function geoStop() {
 }
 $('geoBtn').onclick = function () { if (GEO.on) geoStop(); else geoStart(); };
 if (ls('kg_lead_geo')) { $('geoTx').textContent = '«📍 도착 알림 켜기»를 다시 눌러 주세요(소리 허용)'; }
+/* 글자 크기(10/29 «폰으로 보려면 글자 더 커야 해») — 카드 영역만 키운다. 기본 1.25배, 이 폰에 기억 */
+var FZ = [1, 1.15, 1.25, 1.4, 1.55, 1.7], fz = ls('kg_lead_fz'); if (fz == null || FZ.indexOf(fz) < 0) fz = 1.25;
+function applyFz() { ['who', 'list'].forEach(function (k) { $(k).style.zoom = fz; }); $('fzDn').disabled = fz === FZ[0]; $('fzUp').disabled = fz === FZ[FZ.length - 1]; }
+$('fzUp').onclick = function () { var i = FZ.indexOf(fz); if (i < FZ.length - 1) { fz = FZ[i + 1]; ls('kg_lead_fz', fz); applyFz(); toast('글자 ' + Math.round(fz * 100) + '%'); } };
+$('fzDn').onclick = function () { var i = FZ.indexOf(fz); if (i > 0) { fz = FZ[i - 1]; ls('kg_lead_fz', fz); applyFz(); toast('글자 ' + Math.round(fz * 100) + '%'); } };
+applyFz();
 render(); setTimeout(scrollNow, 100);
 </script>
 </body></html>
