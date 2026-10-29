@@ -60,6 +60,16 @@ button{font-family:inherit;cursor:pointer}
 .seg button{font-size:14px;padding:9px 4px}
 .foot{text-align:center;line-height:1.8;font-size:12px;color:#94A3B8;padding:6px 16px}
 .foot button{border:0;background:none;color:#64748B;text-decoration:underline;font-size:12px}
+.geo{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;font-weight:800}
+.geo button{border:0;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:900;background:#FCD34D;color:#422006;white-space:nowrap}
+.geo button.on{background:#16A34A;color:#fff}
+.geo span{opacity:.9;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arr{position:fixed;left:12px;right:12px;top:12px;z-index:20;background:#F59E0B;color:#fff;border-radius:20px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);display:none}
+.arr.on{display:block;animation:pop .3s}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+.arr b{display:block;font-size:22px;font-weight:900}
+.arr small{font-size:13px;font-weight:700;opacity:.9}
+.arr .btns button{padding:13px 6px}
 </style>
 </head><body>
 <div class="hd">
@@ -67,7 +77,9 @@ button{font-family:inherit;cursor:pointer}
   <div class="t" id="sub"></div>
   <div class="seg"><button data-d="prep">📋 준비</button><button data-d="1">1일차 1학년</button><button data-d="g2">1일차 2학년</button><button data-d="2">2일차</button></div>
   <div class="bar"><i id="bar"></i></div>
+  <div class="geo"><button id="geoBtn">📍 도착 알림 켜기</button><span id="geoTx">스탬프 지점 150m 안에 들어가면 알려 줘요</span></div>
 </div>
+<div class="arr" id="arr"></div>
 <div class="who" id="who"></div>
 <div class="list" id="list"></div>
 <div class="foot">체크·완료·고친 내용은 이 폰에만 저장돼요<br><button id="reset">이 날 체크 지우기</button> · <button id="restore" hidden>처음 내용으로 되돌리기</button></div>
@@ -345,14 +357,90 @@ $('list').onclick = function (e) {
 };
 $('reset').onclick = function () {
   if (!confirm(DAYS[day] + ' 체크·완료 기록을 지울까요?')) return;
-  list().forEach(function (x) { delete st[x.id]; });
-  save(); render();
+  list().forEach(function (x) { delete st[x.id]; delete GEO.hit[x.id]; });
+  ls('kg_lead_arr', GEO.hit); save(); render();
 };
 $('restore').onclick = function () {
   if (!confirm(DAYS[day] + '에서 고친 내용(메시지·일정)을 모두 버리고 처음 내용으로 돌릴까요?')) return;
   delete DATA[day]; ED = null; saveData(); render();
 };
 function scrollNow() { var n = document.querySelector('.card.now'); if (n) window.scrollTo({top: n.offsetTop - 150, behavior: 'smooth'}); }
+
+/* 📍 도착 알림(10/29) — 선두 선생님 폰이 스탬프 지점 150m 안에 들어가면 진동·소리 + «스탬프 카드 보내기».
+   웹페이지라 화면이 꺼지거나 다른 앱으로 가면 위치가 멈춘다 → 켜 두는 동안 화면 꺼짐 방지(wakeLock). */
+var GEO = {on: false, w: null, pos: null, lock: null, ac: null, S: null, hit: ls('kg_lead_arr') || {}};
+var R_ARR = 150;
+function distM(a, b, c, d) { var k = Math.PI / 180, x = (d - b) * k * Math.cos((a + c) / 2 * k), y = (c - a) * k; return Math.sqrt(x * x + y * y) * 6371000; }
+function stampPhases() { return list().filter(function (x) { return x.stamp && GEO.S && GEO.S[x.stamp]; }); }
+function beep() {
+  try {
+    var ac = GEO.ac; if (!ac) return; ac.resume && ac.resume();
+    [0, .35, .7].forEach(function (t) {
+      var o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = 880; o.connect(g); g.connect(ac.destination);
+      g.gain.setValueAtTime(.0001, ac.currentTime + t); g.gain.exponentialRampToValueAtTime(.5, ac.currentTime + t + .02); g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + t + .28);
+      o.start(ac.currentTime + t); o.stop(ac.currentTime + t + .3);
+    });
+  } catch (e) {}
+}
+function arrive(x) {
+  GEO.hit[x.id] = Date.now(); ls('kg_lead_arr', GEO.hit);
+  if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 400]);
+  beep();
+  var e = $('arr');
+  e.innerHTML = '<b>🏅 ' + esc(GEO.S[x.stamp].name) + ' 도착!</b><small>' + esc(x.p) + ' · 스탬프 카드를 단톡에 보낼 때예요</small>'
+    + '<div class="btns"><button class="share" data-arr="send" data-id="' + x.id + '">📤 스탬프 카드 보내기</button><button class="copy" data-arr="go" data-id="' + x.id + '">카드 보기</button></div>'
+    + '<div class="btns"><button class="copy" data-arr="x" style="background:rgba(255,255,255,.25);color:#fff">닫기</button></div>';
+  e.classList.add('on');
+}
+$('arr').onclick = function (ev) {
+  var b = ev.target.closest('button[data-arr]'); if (!b) return;
+  var a = b.dataset.arr, x = list().filter(function (y) { return y.id === b.dataset.id; })[0];
+  $('arr').classList.remove('on');
+  if (a === 'send' && x) share(x, x.msgs[0]);
+  if (a === 'go' && x) { var i = list().indexOf(x), c = $('c' + i); if (c) window.scrollTo({top: c.offsetTop - 150, behavior: 'smooth'}); }
+};
+function onGeo(p) {
+  var lat = p.coords.latitude, lng = p.coords.longitude, acc = p.coords.accuracy;
+  GEO.pos = [lat, lng];
+  var L = stampPhases(), best = null, bd = 1e9, hr = new Date().getHours();
+  L.forEach(function (x) {
+    var s = GEO.S[x.stamp], d = distM(lat, lng, s.lat, s.lng);
+    if (GEO.hit[x.id] || d > R_ARR + Math.min(acc || 0, 60)) return;
+    if (x.stamp === 'school' && hr < 14) return;            // 아침 출발 때 학교에서 울리지 않게
+    if ((st[x.id] || {}).done) return;
+    arrive(x);
+  });
+  L.forEach(function (x) { var s = GEO.S[x.stamp], d = distM(lat, lng, s.lat, s.lng); if (!GEO.hit[x.id] && d < bd) { bd = d; best = x; } });
+  $('geoTx').textContent = best ? '다음 🏅 ' + GEO.S[best.stamp].name + '까지 ' + (bd < 1000 ? Math.round(bd / 10) * 10 + 'm' : (bd / 1000).toFixed(1) + 'km') + (acc > 80 ? ' (위치 흐림)' : '') : (L.length ? '이 날 스탬프 알림은 다 울렸어요' : '이 탭에는 스탬프 일정이 없어요');
+}
+function keepAwake() {
+  if (!GEO.on || !navigator.wakeLock || document.visibilityState !== 'visible') return;
+  navigator.wakeLock.request('screen').then(function (l) { GEO.lock = l; }).catch(function () {});
+}
+document.addEventListener('visibilitychange', keepAwake);
+function geoStart() {
+  if (!navigator.geolocation) { toast('이 폰에서는 위치를 쓸 수 없어요'); return; }
+  try { GEO.ac = GEO.ac || new (window.AudioContext || window.webkitAudioContext)(); GEO.ac.resume(); } catch (e) {}
+  GEO.on = true; ls('kg_lead_geo', 1);
+  $('geoBtn').classList.add('on'); $('geoBtn').textContent = '📍 알림 켜짐';
+  $('geoTx').textContent = '위치를 찾는 중… 화면을 켜 둔 채로 두세요';
+  var go = function () {
+    GEO.w = navigator.geolocation.watchPosition(onGeo, function (e) { $('geoTx').textContent = e.code === 1 ? '위치 권한을 허용해 주세요' : '위치를 못 찾고 있어요'; }, {enableHighAccuracy: true, maximumAge: 5000, timeout: 30000});
+  };
+  if (GEO.S) go(); else fetch('stamps.json', {cache: 'no-cache'}).then(function (r) { return r.json(); }).then(function (d) {
+    GEO.S = {}; (d.stamps || []).forEach(function (s) { if (s.lat != null) GEO.S[s.id] = s; }); go();
+  }).catch(function () { $('geoTx').textContent = '스탬프 위치를 못 불러왔어요'; });
+  keepAwake();
+}
+function geoStop() {
+  GEO.on = false; ls('kg_lead_geo', 0);
+  if (GEO.w != null) navigator.geolocation.clearWatch(GEO.w); GEO.w = null;
+  if (GEO.lock) { GEO.lock.release().catch(function () {}); GEO.lock = null; }
+  $('geoBtn').classList.remove('on'); $('geoBtn').textContent = '📍 도착 알림 켜기';
+  $('geoTx').textContent = '스탬프 지점 150m 안에 들어가면 알려 줘요';
+}
+$('geoBtn').onclick = function () { if (GEO.on) geoStop(); else geoStart(); };
+if (ls('kg_lead_geo')) { $('geoTx').textContent = '«📍 도착 알림 켜기»를 다시 눌러 주세요(소리 허용)'; }
 render(); setTimeout(scrollNow, 100);
 </script>
 </body></html>
