@@ -35,7 +35,8 @@ button,a{font-family:inherit}
 .kk{background:#FEE500;color:#191919}
 .nv{background:#03C75A;color:#fff}
 .sh{display:block;width:100%;margin-top:8px;border:0;background:#0B4F82;color:#fff;font-weight:900;font-size:15px;padding:12px;border-radius:12px;cursor:pointer}
-.im{display:block;width:100%;border-radius:12px;margin-top:10px}
+.im{display:block;width:100%}
+.card .body{padding-top:12px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0F172A;color:#fff;font-size:14px;font-weight:700;padding:10px 16px;border-radius:999px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
 .note{font-size:13px;color:#64748B;background:#fff;border-radius:14px;padding:12px 14px;line-height:1.55}
@@ -108,11 +109,9 @@ function draw(){
   if(today)S.forEach(function(s,i){if(mins(s.t)-30<=nm)nowI=i});
   document.getElementById('list').innerHTML=S.map(function(s,i){
     if(cur!=='all'&&s.c!==cur)return '';
-    var tg=s.c==='12'?'<span class="tag a12">1·2번 차</span>':'<span class="tag a34">3·4번 차</span>';
     var b='<div class="btns"><a class="kk" href="'+kk(s.p,s.lat,s.lng)+'" target="_blank">카카오 길안내</a><a class="nv" href="'+nv(s.p,s.lat,s.lng)+'" target="_blank">네이버 길안내</a></div>';
     if(s.to)b+='<p style="margin-top:12px;font-weight:800">태운 뒤 → '+esc(s.to.p)+'</p><div class="btns"><a class="kk" href="'+kk(s.to.p,s.to.lat,s.to.lng)+'" target="_blank">카카오 길안내</a><a class="nv" href="'+nv(s.to.p,s.to.lat,s.to.lng)+'" target="_blank">네이버 길안내</a></div>';
-    b+='<img class="im" src="car/'+IMG[i]+'.jpg?v='+CV+'" alt="" loading="lazy">';
-    return '<div class="card'+(i===nowI?' now':'')+'"><div class="ch"><div class="tm">'+s.t.replace('~','~<br>')+'</div><div class="ct"><b>'+esc(s.n)+'</b><small>📍 '+esc(s.p)+'</small></div>'+tg+'</div><div class="body"><p>'+esc(s.d)+'</p>'+b+'</div></div>';
+    return '<div class="card'+(i===nowI?' now':'')+'"><img class="im" src="car/'+IMG[i]+'.jpg?v='+CV+'" alt="'+esc(s.t+' '+s.n+' — '+s.d)+'"><div class="body">'+b+'</div></div>';
   }).join('');
 }
 document.getElementById('seg').onclick=function(e){var b=e.target.closest('button');if(!b)return;cur=b.dataset.c;try{localStorage.setItem('kg_car',cur)}catch(x){}draw()};
