@@ -1082,7 +1082,8 @@
   }
   var helperMks = [];
   /* 10/28 사용자: 선생님은 다 보여야 — 위치 공유를 켜지 않아도 «현황판 비번»을 한 번 확인한 폰(TP.ok)이면 보인다 */
-  function paintHelpers(){ helperMks.forEach(function(m){ m.setMap(TP && (TP.on || TP.ok) && mapReady ? map : null); }); }
+  /* 10/30 사용자: «모두가 보여야» — 학생·선생님 구분 없이 전부 보인다 */
+  function paintHelpers(){ helperMks.forEach(function(m){ m.setMap(mapReady ? map : null); }); }
   function drawMe(){
     if(!mapReady || !state.pos) return;
     var pos = new kakao.maps.LatLng(state.pos.lat, state.pos.lng);
