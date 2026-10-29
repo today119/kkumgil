@@ -76,8 +76,8 @@ var S=[
  {t:'11:30경',c:'12',n:'학생회 진행요원 픽업 → 점심 식당',p:'영종하늘도서관 버스정류장',lat:37.494929,lng:126.564576,
   d:'«영종하늘도서관» 정류장(번호 35585, 도서관 바로 앞)에서 학생회 보물찾기 진행요원을 태워 점심 식당(하늘신도시 방앗간 한식뷔페)으로 먼저 데려가 주세요. 점심 전에 보물 쪽지를 숨겨야 해요.',
   to:{p:'방앗간 한식뷔페',lat:37.48615203,lng:126.56027679}},
- {t:'13:00경',c:'34',n:'점심 · 영종별빛광장 대기',p:'영종별빛광장',lat:37.48842949,lng:126.56214494,
-  d:'점심 식당(방앗간 한식뷔페) 근처 영종별빛광장에 주차하고 대기해 주세요.'},
+ {t:'13:00경',c:'34',n:'점심 · 영종달빛광장 대기',p:'영종달빛광장',lat:37.48692797,lng:126.56056622,
+  d:'점심 식당(방앗간 한식뷔페) 근처 영종달빛광장에 주차하고 대기해 주세요.'},
  {t:'14:00경',c:'12',n:'운북사업소 뒤 주차장 대기 (카라반 캠핑장 쪽)',p:'인천환경공단 운북사업소 송산지소',lat:37.47952995,lng:126.55986788,
   d:'사전 답사 때 갔던 카라반 캠핑장 쪽, «인천환경공단 운북사업소 송산지소(송산수질복원센터)» 뒤쪽 주차장이에요. 길안내로 사업소까지 와서 뒤쪽 주차장에 주차하고 대기해 주세요.'},
  {t:'15:00경',c:'34',n:'족욕장 대기',p:'씨사이드 해수족욕장',lat:37.47041503,lng:126.51952616,
@@ -87,7 +87,7 @@ function kk(p,la,ln){return 'https://map.kakao.com/link/to/'+encodeURIComponent(
 function nv(p,la,ln){return 'https://map.naver.com/index.nhn?elng='+ln+'&elat='+la+'&etext='+encodeURIComponent(p)+'&menu=route&pathType=0'}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function mins(t){var m=t.match(/(\d+):(\d+)/);return +m[1]*60+ +m[2]}
-var CV='5';var IMG=['haneulgo','yonggungsa','library','cloud','camping','footbath'];
+var CV='6';var IMG=['haneulgo','yonggungsa','library','cloud','camping','footbath'];
 function txt(s){var o='[차량 안내 · '+s.t+' · '+(s.c==='12'?'1·2번':'3·4번')+' 차]\n'+s.n+'\n'+s.d+'\n📍 '+s.p+'\n카카오 길안내 👉 '+kk(s.p,s.lat,s.lng)+'\n네이버 길안내 👉 '+nv(s.p,s.lat,s.lng);
   if(s.to)o+='\n\n태운 뒤 → '+s.to.p+'\n카카오 길안내 👉 '+kk(s.to.p,s.to.lat,s.to.lng);return o}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on')},2200)}
