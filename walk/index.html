@@ -329,6 +329,11 @@
   .ci-route{display:flex;flex-wrap:wrap;align-items:center;gap:4px 2px;margin:12px 0 4px;font-size:15px;font-weight:800;line-height:1.6}
   .ci-route i{font-style:normal;color:#94A3B8;margin:0 3px}
   .ci-route .bus{color:#64748B;font-weight:700}
+  .ci-lead{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:14px;padding:4px 12px;margin-top:6px}
+  .ci-lead div{display:flex;gap:10px;padding:8px 0;border-top:1px solid #E2E8F0;font-size:14px;line-height:1.5}
+  .ci-lead div:first-child{border-top:0}
+  .ci-lead b{flex:none;width:96px;color:#0B4F82;font-weight:900}
+  .ci-lead span{flex:1;min-width:0;color:#334155;font-weight:700}
   .ci-h{font-size:19px;font-weight:900;margin:22px 0 6px}
   .sch{display:flex;gap:12px;padding:13px 4px;border-bottom:1px solid var(--line);align-items:flex-start}
   .sch .tm{flex:0 0 96px;font-size:15px;font-weight:900;font-variant-numeric:tabular-nums;color:#0F172A;padding-top:1px}
@@ -1443,6 +1448,10 @@
             (c.route ? '<div class="ci-route">' + c.route.map(function(r){
                 return /^\(/.test(r) ? '<span class="bus">' + esc(r) + '</span>' : '<span>' + esc(r) + '</span>';
               }).join('<i>→</i>') + '</div>' : '') +
+            /* 10/29 사용자: 지도 아래·일정 위에 인솔 선생님 명단(courses.json leaders) */
+            (c.leaders ? '<div class="ci-h">🧑‍🏫 인솔 선생님</div><div class="ci-lead">' + c.leaders.map(function(r){
+                return '<div><b>' + esc(r[0]) + '</b><span>' + esc(r[1]) + '</span></div>';
+              }).join('') + '</div>' : '') +
             '<div class="ci-h">🕘 일정</div>' + schRows(c.schedule || []) +
             /* 10/28 사용자: 2일차 조편성도 코스 안내에 — 그룹·반·지도교사·인원만(학생 이름은 앱에 넣지 않는다) */
             (c.groups ? '<div class="ci-h">👥 조편성</div><table class="ci-grp"><tr><th>그룹</th><th>학년·반</th><th>지도교사</th><th>인원</th></tr>' +
