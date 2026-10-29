@@ -34,6 +34,10 @@ button,a{font-family:inherit}
 .btns a{display:block;text-align:center;text-decoration:none;font-weight:900;font-size:15px;padding:12px 4px;border-radius:12px}
 .kk{background:#FEE500;color:#191919}
 .nv{background:#03C75A;color:#fff}
+.sh{display:block;width:100%;margin-top:8px;border:0;background:#0B4F82;color:#fff;font-weight:900;font-size:15px;padding:12px;border-radius:12px;cursor:pointer}
+.im{display:block;width:100%;border-radius:12px;margin-top:10px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0F172A;color:#fff;font-size:14px;font-weight:700;padding:10px 16px;border-radius:999px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
 .note{font-size:13px;color:#64748B;background:#fff;border-radius:14px;padding:12px 14px;line-height:1.55}
 .note b{color:#0F172A}
 </style>
@@ -54,7 +58,7 @@ button,a{font-family:inherit}
     <div><span class="a34">3</span>김주희 선생님</div>
     <div><span class="a34">4</span>김소영 선생님</div>
   </div>
-  <div id="list"></div>
+  <div id="list"></div><div class="toast" id="toast"></div>
   <div class="note">
     <b>공통</b><br>
     · 시간은 «○○경» — 선두 위치에 따라 앞뒤로 바뀔 수 있어요. 단톡방 연락을 꼭 확인해 주세요.<br>
@@ -73,8 +77,8 @@ var S=[
   to:{p:'방앗간 한식뷔페',lat:37.48615203,lng:126.56027679}},
  {t:'13:00경',c:'34',n:'하늘광장 대기',p:'씨사이드파크 하늘구름광장',lat:37.48334535,lng:126.56782893,
   d:'점심 식당에서 나와 씨사이드파크로 들어가는 길목이에요. 하늘구름광장 근처에 주차하고 대기해 주세요.'},
- {t:'14:00경',c:'12',n:'씨사이드파크 캠핑장 주차장 대기',p:'씨사이드파크 주차장 (텐트캠핑장 옆)',lat:37.47304794,lng:126.52335294,
-  d:'사전 답사 때 갔던 씨사이드파크 캠핑장 주차장이에요(영종구 큰말로 23).'},
+ {t:'14:00경',c:'12',n:'씨사이드 카라반 캠핑장 주차장 대기',p:'영종씨사이드 카라반캠핑장',lat:37.47820289,lng:126.55676663,
+  d:'사전 답사 때 갔던 영종씨사이드 카라반 캠핑장 쪽 주차장이에요(영종해안남로 1403). 여기에 주차하고 대기해 주세요.'},
  {t:'15:00경',c:'34',n:'족욕장 대기',p:'씨사이드 해수족욕장',lat:37.47041503,lng:126.51952616,
   d:'족욕장 휴식 뒤 학교까지 마지막 3km를 걸어요. 족욕장 주변에 주차하고 대기해 주세요.'}
 ];
@@ -82,6 +86,19 @@ function kk(p,la,ln){return 'https://map.kakao.com/link/to/'+encodeURIComponent(
 function nv(p,la,ln){return 'https://map.naver.com/index.nhn?elng='+ln+'&elat='+la+'&etext='+encodeURIComponent(p)+'&menu=route&pathType=0'}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function mins(t){var m=t.match(/(\d+):(\d+)/);return +m[1]*60+ +m[2]}
+var IMG=['haneulgo','yonggungsa','library','cloud','camping','footbath'];
+function txt(s){var o='[차량 안내 · '+s.t+' · '+(s.c==='12'?'1·2번':'3·4번')+' 차]\n'+s.n+'\n'+s.d+'\n📍 '+s.p+'\n카카오 길안내 👉 '+kk(s.p,s.lat,s.lng)+'\n네이버 길안내 👉 '+nv(s.p,s.lat,s.lng);
+  if(s.to)o+='\n\n태운 뒤 → '+s.to.p+'\n카카오 길안내 👉 '+kk(s.to.p,s.to.lat,s.to.lng);return o}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on')},2200)}
+function share(i){var s=S[i],t=txt(s);
+  try{navigator.clipboard.writeText(t)}catch(e){}
+  fetch('car/'+IMG[i]+'.jpg').then(function(r){return r.blob()}).then(function(b){
+    var f=new File([b],IMG[i]+'.jpg',{type:'image/jpeg'});
+    if(navigator.canShare&&navigator.canShare({files:[f]}))return navigator.share({files:[f],text:t});
+    if(navigator.share)return navigator.share({text:t});
+    toast('글을 복사했어요 — 카톡에 붙여넣기 하세요');
+  }).then(function(){toast('카드 보냄 · 글도 복사돼 있어요(링크가 빠지면 붙여넣기)')}).catch(function(){});
+}
 var cur='all';
 try{cur=localStorage.getItem('kg_car')||'all'}catch(e){}
 function draw(){
@@ -93,6 +110,7 @@ function draw(){
     var tg=s.c==='12'?'<span class="tag a12">1·2번 차</span>':'<span class="tag a34">3·4번 차</span>';
     var b='<div class="btns"><a class="kk" href="'+kk(s.p,s.lat,s.lng)+'" target="_blank">카카오 길안내</a><a class="nv" href="'+nv(s.p,s.lat,s.lng)+'" target="_blank">네이버 길안내</a></div>';
     if(s.to)b+='<p style="margin-top:12px;font-weight:800">태운 뒤 → '+esc(s.to.p)+'</p><div class="btns"><a class="kk" href="'+kk(s.to.p,s.to.lat,s.to.lng)+'" target="_blank">카카오 길안내</a><a class="nv" href="'+nv(s.to.p,s.to.lat,s.to.lng)+'" target="_blank">네이버 길안내</a></div>';
+    b+='<img class="im" src="car/'+IMG[i]+'.jpg" alt="" loading="lazy"><button class="sh" onclick="share('+i+')">📤 카드 + 길안내 카톡으로 보내기</button>';
     return '<div class="card'+(i===nowI?' now':'')+'"><div class="ch"><div class="tm">'+s.t.replace('~','~<br>')+'</div><div class="ct"><b>'+esc(s.n)+'</b><small>📍 '+esc(s.p)+'</small></div>'+tg+'</div><div class="body"><p>'+esc(s.d)+'</p>'+b+'</div></div>';
   }).join('');
 }
