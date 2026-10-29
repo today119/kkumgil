@@ -72,8 +72,8 @@ button{font-family:inherit;cursor:pointer}
 <div class="foot">체크·완료·고친 내용은 이 폰에만 저장돼요<br><button id="reset">이 날 체크 지우기</button> · <button id="restore" hidden>처음 내용으로 되돌리기</button></div>
 <div class="toast" id="toast"></div>
 <script>
-/* 김시형 선생님 전용 «국면별 진행 카드» — 앱 어디에도 링크 없음(주소로만 연다).
-   카드마다 할 일 체크 + 단톡 보낼 말. [단톡으로 보내기] = 폰 공유창(카톡 선택) — 스탬프 국면은 lead/<id>.jpg 카드 그림을 같이 보낸다.
+/* 김시형 선생님 전용 «일정별 진행 카드» — 앱 어디에도 링크 없음(주소로만 연다).
+   카드마다 할 일 체크 + 단톡 보낼 말. [단톡으로 보내기] = 폰 공유창(카톡 선택) — 스탬프 일정은 lead/<id>.jpg 카드 그림을 같이 보낸다.
    ★ 일정·배치는 meeting/·guide/ 기준(10/29). 바뀌면 여기도 고칠 것. 현황판 비번 같은 비밀은 넣지 말 것(공개 저장소). */
 var K = '김시형', Y = '김양선', S = '이세미';
 var TAG = {}; TAG[K] = 'k'; TAG[Y] = 'y'; TAG[S] = 's'; TAG['담임'] = 'a'; TAG['전체'] = 'a'; TAG['학생회'] = 'a'; TAG['학년부장'] = 'k';
@@ -177,9 +177,9 @@ g2: [
   msg:"[도착]\n학교 도착했습니다. 담임 선생님들 도착 인원은 현황판으로 보고 부탁드립니다 (꿈길 앱 → 👩‍🏫 현황판).\n점심 영수증은 잊지 말고 제출해 주세요 🧾\n오늘 찍은 사진·영상은 집에서 한 장 골라 사진전·릴스전에 출품! (동판 미션 ③)\n내일 2일차 신청자는 08:10 등교입니다 🏝"}
 ]};
 
-/* ── 10/29 사용자 요청: 카드 안에서 직접 고치기·메시지 추가·국면 추가 ──
+/* ── 10/29 사용자 요청: 카드 안에서 직접 고치기·메시지 추가·일정 추가 ──
    기본 내용(P)은 그대로 두고, 손대는 순간 그날 목록 전체를 이 폰 localStorage(kg_lead_data)에 복사해 그 사본을 고친다.
-   «처음 내용으로»를 누르면 사본을 지우고 P 로 돌아간다. 체크·완료는 국면 id 로 기록(kg_lead_st2). */
+   «처음 내용으로»를 누르면 사본을 지우고 P 로 돌아간다. 체크·완료는 일정 id 로 기록(kg_lead_st2). */
 function ls(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
 var DAYS = {'1': '1일차 1학년', 'g2': '1일차 2학년', '2': '2일차'};
 var qd = (location.search.match(/[?&]d=(\w+)/) || [])[1];
@@ -187,7 +187,7 @@ var day = (qd && DAYS[qd]) ? qd : (ls('kg_lead_day') || (new Date().getDate() ==
 day = String(day);
 var st = ls('kg_lead_st2') || {};          // {id:{ck:[0,2], done:'09:32'}}
 var DATA = ls('kg_lead_data') || {};       // {day:[phase…]} — 고친 날만
-var ED = null;                             // 지금 고치는 것 {id, m} (m: 메시지 번호 | 'p' 국면 정보 | 'new' 새 메시지)
+var ED = null;                             // 지금 고치는 것 {id, m} (m: 메시지 번호 | 'p' 일정 정보 | 'new' 새 메시지)
 function save() { ls('kg_lead_st2', st); }
 function saveData() { ls('kg_lead_data', DATA); }
 function $(id) { return document.getElementById(id); }
@@ -215,15 +215,15 @@ function render() {
     h += '<div class="card' + (done ? ' done' : '') + (now ? ' now' : '') + '" id="c' + i + '">';
     if (ED && ED.id === x.id && ED.m === 'p') {
       h += '<div class="body ed" style="padding-top:14px"><label>시각·지점</label><input id="e_t" value="' + esc(x.t) + '">'
-        + '<label>국면 이름</label><input id="e_p" value="' + esc(x.p) + '">'
+        + '<label>일정 이름</label><input id="e_p" value="' + esc(x.p) + '">'
         + '<label>할 일 (한 줄에 하나 · «누가: 할 일»)</label><textarea id="e_todo" rows="5">' + esc(x.todo.map(function (t) { return t[0] + ': ' + t[1]; }).join('\n')) + '</textarea>'
         + '<div class="btns"><button class="copy" data-a="cancel">취소</button><button class="fin" data-a="psave" data-id="' + x.id + '">저장</button></div>'
-        + '<div class="btns"><button class="del" data-a="pdel" data-id="' + x.id + '">🗑 이 국면 삭제</button></div></div></div>';
+        + '<div class="btns"><button class="del" data-a="pdel" data-id="' + x.id + '">🗑 이 일정 삭제</button></div></div></div>';
       return;
     }
     h += '<div class="ch"><div class="num">' + (i + 1) + '</div><div class="ct"><b>' + esc(x.p) + '</b><small>' + esc(x.t) + (done ? ' · ✅ ' + s.done + ' 완료' : '') + '</small></div>'
       + (x.stamp ? '<span class="stp">🏅 스탬프 ' + esc(x.sn) + '</span>' : '')
-      + '<button class="pen" data-a="pedit" data-id="' + x.id + '" aria-label="국면 고치기">✏️</button></div>'
+      + '<button class="pen" data-a="pedit" data-id="' + x.id + '" aria-label="일정 고치기">✏️</button></div>'
       + '<div class="body"><ul class="todo">'
       + x.todo.map(function (t, j) {
           var ok = s.ck.indexOf(j) >= 0;
@@ -246,8 +246,8 @@ function render() {
       h += '<div class="ed"><textarea id="e_msg" rows="6" placeholder="[제목]&#10;내용은 다음 줄부터"></textarea>'
         + '<div class="btns"><button class="copy" data-a="cancel">취소</button><button class="fin" data-a="madd" data-id="' + x.id + '">추가</button></div></div>';
     }
-    h += '<div class="mini"><button data-a="mnew" data-id="' + x.id + '">＋ 메시지 추가</button><button data-a="pnew" data-id="' + x.id + '">＋ 아래에 국면 추가</button></div>'
-      + '<div class="btns"><button class="fin" data-a="fin" data-id="' + x.id + '">' + (done ? '↩ 완료 취소' : '✅ 이 국면 완료') + '</button></div>'
+    h += '<div class="mini"><button data-a="mnew" data-id="' + x.id + '">＋ 메시지 추가</button><button data-a="pnew" data-id="' + x.id + '">＋ 아래에 일정 추가</button></div>'
+      + '<div class="btns"><button class="fin" data-a="fin" data-id="' + x.id + '">' + (done ? '↩ 완료 취소' : '✅ 이 일정 완료') + '</button></div>'
       + '</div></div>';
   });
   $('list').innerHTML = h;
@@ -311,10 +311,10 @@ $('list').onclick = function (e) {
     delete st[id]; save();                    // 할 일 순서가 바뀌었을 수 있어 체크는 비운다
     ED = null; saveData(); toast('저장했어요'); return render();
   }
-  if (a === 'pdel') { if (!confirm('«' + x.p + '» 국면을 지울까요?')) return; F = find(id); F.L.splice(F.i, 1); ED = null; saveData(); return render(); }
+  if (a === 'pdel') { if (!confirm('«' + x.p + '» 일정을 지울까요?')) return; F = find(id); F.L.splice(F.i, 1); ED = null; saveData(); return render(); }
   if (a === 'pnew') {
     F = find(id); var nid = 'n' + Date.now().toString(36);
-    F.L.splice(F.i + 1, 0, {id: nid, t: '', p: '새 국면', stamp: '', sn: '', todo: [], msgs: []});
+    F.L.splice(F.i + 1, 0, {id: nid, t: '', p: '새 일정', stamp: '', sn: '', todo: [], msgs: []});
     ED = {id: nid, m: 'p'}; saveData(); return render();
   }
   if (a === 'fin') {
@@ -330,7 +330,7 @@ $('reset').onclick = function () {
   save(); render();
 };
 $('restore').onclick = function () {
-  if (!confirm(DAYS[day] + '에서 고친 내용(메시지·국면)을 모두 버리고 처음 내용으로 돌릴까요?')) return;
+  if (!confirm(DAYS[day] + '에서 고친 내용(메시지·일정)을 모두 버리고 처음 내용으로 돌릴까요?')) return;
   delete DATA[day]; ED = null; saveData(); render();
 };
 function scrollNow() { var n = document.querySelector('.card.now'); if (n) window.scrollTo({top: n.offsetTop - 150, behavior: 'smooth'}); }
