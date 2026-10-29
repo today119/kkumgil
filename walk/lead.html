@@ -51,6 +51,7 @@ button{font-family:inherit;cursor:pointer}
 .pen{flex:none;border:0;background:#F1F5F9;border-radius:10px;width:36px;height:36px;font-size:16px}
 .btns .sm{flex:0 0 52px}
 .del{background:#FEE2E2;color:#B91C1C}
+.ins{display:block;width:100%;margin:-4px 0 14px;border:2px dashed #F59E0B;background:#FFFBEB;color:#B45309;border-radius:14px;padding:10px;font-size:14px;font-weight:900}
 .mini{display:flex;gap:8px;margin-top:10px}
 .mini button{flex:1;border:1px dashed #94A3B8;background:none;color:#475569;border-radius:12px;padding:9px 4px;font-size:13px;font-weight:800}
 .ed{margin-top:10px}
@@ -259,9 +260,10 @@ function render() {
       h += '<div class="ed"><textarea id="e_msg" rows="6" placeholder="[제목]&#10;내용은 다음 줄부터"></textarea>'
         + '<div class="btns"><button class="copy" data-a="cancel">취소</button><button class="fin" data-a="madd" data-id="' + x.id + '">추가</button></div></div>';
     }
-    h += '<div class="mini"><button data-a="mnew" data-id="' + x.id + '">＋ 메시지 추가</button><button data-a="pnew" data-id="' + x.id + '">＋ 아래에 일정 추가</button></div>'
+    h += '<div class="mini"><button data-a="mnew" data-id="' + x.id + '">＋ 메시지 추가</button></div>'
       + '<div class="btns"><button class="fin" data-a="fin" data-id="' + x.id + '">' + (done ? '↩ 완료 취소' : '✅ 이 일정 완료') + '</button></div>'
-      + '</div></div>';
+      + '</div></div>'
+      + (ED ? '' : '<button class="ins" data-a="pnew" data-id="' + x.id + '">＋ ' + (i + 1) + '번 다음에 일정 추가</button>');
   });
   $('list').innerHTML = h;
   $('bar').style.width = (arr.length ? nDone / arr.length * 100 : 0) + '%';
