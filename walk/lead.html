@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0B4F82">
+<title>꿈길 걷기 진행 카드</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#F1F5FA;color:#0F172A;-webkit-text-size-adjust:100%;padding-bottom:40px}
+button{font-family:inherit;cursor:pointer}
+.hd{position:sticky;top:0;z-index:5;background:#0B4F82;color:#fff;padding:14px 16px 12px}
+.hd h1{font-size:19px;font-weight:900}
+.hd .t{font-size:13px;opacity:.85;margin-top:2px}
+.seg{display:flex;gap:4px;background:rgba(255,255,255,.15);border-radius:12px;padding:4px;margin-top:10px}
+.seg button{flex:1;border:0;background:none;color:#fff;font-size:15px;font-weight:800;padding:9px;border-radius:9px}
+.seg button.on{background:#fff;color:#0B4F82}
+.bar{height:6px;background:rgba(255,255,255,.25);border-radius:3px;margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:#FCD34D;width:0;transition:width .3s}
+.who{display:flex;gap:6px;flex-wrap:wrap;padding:12px 16px 0;font-size:12px;font-weight:800}
+.who span{padding:4px 9px;border-radius:999px}
+.k{background:#DBEAFE;color:#1D4ED8}.y{background:#FCE7F3;color:#BE185D}.s{background:#DCFCE7;color:#15803D}.a{background:#E2E8F0;color:#334155}
+.list{padding:12px 16px}
+.card{background:#fff;border-radius:18px;margin-bottom:14px;box-shadow:0 2px 0 #E2E8F0;overflow:hidden;border:2px solid transparent}
+.card.now{border-color:#F59E0B}
+.card.done{opacity:.55}
+.ch{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+.num{flex:none;width:34px;height:34px;border-radius:50%;background:#0B4F82;color:#fff;font-weight:900;display:grid;place-items:center;font-size:16px}
+.card.done .num{background:#94A3B8}
+.ct{flex:1;min-width:0}
+.ct b{display:block;font-size:17px;font-weight:900;line-height:1.25}
+.ct small{font-size:13px;color:#64748B;font-weight:700}
+.stp{font-size:12px;font-weight:900;background:#FEF3C7;color:#B45309;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.body{padding:0 16px 14px}
+.todo{list-style:none}
+.todo li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid #F1F5F9;font-size:15px;line-height:1.4}
+.todo li .bx{flex:none;width:24px;height:24px;border-radius:7px;border:2px solid #CBD5E1;display:grid;place-items:center;font-size:15px;color:#fff;margin-top:1px}
+.todo li.ok .bx{background:#16A34A;border-color:#16A34A}
+.todo li.ok .tx{color:#94A3B8;text-decoration:line-through}
+.todo li .tg{font-size:11px;font-weight:900;padding:2px 6px;border-radius:6px;margin-right:4px;vertical-align:1px}
+.img{display:block;width:100%;border-radius:12px;margin:10px 0 4px}
+.msg{background:#F8FAFC;border:1px dashed #CBD5E1;border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.5;white-space:pre-wrap;margin-top:10px;color:#334155}
+.btns{display:flex;gap:8px;margin-top:10px}
+.btns button{flex:1;border:0;border-radius:12px;padding:12px 6px;font-size:15px;font-weight:900}
+.share{background:#FEE500;color:#191919}
+.copy{background:#E2E8F0;color:#0F172A}
+.fin{background:#0B4F82;color:#fff}
+.card.done .fin{background:#94A3B8}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#0F172A;color:#fff;font-size:14px;font-weight:800;padding:10px 16px;border-radius:999px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.on{opacity:.92}
+.foot{text-align:center;font-size:12px;color:#94A3B8;padding:6px 16px}
+.foot button{border:0;background:none;color:#64748B;text-decoration:underline;font-size:12px}
+</style>
+</head><body>
+<div class="hd">
+  <h1>🧭 진행 카드 <span style="font-size:13px;opacity:.8">· 선생님 전용</span></h1>
+  <div class="t" id="sub"></div>
+  <div class="seg"><button data-d="1">1일차 10/30(금)</button><button data-d="2">2일차 10/31(토)</button></div>
+  <div class="bar"><i id="bar"></i></div>
+</div>
+<div class="who" id="who"></div>
+<div class="list" id="list"></div>
+<div class="foot">체크·완료 표시는 이 폰에만 저장돼요 · <button id="reset">이 날 기록 지우기</button></div>
+<div class="toast" id="toast"></div>
+<script>
+/* 김시형 선생님 전용 «국면별 진행 카드» — 앱 어디에도 링크 없음(주소로만 연다).
+   카드마다 할 일 체크 + 단톡 보낼 말. [단톡으로 보내기] = 폰 공유창(카톡 선택) — 스탬프 국면은 lead/<id>.jpg 카드 그림을 같이 보낸다.
+   ★ 일정·배치는 meeting/·guide/ 기준(10/29). 바뀌면 여기도 고칠 것. 현황판 비번 같은 비밀은 넣지 말 것(공개 저장소). */
+var K = '김시형', Y = '김양선', S = '이세미';
+var TAG = {}; TAG[K] = 'k'; TAG[Y] = 'y'; TAG[S] = 's'; TAG['담임'] = 'a'; TAG['전체'] = 'a';
+var WHO = {
+  1: [[K, '선두'], [Y, '3그룹(8~10반)'], [S, '상황실·간식']],
+  2: [[K, '선두'], [Y, '후미(밴)'], [S, '상황실·간식']]
+};
+var P = {
+1: [
+ {t:'08:10', p:'등교 · 출석', todo:[[K,'하산 표지판 · 구급가방 · 스탬프 카드 챙기기'],[S,'아침 샌드위치·음료 배분'],['담임','출석 → 현황판 보고(불참·지각)']],
+  msg:'[꿈길 걷기 1일차] 좋은 아침입니다 🙂\n담임 선생님들 출석 확인 후 현황판에 불참·지각 보고 부탁드립니다.\n아침 샌드위치·음료는 반별로 받아 가 주세요.'},
+ {t:'08:10~08:30', p:'운동장 · 안전교육 · 출발 준비', todo:[[K,'학생 안내: 앱 ▶길안내 시작 · 위치 허용 · SOS · 스탬프 5곳'],[K,'반별 인원 모아서 출발 인원 공지'],[K,'하산 도우미 4명 먼저 출발 (2.0km 첫 갈림길 · 2.5km 급경사 앞)'],['담임','반별 인원 단톡 보고']],
+  msg:'[출발 전 인원 보고] 담임 선생님들 반별 출발 인원 올려 주세요.\n예) 「3반 출발 25명 이상 없음」\n하산 도우미 선생님들은 먼저 출발해 2.0km 첫 갈림길, 2.5km 급경사 앞에 서 주세요.'},
+ {t:'08:30', p:'출발 → 백운산 (3km)', todo:[[K,'출발 순서 1그룹 → 2그룹 → 3그룹'],[K,'갈림길: 반 맨 뒤 통과까지 방향 확인'],[Y,'후미 통과하면 하산 도우미 철수 알림'],['전체','하산할 학생 → 하산 도우미 → 하늘고 주차장(차량)']],
+  msg:'[출발] 1그룹부터 출발합니다 🚶\n산길 갈림길에서는 반 맨 뒤 학생이 지날 때까지 방향 확인 부탁드립니다.\n못 걷는 학생은 하산 도우미에게 인계 → 하늘고 주차장에서 차량 탑승.'},
+ {t:'09:30', p:'백운산 정상', stamp:'baegunsan', sn:'1/5', todo:[[K,'스탬프 투어 시작 알리기 (카드 보내기)'],['담임','인원 확인 → 단톡 · 바람막이 입히기'],[Y,'후미 상황 단톡']],
+  msg:'🏅 [스탬프 1/5] 백운산 정상 도착!\n앱 → 스탬프 → 백운산 정상 → 📷 표지석이나 봉수대가 보이게 한 컷 → 해설 읽고 퀴즈까지.\n반별로 2~3분 시간 주시고, 인원 확인 후 단톡 보고 부탁드립니다. 정상은 바람이 세니 바람막이 입혀 주세요.'},
+ {t:'4.7km', p:'용궁사', stamp:'yonggungsa', sn:'2/5', todo:[[S,'생수 배분'],[K,'간식조에 점심 장소 도착 예상 시각 연락'],['전체','절 안에서는 조용히']],
+  msg:'🏅 [스탬프 2/5] 용궁사 도착!\n앱 → 스탬프 → 용궁사 → 📷 «용궁사» 현판이나 큰 느티나무가 보이게 → 해설·퀴즈.\n생수 받아 가세요 💧 절 안에서는 조용히 부탁드립니다.'},
+ {t:'용궁사 출발', p:'간식조 연락', todo:[[K,'간식조: 점심(방앗간 한식뷔페) 생수·아이스크림 도착 시각 알림']],
+  msg:'[간식조] 선두 용궁사 출발했습니다. 점심 장소(하늘신도시 방앗간 한식뷔페) 12:30 도착 예상입니다.\n생수·아이스크림 준비 부탁드립니다 🙏'},
+ {t:'9.3km', p:'중산교차로 → 박석공원 → 영종진', todo:[[K,'9.3km 건널목: 선두가 먼저 서서 통제'],['담임','앞 반과 간격 벌어지면 단톡']],
+  msg:'[안내] 곧 큰 건널목(9.3km)입니다. 선두가 먼저 서서 통제하겠습니다.\n반 간격 벌어지면 단톡에 알려 주세요.'},
+ {t:'10.3km', p:'하늘신도시', stamp:'haneul', sn:'3/5', todo:[[K,'스탬프 카드 보내기'],['담임','인원 확인 후 점심 장소로']],
+  msg:'🏅 [스탬프 3/5] 하늘신도시 도착!\n앱 → 스탬프 → 하늘신도시 → 📷 높은 아파트·건물이 보이게 → 해설·퀴즈.\n인원 확인 후 점심 장소로 이동합니다.'},
+ {t:'12:30', p:'점심 · 방앗간 한식뷔페', todo:[[S,'생수·아이스크림 배분'],['담임','오후 출발 전 인원 확인 · 중도포기 정리'],[K,'간식조: 손커피연구소 이온음료 시각 연락']],
+  msg:'[점심] 반별 입장 부탁드립니다 🍚 13:30 오후 출발입니다.\n출발 전 반별 인원과 중도포기 학생 단톡 보고 부탁드립니다.'},
+ {t:'점심 후', p:'간식조 연락', todo:[[K,'간식조: 손커피연구소 이온음료 도착 시각']],
+  msg:'[간식조] 오후 출발했습니다. 손커피연구소에서 이온음료 배분 예정입니다. 도착 예상 시각 따로 알려 드리겠습니다 🙏'},
+ {t:'13:30~14:50', p:'씨사이드파크 → 손커피연구소', todo:[[S,'손커피연구소 이온음료'],['전체','14.6km 갯벌 데크길로 들어가지 않기 (큰길 인도)']],
+  msg:'[안내] 손커피연구소에서 이온음료 받아 가세요 🥤\n14.6km 갯벌 데크길로는 들어가지 않고 큰길 인도로 갑니다.'},
+ {t:'14:50', p:'씨사이드파크 족욕장', stamp:'seaside', sn:'4/5', todo:[[K,'스탬프 카드 보내기'],['담임','휴식 · 학급별 캠페인 사진'],['담임','인원 확인 → 단톡']],
+  msg:'🏅 [스탬프 4/5] 씨사이드파크 족욕장 도착!\n앱 → 스탬프 → 족욕장 → 📷 족욕장과 바다(인천대교)가 함께 → 해설·퀴즈.\n휴식 후 학급별 캠페인 사진 찍어 주세요. 15:10 학교로 출발합니다.'},
+ {t:'15:40', p:'학교 도착', stamp:'school', sn:'5/5', todo:[[S,'빵·음료 배분'],['담임','도착 인원 확인 → 단톡'],['담임','다친 학생 보건실 · 가정 연락'],[K,'「전원 도착」 공지']],
+  msg:'🏅 [스탬프 5/5] 학교 도착! 25km 완주를 축하합니다 🎉\n앱 → 스탬프 → 인천영종고등학교 → 📷 정문이나 교명이 보이게 → 마지막 퀴즈.\n담임 선생님들 도착 인원 보고 부탁드립니다. 빵·음료 받아 가세요.'}
+],
+2: [
+ {t:'08:10', p:'등교 · 출석', todo:[[S,'아침 배분'],['담임','출석 → 현황판 보고']],
+  msg:'[꿈길 걷기 2일차] 좋은 아침입니다 🙂\n출석 확인 후 현황판 보고, 아침 받아 가 주세요. 08:20 버스 출발합니다.'},
+ {t:'08:10~08:20', p:'버스 탑승', todo:[[K,'호차별 탑승 인원 확인 (1호 43 · 2호 43 · 3호 44)'],['전체','호차 담당 → 단톡 보고']],
+  msg:'[버스 탑승] 호차별 탑승 인원 보고 부탁드립니다.\n예) 「1호차 43명 탑승 이상 없음」'},
+ {t:'08:55', p:'무의도 공영주차장', stamp:'muuido', sn:'1/7', todo:[[K,'하차 인원 확인'],[K,'안내: 스탬프 7곳 · 한 줄로 걷기'],[Y,'후미 출발 확인']],
+  msg:'🏅 [스탬프 1/7] 무의도 도착!\n오늘 스탬프는 7곳이에요: 무의도 · 무의대교 · 잠진도 · 마시안해변 · 선녀바위 · 을왕리 · 용유 염전.\n해안도로는 꼭 한 줄로 걷습니다. 호차별 하차 인원 보고 부탁드립니다.'},
+ {t:'무의대교', p:'무의대교', stamp:'muuidaegyo', sn:'2/7', todo:[[K,'스탬프 카드 보내기'],['전체','다리 위 한 줄 · 난간 기대지 않기']],
+  msg:'🏅 [스탬프 2/7] 무의대교!\n앱 → 스탬프 → 무의대교 → 📷 다리가 보이게 → 해설·퀴즈.\n다리 위에서는 한 줄로, 난간에 기대지 않기.'},
+ {t:'잠진도', p:'잠진도', stamp:'jamjindo', sn:'3/7', todo:[[K,'스탬프 카드 보내기']],
+  msg:'🏅 [스탬프 3/7] 잠진도!\n앱 → 스탬프 → 잠진도 → 📷 → 해설·퀴즈.'},
+ {t:'10:15', p:'마시안해변 · 해변 청소', stamp:'masian', sn:'4/7', todo:[[S,'쓰레기봉투·장갑 배분'],['전체','유리·낚싯바늘 맨손 금지 · 물가 들어가지 않기'],['담임','단체사진']],
+  msg:'🏅 [스탬프 4/7] 마시안해변 도착!\n앱 → 스탬프 → 마시안해변 → 📷 모래사장과 바다 → 해설·퀴즈.\n해변 청소 시작합니다 🧤 유리·낚싯바늘 같은 날카로운 건 맨손 금지, 물가로는 들어가지 않기. 끝나면 반별 단체사진!'},
+ {t:'11:05', p:'마시안 → 선녀바위 (경찰 에스코트)', todo:[[K,'7.0~10.6km 경찰 에스코트 구간: 한 줄로'],[K,'간식조: 을왕 점심 도착 시각'],[Y,'후미 상황 단톡']],
+  msg:'[안내] 돌짜장 앞부터 선녀바위해변까지(약 3.6km)는 인도가 없어 경찰 에스코트를 받습니다.\n반드시 한 줄로, 대열 밖으로 나가지 않기.'},
+ {t:'선녀바위', p:'선녀바위', stamp:'seonnyeo', sn:'5/7', todo:[[K,'스탬프 카드 보내기'],['전체','젖은 바위 올라가지 않기']],
+  msg:'🏅 [스탬프 5/7] 선녀바위!\n앱 → 스탬프 → 선녀바위 → 📷 바위가 나오게 → 해설·퀴즈.\n젖은 바위는 미끄러우니 올라가서 찍지 않기!'},
+ {t:'12:30', p:'을왕리 · 점심', stamp:'eulwang', sn:'6/7', todo:[[K,'스탬프 카드 보내기'],['담임','점심(해물라면) 인원 확인'],[K,'간식조: 용유초 음료 도착 시각']],
+  msg:'🏅 [스탬프 6/7] 을왕리해수욕장 도착!\n앱 → 스탬프 → 을왕리해수욕장 → 📷 → 해설·퀴즈.\n점심 후 13:30 출발합니다. 반별 인원 보고 부탁드립니다.'},
+ {t:'13:30~15:00', p:'을왕 → 용유초 (염전길)', stamp:'yeomjeon', sn:'7/7', todo:[[K,'14.9 · 15.5km 갈림길: 오른쪽 → 왼쪽'],[K,'염전 스탬프 카드 보내기']],
+  msg:'🏅 [스탬프 7/7] 용유 염전!\n앱 → 스탬프 → 용유 염전 → 📷 → 마지막 퀴즈.\n7곳 다 모았으면 앱에서 «스탬프 인증 제출»까지 눌러 주세요 🏅'},
+ {t:'15:00', p:'용유초 · 휴식', todo:[[S,'음료 배분'],['담임','인원 확인']],
+  msg:'[도착] 용유초에서 휴식합니다 🥤 음료 받아 가세요. 15:20 버스 탑승합니다.'},
+ {t:'15:20', p:'버스 → 학교 강당 · 하교', todo:[[K,'호차별 탑승 인원 확인'],[K,'「전원 도착」 공지']],
+  msg:'[버스 탑승] 호차별 탑승 인원 보고 부탁드립니다.\n학교 강당에서 하교 지도합니다. 이틀 동안 정말 수고 많으셨습니다 🙏'}
+]};
+
+function ls(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
+var day = ls('kg_lead_day') || (new Date().getDate() === 31 ? 2 : 1);
+var st = ls('kg_lead_st') || {};          // {'1-3':{ck:[0,2], done:'09:32'}}
+function save() { ls('kg_lead_st', st); }
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function toast(t) { var e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(function () { e.classList.remove('on'); }, 1800); }
+
+function render() {
+  document.querySelectorAll('.seg button').forEach(function (b) { b.classList.toggle('on', +b.dataset.d === day); });
+  $('who').innerHTML = WHO[day].map(function (w) { return '<span class="' + TAG[w[0]] + '">' + w[0] + ' · ' + w[1] + '</span>'; }).join('');
+  var arr = P[day], nDone = 0, nowSet = false, h = '';
+  arr.forEach(function (x, i) {
+    var s = st[day + '-' + i] || {ck: []}, done = !!s.done;
+    if (done) nDone++;
+    var now = !done && !nowSet; if (now) nowSet = true;
+    h += '<div class="card' + (done ? ' done' : '') + (now ? ' now' : '') + '" id="c' + i + '">'
+      + '<div class="ch"><div class="num">' + (i + 1) + '</div><div class="ct"><b>' + esc(x.p) + '</b><small>' + esc(x.t) + (done ? ' · ✅ ' + s.done + ' 완료' : '') + '</small></div>'
+      + (x.stamp ? '<span class="stp">🏅 스탬프 ' + x.sn + '</span>' : '') + '</div>'
+      + '<div class="body"><ul class="todo">'
+      + x.todo.map(function (t, j) {
+          var ok = s.ck.indexOf(j) >= 0;
+          return '<li class="' + (ok ? 'ok' : '') + '" data-i="' + i + '" data-j="' + j + '"><span class="bx">' + (ok ? '✓' : '') + '</span><span class="tx"><span class="tg ' + TAG[t[0]] + '">' + t[0] + '</span>' + esc(t[1]) + '</span></li>';
+        }).join('') + '</ul>'
+      + (x.stamp ? '<img class="img" src="lead/' + x.stamp + '.jpg" alt="" loading="lazy">' : '')
+      + '<div class="msg">' + esc(x.msg) + '</div>'
+      + '<div class="btns"><button class="share" data-i="' + i + '">📤 단톡으로 보내기</button><button class="copy" data-i="' + i + '">📋 문구 복사</button></div>'
+      + '<div class="btns"><button class="fin" data-i="' + i + '">' + (done ? '↩ 완료 취소' : '✅ 이 국면 완료') + '</button></div>'
+      + '</div></div>';
+  });
+  $('list').innerHTML = h;
+  $('bar').style.width = (nDone / arr.length * 100) + '%';
+  $('sub').textContent = (day === 1 ? '1학년 도보 25km' : '1·2학년 희망자 · 무의도~용유') + ' · ' + nDone + '/' + arr.length + ' 완료';
+}
+
+function copy(t) {
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t).then(function () { toast('문구를 복사했어요 — 카톡에 붙여 넣으세요'); }, function () { fallbackCopy(t); });
+  fallbackCopy(t);
+}
+function fallbackCopy(t) {
+  var a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select();
+  try { document.execCommand('copy'); toast('문구를 복사했어요'); } catch (e) { toast('복사가 안 돼요 — 길게 눌러 복사해 주세요'); }
+  a.remove();
+}
+function share(x) {
+  if (!navigator.share) { copy(x.msg); return; }
+  // 카톡은 그림+글을 같이 받으면 글을 버리는 경우가 있어 → 글은 먼저 클립보드에도 넣어 둔다
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(x.msg).catch(function () {});
+  if (!x.stamp) { navigator.share({text: x.msg}).catch(function () {}); return; }
+  fetch('lead/' + x.stamp + '.jpg').then(function (r) { return r.blob(); }).then(function (b) {
+    var f = new File([b], '스탬프_' + x.p + '.jpg', {type: 'image/jpeg'});
+    var d = {files: [f], text: x.msg};
+    if (navigator.canShare && !navigator.canShare(d)) d = {text: x.msg};
+    return navigator.share(d).then(function () { if (d.files) toast('글이 빠졌으면 카톡 입력창에 붙여 넣기 하세요'); });
+  }).catch(function (e) { if (!e || e.name !== 'AbortError') navigator.share({text: x.msg}).catch(function () {}); });
+}
+
+document.querySelector('.seg').onclick = function (e) {
+  var b = e.target.closest('button'); if (!b) return;
+  day = +b.dataset.d; ls('kg_lead_day', day); render(); scrollNow();
+};
+$('list').onclick = function (e) {
+  var li = e.target.closest('li[data-j]'), b = e.target.closest('button');
+  if (li) {
+    var k = day + '-' + li.dataset.i, s = st[k] || (st[k] = {ck: []}), j = +li.dataset.j, p = s.ck.indexOf(j);
+    if (p >= 0) s.ck.splice(p, 1); else s.ck.push(j);
+    save(); render(); return;
+  }
+  if (!b) return;
+  var i = +b.dataset.i, x = P[day][i];
+  if (b.classList.contains('share')) share(x);
+  else if (b.classList.contains('copy')) copy(x.msg);
+  else if (b.classList.contains('fin')) {
+    var k2 = day + '-' + i, s2 = st[k2] || (st[k2] = {ck: []});
+    if (s2.done) delete s2.done;
+    else { var d = new Date(); s2.done = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+    save(); render(); if (s2.done) scrollNow();
+  }
+};
+$('reset').onclick = function () {
+  if (!confirm(day + '일차 체크·완료 기록을 지울까요?')) return;
+  Object.keys(st).forEach(function (k) { if (k.indexOf(day + '-') === 0) delete st[k]; });
+  save(); render();
+};
+function scrollNow() { var n = document.querySelector('.card.now'); if (n) window.scrollTo({top: n.offsetTop - 150, behavior: 'smooth'}); }
+render(); setTimeout(scrollNow, 100);
+</script>
+</body></html>
