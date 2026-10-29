@@ -554,7 +554,7 @@
         <span>선생님용 · 학생 확인<span class="s">현황판 비번으로 들어가요 — 참가·중도포기 현황</span></span></a>
 
       <button class="book teacher" id="tposBtn" hidden style="width:100%;margin-top:10px"><span class="e">📡</span>
-        <span>선생님 위치 공유<span class="s" id="tposSub">선두·후미 선생님 — 지도에서 대형을 봐요</span></span></button>
+        <span>선생님 위치 공유<span class="s" id="tposSub">선생님·안전요원 — 지도에서 대형을 봐요</span></span></button>
 
       <div class="school">인천영종고등학교</div>
     </div>
@@ -655,8 +655,8 @@
       화면이 꺼지면 멈추니 <b>「화면 켜두기」+ 보조배터리</b>로 걸어 주세요. 위치는 6시간 뒤 저절로 지워져요.</div>
     <div class="q" style="font-weight:900;margin:16px 2px 6px">① 현황판 비번</div>
     <input id="tpPin" type="password" inputmode="numeric" maxlength="12" style="width:100%;font-size:22px;font-weight:900;letter-spacing:.3em;text-align:center;padding:12px;border-radius:14px;border:2px solid #CBD5E1">
-    <div class="q" style="font-weight:900;margin:14px 2px 6px">② 성함 <span style="color:var(--sub);font-weight:700">— 두 글자 치면 명단이 떠요</span></div>
-    <input id="tpName" list="tpNames" maxlength="20" autocomplete="off" placeholder="비번을 넣으면 명단에서 골라요" style="width:100%;font-size:18px;font-weight:800;padding:12px;border-radius:14px;border:2px solid #CBD5E1">
+    <div class="q" style="font-weight:900;margin:14px 2px 6px">② 성함 <span style="color:var(--sub);font-weight:700">— 선생님은 명단에서 고르고, 안전요원은 «안전요원 홍길동»처럼 직접 써 주세요</span></div>
+    <input id="tpName" list="tpNames" maxlength="20" autocomplete="off" placeholder="예: 김시형 / 안전요원 홍길동" style="width:100%;font-size:18px;font-weight:800;padding:12px;border-radius:14px;border:2px solid #CBD5E1">
     <datalist id="tpNames"></datalist>
     <div class="q" style="font-weight:900;margin:14px 2px 6px">③ 맡은 자리</div>
     <div class="codeRow" id="tpRole"><button data-r="선두">🚩 선두</button><button data-r="중간">중간</button><button data-r="후미">🏁 후미</button></div>
@@ -1557,7 +1557,7 @@
     $("tposDot").hidden = !TP.on;
     $("troopBtn").hidden = !TP.on;
     paintHelpers();
-    $("tposSub").textContent = TP.on ? "공유 중 · " + ((TP.role ? TP.role + " " : "") + TP.name).trim() + " — 눌러서 끄기" : "선두·후미 선생님 — 지도에서 대형을 봐요";
+    $("tposSub").textContent = TP.on ? "공유 중 · " + ((TP.role ? TP.role + " " : "") + TP.name).trim() + " — 눌러서 끄기" : "선생님·안전요원 — 지도에서 대형을 봐요";
     if(!TP.on) troopOff();
   }
   function tpMaybeSend(){
@@ -1602,7 +1602,7 @@
   };
   $("tpOn").onclick = function(){
     var name = $("tpName").value.trim(), pin = $("tpPin").value.trim();
-    if(name && tpNames.length && tpNames.indexOf(name) < 0){ $("tpMsg").textContent = "명단에 있는 성함을 골라 주세요"; return; }
+    /* 10/30 사용자: 안전요원도 — 명단에 없어도 비번만 맞으면 된다(서버도 이름은 검사하지 않음) */
     if(!name && !TP.role){ $("tpMsg").textContent = "맡은 자리(선두·중간·후미)를 골라 주세요"; return; }
     if(!pin){ $("tpMsg").textContent = "현황판 비번을 넣어 주세요"; return; }
     TP.name = name; TP.pin = pin;
