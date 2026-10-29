@@ -1061,10 +1061,12 @@
         helperMks = (C.helpers || []).map(function(h){
           var el = document.createElement("div");
           el.className = "upr";
-          el.style.cssText = "background:#1565C0;color:#fff;font-weight:900;font-size:12px;padding:4px 9px;border-radius:999px;white-space:nowrap;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.5)";
-          el.textContent = "📍 하산 포인트 " + "①②③④⑤⑥"[h.n - 1] + " · 2명 대기";
+          /* 10/30 사용자: 「지점 확실하게」 — 빨간 큰 표지 + 거리, 아래 꼭짓점이 정확한 자리 */
+          el.style.cssText = "position:relative;background:#DC2626;color:#fff;font-weight:900;font-size:14px;line-height:1.2;padding:6px 11px;border-radius:12px;white-space:nowrap;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.55);text-align:center";
+          el.innerHTML = "⛰ 하산 " + "①②③④⑤⑥"[h.n - 1] + " · " + (h.m/1000).toFixed(1) + "km<br><small style=\"font-size:11px;font-weight:800\">도우미 2명 대기</small>" +
+            '<i style="position:absolute;left:50%;bottom:-11px;margin-left:-9px;width:0;height:0;border:9px solid transparent;border-top-color:#DC2626;border-bottom:0"></i>';
           el.onclick = function(){ toast("📍 하산 포인트 " + "①②③④⑤⑥"[h.n - 1] + " · " + h.name + " (" + (h.m/1000).toFixed(1) + "km) — " + h.desc); };
-          return new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(h.lat, h.lng), content:el, yAnchor:1.3, zIndex:7});
+          return new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(h.lat, h.lng), content:el, yAnchor:1.2, zIndex:8});
         });
         var bounds = new kakao.maps.LatLngBounds();
         path.forEach(function(ll){ bounds.extend(ll); });
