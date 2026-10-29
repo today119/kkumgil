@@ -7,7 +7,7 @@
      · 내 파일(코스·사진·화면)  → 저장해 둔 것을 «먼저» 주고, 뒤에서 조용히 갱신
      · 카카오 지도 타일         → 저장하지 않는다(약관·용량). 신호 없으면 지도만 안 보인다
    ══════════════════════════════════════════════════════════════ */
-const V = 'kkumgil-v119';
+const V = 'kkumgil-v120';
 const CORE = ['./', './index.html', './courses.json', './course-day1.json', './course-day2.json',
               './manifest.json', './icon-192.png', './icon-512.png', './stamps.json',
               './hero.jpg', './t-poem.jpg', './t-catch.jpg', './t-shirt-dpw2.jpg',
@@ -38,7 +38,7 @@ self.addEventListener('fetch', (e) => {
   const u = new URL(e.request.url);
   if (e.request.method !== 'GET') return;
   if (u.origin !== location.origin) return;          // 카카오 지도 등 남의 것은 건드리지 않는다
-  const fresh = e.request.mode === 'navigate' || /\.(html|json|js)$/.test(u.pathname) || u.pathname.endsWith('/');
+  const fresh = e.request.mode === 'navigate' || /\.(html|json|js)$/.test(u.pathname) || u.pathname.endsWith('/') || u.pathname.includes('/car/') || u.pathname.includes('/lead/');  // 진행·차량 카드는 자주 고친다
   e.respondWith((async () => {
     const c = await caches.open(V);
     const hit = await c.match(e.request, { ignoreSearch: true });

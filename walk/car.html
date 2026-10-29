@@ -87,7 +87,7 @@ function kk(p,la,ln){return 'https://map.kakao.com/link/to/'+encodeURIComponent(
 function nv(p,la,ln){return 'https://map.naver.com/index.nhn?elng='+ln+'&elat='+la+'&etext='+encodeURIComponent(p)+'&menu=route&pathType=0'}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function mins(t){var m=t.match(/(\d+):(\d+)/);return +m[1]*60+ +m[2]}
-var CV='3';var IMG=['haneulgo','yonggungsa','library','cloud','camping','footbath'];
+var CV='4';var IMG=['haneulgo','yonggungsa','library','cloud','camping','footbath'];
 function txt(s){var o='[차량 안내 · '+s.t+' · '+(s.c==='12'?'1·2번':'3·4번')+' 차]\n'+s.n+'\n'+s.d+'\n📍 '+s.p+'\n카카오 길안내 👉 '+kk(s.p,s.lat,s.lng)+'\n네이버 길안내 👉 '+nv(s.p,s.lat,s.lng);
   if(s.to)o+='\n\n태운 뒤 → '+s.to.p+'\n카카오 길안내 👉 '+kk(s.to.p,s.to.lat,s.to.lng);return o}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on')},2200)}
