@@ -110,7 +110,7 @@ function draw(){
     var tg=s.c==='12'?'<span class="tag a12">1·2번 차</span>':'<span class="tag a34">3·4번 차</span>';
     var b='<div class="btns"><a class="kk" href="'+kk(s.p,s.lat,s.lng)+'" target="_blank">카카오 길안내</a><a class="nv" href="'+nv(s.p,s.lat,s.lng)+'" target="_blank">네이버 길안내</a></div>';
     if(s.to)b+='<p style="margin-top:12px;font-weight:800">태운 뒤 → '+esc(s.to.p)+'</p><div class="btns"><a class="kk" href="'+kk(s.to.p,s.to.lat,s.to.lng)+'" target="_blank">카카오 길안내</a><a class="nv" href="'+nv(s.to.p,s.to.lat,s.to.lng)+'" target="_blank">네이버 길안내</a></div>';
-    b+='<img class="im" src="car/'+IMG[i]+'.jpg" alt="" loading="lazy"><button class="sh" onclick="share('+i+')">📤 카드 + 길안내 카톡으로 보내기</button>';
+    b+='<button class="sh" onclick="share('+i+')">📤 카드 + 길안내 카톡으로 보내기</button>';
     return '<div class="card'+(i===nowI?' now':'')+'"><div class="ch"><div class="tm">'+s.t.replace('~','~<br>')+'</div><div class="ct"><b>'+esc(s.n)+'</b><small>📍 '+esc(s.p)+'</small></div>'+tg+'</div><div class="body"><p>'+esc(s.d)+'</p>'+b+'</div></div>';
   }).join('');
 }
