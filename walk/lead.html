@@ -58,6 +58,12 @@ button{font-family:inherit;cursor:pointer}
 .ed label{display:block;font-size:12px;font-weight:900;color:#64748B;margin:8px 0 4px}
 .ed input,.ed textarea{width:100%;border:2px solid #93C5FD;border-radius:12px;padding:10px 12px;font-size:16px;font-family:inherit;line-height:1.5;background:#fff;color:#0F172A}
 .seg button{font-size:14px;padding:9px 4px}
+.pk{margin-top:10px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:10px 12px}
+.pk b{display:block;font-size:13px;font-weight:900;color:#B45309;margin-bottom:6px}
+.pk div{display:flex;gap:6px;margin-top:6px;align-items:center}
+.pk span{flex:none;width:18px;font-size:13px;font-weight:900;color:#B45309}
+.pk input{min-width:0;border:1px solid #FCD34D;border-radius:10px;padding:9px 10px;font-size:16px;font-family:inherit;background:#fff}
+.pk .no{flex:0 0 96px}.pk .nm{flex:1}
 .foot{text-align:center;line-height:1.8;font-size:12px;color:#94A3B8;padding:6px 16px}
 .foot button{border:0;background:none;color:#64748B;text-decoration:underline;font-size:12px}
 .geo{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;font-weight:800}
@@ -135,7 +141,7 @@ var P = {
   msg:'[사진전·릴스전]\n20km 걸어온 우리, 지금이 제일 멋진 순간이에요 🌊\n바다·인천대교·족욕하는 발까지 한 장 남겨 보세요.\n친구가 나오면 꼭 «찍어도 돼?» 먼저 물어보기!\n출품: 꿈길 앱 홈 → 사진전·릴스전 → 📤 출품하기 (사진 한 장만 내도 동판 미션 ③ 인정!)'},
  {t:'15:40', p:'학교 도착', stamp:'school', sn:'5/5', todo:[['담임','🎉 반별 완주 기념사진 찍기'],['담임','도착 인원 → 현황판 보고'],['담임','다친 학생 보건실 · 가정 연락'],[K,'「전원 도착」 공지']],
   msg:'🏅 [스탬프 5/5]\n학교 도착! 25km 완주를 축하합니다 🎉\n📸 반별로 완주 기념사진 찍어요! 친구들과 함께 교문(교명)이 보이게 한 컷.\n이 사진으로 앱 → 스탬프 → 인천영종고등학교 → 📷 → 마지막 퀴즈까지!\n담임 선생님들 도착 인원은 현황판으로 보고 부탁드립니다. 사진 찍은 반부터 강당으로 모여요!'},
- {t:'학교 도착 후', p:'🎤 강당 · 간식 · 1일차 소감 발표', todo:[[S,'강당에 빵·음료 준비 · 반별 배분'],['담임','반별로 앉히고 인원 확인'],[K,'소감 발표 진행 (반별 1~2명)'],['담임','발표할 학생 미리 정하기']],
+ {t:'학교 도착 후', p:'🎤 강당 · 간식 · 1일차 소감 발표', todo:[[S,'강당에 빵·음료 준비 · 반별 배분'],['담임','반별로 앉히고 인원 확인'],[K,'소감 발표 진행 (반별 1~2명)'],['담임','발표할 학생 미리 정하기']], pick:3,
   msg:"[강당 집결]\n완주 기념사진 찍은 반부터 강당으로 모여요 🎤\n빵·음료 먹으면서 1일차 소감 발표가 있어요.\n반별로 앉고, 발표할 친구 1~2명 미리 정해 두세요.\n25km 걸으며 가장 기억에 남는 순간 한 가지!"},
  {t:'귀가 전', p:'📷 사진전·릴스전 독려 ③', todo:[[K,'하교 전 출품 독려 문구 보내기'],['담임','종례 때 한 번 더 안내']],
   msg:'[사진전·릴스전]\n오늘 찍은 사진·영상, 폰 속에만 두기 아깝죠? 📤\n집에 가서 한 장만 골라 출품해 주세요.\n출품: 꿈길 앱 홈 → 사진전·릴스전 → 📤 출품하기 (사진 한 장만 내도 동판 미션 ③ 인정!)'}
@@ -225,7 +231,7 @@ function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return {'&'
 function toast(t) { var e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(function () { e.classList.remove('on'); }, 1800); }
 function base(d) {
   return P[d].map(function (x, i) {
-    return {id: d + '-' + i, t: x.t, p: x.p, stamp: x.stamp || '', sn: x.sn || '', todo: x.todo.map(function (a) { return a.slice(); }), msgs: x.msgs ? x.msgs.slice() : [x.msg]};
+    return {id: d + '-' + i, t: x.t, p: x.p, stamp: x.stamp || '', sn: x.sn || '', pick: x.pick || 0, todo: x.todo.map(function (a) { return a.slice(); }), msgs: x.msgs ? x.msgs.slice() : [x.msg]};
   });
 }
 function list() { return DATA[day] || base(day); }
@@ -259,6 +265,7 @@ function render() {
           var ok = s.ck.indexOf(j) >= 0;
           return '<li class="' + (ok ? 'ok' : '') + '" data-id="' + x.id + '" data-j="' + j + '"><span class="bx">' + (ok ? '✓' : '') + '</span><span class="tx"><span class="tg ' + tagOf(t[0]) + '">' + esc(t[0]) + '</span>' + esc(t[1]) + '</span></li>';
         }).join('') + '</ul>'
+      + pickBox(x)
       + (x.stamp ? '<img class="img" src="lead/' + x.stamp + '.jpg" alt="" loading="lazy">' : '');
     x.msgs.forEach(function (m, k) {
       if (ED && ED.id === x.id && ED.m === k) {
@@ -288,6 +295,23 @@ function render() {
   var f = document.querySelector('.ed textarea, .ed input'); if (f) { f.focus(); }
 }
 
+/* 🎤 발표 학생 칸(10/29) — 학번·이름 3칸, 이 폰에 저장(kg_lead_pick) */
+var PICK = ls('kg_lead_pick') || {};
+function pickBox(x) {
+  var n = x.pick || (/소감 발표/.test(x.p) ? 3 : 0); if (!n) return '';
+  var v = PICK[x.id] || [], h = '<div class="pk"><b>🎤 발표 학생</b>';
+  for (var i = 0; i < n; i++) {
+    var r = v[i] || ['', ''];
+    h += '<div><span>' + (i + 1) + '</span><input class="no" inputmode="numeric" placeholder="학번" data-pk="' + x.id + '" data-i="' + i + '" data-f="0" value="' + esc(r[0]) + '">'
+      + '<input class="nm" placeholder="이름" data-pk="' + x.id + '" data-i="' + i + '" data-f="1" value="' + esc(r[1]) + '"></div>';
+  }
+  return h + '</div>';
+}
+document.addEventListener('input', function (e) {
+  var t = e.target; if (!t.dataset || !t.dataset.pk) return;
+  var v = PICK[t.dataset.pk] || (PICK[t.dataset.pk] = []), i = +t.dataset.i;
+  v[i] = v[i] || ['', '']; v[i][+t.dataset.f] = t.value; ls('kg_lead_pick', PICK);
+});
 function copy(t) {
   if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t).then(function () { toast('문구를 복사했어요 — 카톡에 붙여 넣으세요'); }, function () { fallbackCopy(t); });
   fallbackCopy(t);
