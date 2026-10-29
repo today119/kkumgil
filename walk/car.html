@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0B4F82">
+<title>꿈길 걷기 차량 안내</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#F1F5FA;color:#0F172A;-webkit-text-size-adjust:100%;padding-bottom:40px}
+button,a{font-family:inherit}
+.hd{position:sticky;top:0;z-index:5;background:#0B4F82;color:#fff;padding:14px 16px 12px}
+.hd h1{font-size:19px;font-weight:900}
+.hd .t{font-size:13px;opacity:.85;margin-top:2px}
+.seg{display:flex;gap:4px;background:rgba(255,255,255,.15);border-radius:12px;padding:4px;margin-top:10px}
+.seg button{flex:1;border:0;background:none;color:#fff;font-size:14px;font-weight:800;padding:9px 2px;border-radius:9px;cursor:pointer}
+.seg button.on{background:#fff;color:#0B4F82}
+.list{padding:12px 16px}
+.cars{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;margin-bottom:12px}
+.cars div{background:#fff;border-radius:12px;padding:8px 10px;font-size:14px;font-weight:800;box-shadow:0 2px 0 #E2E8F0}
+.cars span{display:inline-block;min-width:22px;text-align:center;border-radius:6px;color:#fff;margin-right:6px;font-size:12px;padding:2px 4px}
+.a12{background:#2563EB}.a34{background:#DB2777}
+.card{background:#fff;border-radius:18px;margin-bottom:14px;box-shadow:0 2px 0 #E2E8F0;overflow:hidden;border:2px solid transparent}
+.card.now{border-color:#F59E0B}
+.ch{display:flex;align-items:center;gap:10px;padding:14px 16px 8px}
+.tm{flex:none;font-size:15px;font-weight:900;color:#0B4F82;background:#E0F2FE;border-radius:10px;padding:6px 8px;text-align:center;line-height:1.15}
+.ct{flex:1;min-width:0}
+.ct b{display:block;font-size:17px;font-weight:900;line-height:1.25}
+.ct small{font-size:13px;color:#64748B;font-weight:700}
+.tag{flex:none;font-size:13px;font-weight:900;color:#fff;padding:4px 9px;border-radius:999px;white-space:nowrap}
+.body{padding:0 16px 14px;font-size:15px;line-height:1.5}
+.body p{color:#334155}
+.btns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:10px}
+.btns a{display:block;text-align:center;text-decoration:none;font-weight:900;font-size:15px;padding:12px 4px;border-radius:12px}
+.kk{background:#FEE500;color:#191919}
+.nv{background:#03C75A;color:#fff}
+.note{font-size:13px;color:#64748B;background:#fff;border-radius:14px;padding:12px 14px;line-height:1.55}
+.note b{color:#0F172A}
+</style>
+</head><body>
+<div class="hd">
+  <h1>🚗 꿈길 걷기 1일차 · 차량 안내</h1>
+  <div class="t">10/30(금) · 시간·장소 순서대로 · 버튼을 누르면 길안내가 열려요</div>
+  <div class="seg" id="seg">
+    <button data-c="all" class="on">전체</button>
+    <button data-c="12">1·2번 차</button>
+    <button data-c="34">3·4번 차</button>
+  </div>
+</div>
+<div class="list">
+  <div class="cars">
+    <div><span class="a12">1</span>임예은 선생님</div>
+    <div><span class="a12">2</span>박창효 선생님</div>
+    <div><span class="a34">3</span>김주희 선생님</div>
+    <div><span class="a34">4</span>김소영 선생님</div>
+  </div>
+  <div id="list"></div>
+  <div class="note">
+    <b>공통</b><br>
+    · 시간은 «○○경» — 선두 위치에 따라 앞뒤로 바뀔 수 있어요. 단톡방 연락을 꼭 확인해 주세요.<br>
+    · 대기 중 아픈 학생·지친 학생이 생기면 연락받고 바로 이동합니다.<br>
+    · 다음 장소로 이동할 때 단톡에 «○번 차 ○○ 출발» 한 줄 남겨 주세요.
+  </div>
+</div>
+<script>
+var S=[
+ {t:'09:20~10:00',c:'12',n:'하늘고 주변 주차 · 대기',p:'인천하늘고등학교',lat:37.49500974,lng:126.50708578,
+  d:'학생들 학교 출발 후 백운산 오르막 시작 지점(하늘고 뒤 산길)과 가까운 곳이에요. 하늘고 주변에 주차하고 대기해 주세요.'},
+ {t:'10:40경',c:'34',n:'용궁사 대기',p:'용궁사 (영종구 운남동)',lat:37.49695019,lng:126.52797094,
+  d:'백운산에서 내려온 학생들이 용궁사를 지나요. 용궁사 앞에서 대기해 주세요.'},
+ {t:'11:30경',c:'12',n:'학생회 진행요원 픽업 → 점심 식당',p:'영종하늘도서관 버스정류장',lat:37.494929,lng:126.564576,
+  d:'«영종하늘도서관» 정류장(번호 35585, 도서관 바로 앞)에서 학생회 보물찾기 진행요원을 태워 점심 식당(하늘신도시 방앗간 한식뷔페)으로 먼저 데려가 주세요. 점심 전에 보물 쪽지를 숨겨야 해요.',
+  to:{p:'방앗간 한식뷔페',lat:37.48615203,lng:126.56027679}},
+ {t:'13:00경',c:'34',n:'하늘광장 대기',p:'씨사이드파크 하늘구름광장',lat:37.48334535,lng:126.56782893,
+  d:'점심 식당에서 나와 씨사이드파크로 들어가는 길목이에요. 하늘구름광장 근처에 주차하고 대기해 주세요.'},
+ {t:'14:00경',c:'12',n:'씨사이드파크 캠핑장 주차장 대기',p:'씨사이드파크 주차장 (텐트캠핑장 옆)',lat:37.47304794,lng:126.52335294,
+  d:'사전 답사 때 갔던 씨사이드파크 캠핑장 주차장이에요(영종구 큰말로 23).'},
+ {t:'15:00경',c:'34',n:'족욕장 대기',p:'씨사이드 해수족욕장',lat:37.47041503,lng:126.51952616,
+  d:'족욕장 휴식 뒤 학교까지 마지막 3km를 걸어요. 족욕장 주변에 주차하고 대기해 주세요.'}
+];
+function kk(p,la,ln){return 'https://map.kakao.com/link/to/'+encodeURIComponent(p)+','+la+','+ln}
+function nv(p,la,ln){return 'https://map.naver.com/index.nhn?elng='+ln+'&elat='+la+'&etext='+encodeURIComponent(p)+'&menu=route&pathType=0'}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function mins(t){var m=t.match(/(\d+):(\d+)/);return +m[1]*60+ +m[2]}
+var cur='all';
+try{cur=localStorage.getItem('kg_car')||'all'}catch(e){}
+function draw(){
+  document.querySelectorAll('#seg button').forEach(function(b){b.classList.toggle('on',b.dataset.c===cur)});
+  var now=new Date(),nm=now.getHours()*60+now.getMinutes(),today=now.getMonth()===9&&now.getDate()===30,nowI=-1;
+  if(today)S.forEach(function(s,i){if(mins(s.t)-30<=nm)nowI=i});
+  document.getElementById('list').innerHTML=S.map(function(s,i){
+    if(cur!=='all'&&s.c!==cur)return '';
+    var tg=s.c==='12'?'<span class="tag a12">1·2번 차</span>':'<span class="tag a34">3·4번 차</span>';
+    var b='<div class="btns"><a class="kk" href="'+kk(s.p,s.lat,s.lng)+'" target="_blank">카카오 길안내</a><a class="nv" href="'+nv(s.p,s.lat,s.lng)+'" target="_blank">네이버 길안내</a></div>';
+    if(s.to)b+='<p style="margin-top:12px;font-weight:800">태운 뒤 → '+esc(s.to.p)+'</p><div class="btns"><a class="kk" href="'+kk(s.to.p,s.to.lat,s.to.lng)+'" target="_blank">카카오 길안내</a><a class="nv" href="'+nv(s.to.p,s.to.lat,s.to.lng)+'" target="_blank">네이버 길안내</a></div>';
+    return '<div class="card'+(i===nowI?' now':'')+'"><div class="ch"><div class="tm">'+s.t.replace('~','~<br>')+'</div><div class="ct"><b>'+esc(s.n)+'</b><small>📍 '+esc(s.p)+'</small></div>'+tg+'</div><div class="body"><p>'+esc(s.d)+'</p>'+b+'</div></div>';
+  }).join('');
+}
+document.getElementById('seg').onclick=function(e){var b=e.target.closest('button');if(!b)return;cur=b.dataset.c;try{localStorage.setItem('kg_car',cur)}catch(x){}draw()};
+var q=location.hash.match(/c=(12|34)/);if(q)cur=q[1];
+draw();
+</script>
+</body></html>
