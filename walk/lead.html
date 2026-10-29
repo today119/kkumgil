@@ -48,30 +48,41 @@ button{font-family:inherit;cursor:pointer}
 .card.done .fin{background:#94A3B8}
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#0F172A;color:#fff;font-size:14px;font-weight:800;padding:10px 16px;border-radius:999px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
 .toast.on{opacity:.92}
-.foot{text-align:center;font-size:12px;color:#94A3B8;padding:6px 16px}
+.pen{flex:none;border:0;background:#F1F5F9;border-radius:10px;width:36px;height:36px;font-size:16px}
+.btns .sm{flex:0 0 52px}
+.del{background:#FEE2E2;color:#B91C1C}
+.mini{display:flex;gap:8px;margin-top:10px}
+.mini button{flex:1;border:1px dashed #94A3B8;background:none;color:#475569;border-radius:12px;padding:9px 4px;font-size:13px;font-weight:800}
+.ed{margin-top:10px}
+.ed label{display:block;font-size:12px;font-weight:900;color:#64748B;margin:8px 0 4px}
+.ed input,.ed textarea{width:100%;border:2px solid #93C5FD;border-radius:12px;padding:10px 12px;font-size:16px;font-family:inherit;line-height:1.5;background:#fff;color:#0F172A}
+.seg button{font-size:14px;padding:9px 4px}
+.foot{text-align:center;line-height:1.8;font-size:12px;color:#94A3B8;padding:6px 16px}
 .foot button{border:0;background:none;color:#64748B;text-decoration:underline;font-size:12px}
 </style>
 </head><body>
 <div class="hd">
   <h1>🧭 진행 카드 <span style="font-size:13px;opacity:.8">· 선생님 전용</span></h1>
   <div class="t" id="sub"></div>
-  <div class="seg"><button data-d="1">1일차 10/30(금)</button><button data-d="2">2일차 10/31(토)</button></div>
+  <div class="seg"><button data-d="1">1일차 1학년</button><button data-d="g2">1일차 2학년</button><button data-d="2">2일차</button></div>
   <div class="bar"><i id="bar"></i></div>
 </div>
 <div class="who" id="who"></div>
 <div class="list" id="list"></div>
-<div class="foot">체크·완료 표시는 이 폰에만 저장돼요 · <button id="reset">이 날 기록 지우기</button></div>
+<div class="foot">체크·완료·고친 내용은 이 폰에만 저장돼요<br><button id="reset">이 날 체크 지우기</button> · <button id="restore" hidden>처음 내용으로 되돌리기</button></div>
 <div class="toast" id="toast"></div>
 <script>
 /* 김시형 선생님 전용 «국면별 진행 카드» — 앱 어디에도 링크 없음(주소로만 연다).
    카드마다 할 일 체크 + 단톡 보낼 말. [단톡으로 보내기] = 폰 공유창(카톡 선택) — 스탬프 국면은 lead/<id>.jpg 카드 그림을 같이 보낸다.
    ★ 일정·배치는 meeting/·guide/ 기준(10/29). 바뀌면 여기도 고칠 것. 현황판 비번 같은 비밀은 넣지 말 것(공개 저장소). */
 var K = '김시형', Y = '김양선', S = '이세미';
-var TAG = {}; TAG[K] = 'k'; TAG[Y] = 'y'; TAG[S] = 's'; TAG['담임'] = 'a'; TAG['전체'] = 'a'; TAG['학생회'] = 'a';
+var TAG = {}; TAG[K] = 'k'; TAG[Y] = 'y'; TAG[S] = 's'; TAG['담임'] = 'a'; TAG['전체'] = 'a'; TAG['학생회'] = 'a'; TAG['학년부장'] = 'k';
 var WHO = {
   1: [[K, '선두'], [Y, '3그룹(8~10반)'], [S, '상황실·간식']],
-  2: [[K, '선두'], [Y, '후미(밴)'], [S, '상황실·간식']]
+  2: [[K, '선두'], [Y, '후미(밴)'], [S, '상황실·간식']],
+  g2: [['학년부장', '총괄'], ['담임', '학급 인솔']]
 };
+var SUB = {'1': '1학년 도보 25km', 'g2': '2학년 인천바로알기 (학급별 코스)', '2': '1·2학년 희망자 · 무의도~용유'};
 var P = {
 1: [
  {t:'08:00', p:'🍞 반장방 · 조식·간식 수령', todo:[[K,'반장 단톡방에 수령 안내 보내기'],[S,'반별 꾸러미·생수 나눠 두기 (반 인원만큼)'],['담임','우리 반 수령 확인']],
@@ -142,41 +153,106 @@ var P = {
   msg:'[버스 탑승]\n탑승 인원은 현황판으로 보고 부탁드립니다.\n학교 강당에서 하교 지도합니다. 이틀 동안 정말 수고 많으셨습니다 🙏'},
  {t:'하교 전', p:'📷 사진전·릴스전 독려 ⑤', todo:[[K,'하교 전 출품 독려 문구 보내기']],
   msg:'[사진전·릴스전]\n이틀 동안 걸은 길, 이제 작품으로 남겨요 📤\n사진 한 장 또는 15초 릴스 하나면 동판 미션 ③ 완료!\n출품: 꿈길 앱 홈 → 사진전·릴스전 → 📤 출품하기 (사진 한 장만 내도 동판 미션 ③ 인정!)'}
+],
+g2: [
+ {t:"08:40~08:50", p:"등교 · 출석", todo:[["담임", "출석 확인 → 불참·지각 학년부장께 보고"], ["학년부장", "반별 출석 모으기"]],
+  msg:"[인천바로알기]\n좋은 아침입니다 🙂\n담임 선생님들 출석 확인 후 불참·지각 학생 알려 주세요.\n08:50부터 행사 안내·안전교육입니다."},
+ {t:"08:50~09:40", p:"행사 안내 · 안전교육", todo:[["학년부장", "학급별 코스(A·B·C)·일정 안내"], ["학년부장", "안전: 개인행동 금지 · 찻길 · 버스 안전벨트"], ["담임", "학생 앱: 스탬프 → 2학년 → 우리 반 코스 고르기 확인"]],
+  msg:"[오늘 일정]\n학급별 코스로 인천을 탐방해요 🚌\nA 인천의 대학 (1·2·3·5·9반)\nB 개항장 일대와 종교의 전파 (4·7반)\nC 인천의 오늘, 그리고 미래 (6·8·10반)\n꿈길 앱 → 스탬프 → 2학년 → 우리 반 코스를 미리 골라 두세요.\n장소마다 사진 찍고 퀴즈 풀면 스탬프! (동판 미션 ②)"},
+ {t:"09:40~10:00", p:"버스 탑승", todo:[["담임", "반별 탑승 인원 확인 → 보고"], ["학년부장", "전 학급 탑승 확인 후 출발"]],
+  msg:"[버스 탑승]\n담임 선생님들 반별 탑승 인원 올려 주세요.\n예) 「4반 29명 탑승 이상 없음」\n10:00 학급별 코스로 출발합니다."},
+ {t:"10:00~11:00", p:"코스로 이동", todo:[["담임", "안전벨트 · 차내 이동 금지"], ["담임", "내리기 전 집합 장소·시각 안내"]],
+  msg:"[이동 중]\n안전벨트 꼭 매고, 버스 안에서는 자리에 앉아 있기 🚌\n내리기 전에 우리 반 코스 스탬프 4곳을 앱에서 미리 확인해 보세요."},
+ {t:"11:00~12:30", p:"점심 · 코스별 식당", todo:[["담임", "식당 앞 인원 확인 후 입장"], ["담임", "12:30 탐방 시작 집합 안내"]],
+  msg:"[점심]\n코스별 식당에서 점심입니다 🍚\n식당 앞에서 반별 인원 확인 후 입장, 12:30 탐방 시작합니다.\n개인 행동 없이 반과 함께 움직여요."},
+ {t:"12:30~14:30", p:"인천길 탐방 · 코스별 스탬프", todo:[["담임", "우리 반 코스 카드 보내기 (A·B·C 중)"], ["담임", "장소마다 사진 시간 2~3분"], ["담임", "장소 옮길 때마다 인원 확인"]],
+  msgs:["🏅 [스탬프 · A코스]\n1·2·3·5·9반 인천의 대학 — 오늘의 스탬프 4곳\n① 인천대학교 미추홀캠퍼스 — 📷 '인천대학교 미추홀캠퍼스' 또는 '미추홀별관' 글자가 보이게 한 컷\n② 인하대학교 항공우주융합캠퍼스 — 📷 '인하대학교 항공우주융합캠퍼스' 건물 이름판 앞에서 한 컷\n③ 연세대학교 국제캠퍼스 — 📷 정문의 '연세대학교 국제캠퍼스' 교명 표지 앞에서 한 컷\n④ 인천글로벌캠퍼스 — 📷 '인천글로벌캠퍼스(IGC)' 표지판 앞에서 한 컷\n앱 → 스탬프 → 2학년 → A코스 → 장소 → 📷 사진 → 해설·퀴즈\n4곳 다 모으면 «스탬프 인증 제출»까지! (동판 미션 ②)", "🏅 [스탬프 · B코스]\n4·7반 개항장 일대와 종교의 전파 — 오늘의 스탬프 4곳\n① 인천역 — 📷 역 광장의 '한국 철도 탄생역' 기관차 조형물 앞에서 한 컷\n② 의선당 — 📷 '義善堂(의선당)' 현판이 보이는 대문 앞에서 한 컷\n③ 짜장면박물관(옛 공화춘) — 📷 '짜장면박물관' 간판과 붉은 중국식 건물 외관 한 컷\n④ 대불호텔 전시관 — 📷 '대불호텔' 간판이 보이는 붉은 벽돌 건물 앞에서 한 컷\n앱 → 스탬프 → 2학년 → B코스 → 장소 → 📷 사진 → 해설·퀴즈\n4곳 다 모으면 «스탬프 인증 제출»까지! (동판 미션 ②)", "🏅 [스탬프 · C코스]\n6·8·10반 인천의 오늘, 그리고 미래 — 오늘의 스탬프 4곳\n① G타워 — 📷 G타워 건물 전체가 나오게(또는 'G-TOWER' 글자) 한 컷\n② 트라이볼 — 📷 물 위에 떠 있는 듯한 그릇 세 개가 모두 나오게 한 컷\n③ 인천도시역사관(옛 컴팩스마트시티) — 📷 '인천도시역사관' 글자가 보이는 건물 입구 앞에서 한 컷\n④ 센트럴파크 지구촌의 얼굴 — 📷 '지구촌의 얼굴' 탈 조형물과 함께 한 컷\n앱 → 스탬프 → 2학년 → C코스 → 장소 → 📷 사진 → 해설·퀴즈\n4곳 다 모으면 «스탬프 인증 제출»까지! (동판 미션 ②)"]},
+ {t:"탐방 중", p:"📷 사진전·릴스전 독려", todo:[["담임", "독려 문구 보내기"]],
+  msg:"[사진전·릴스전]\n오늘 걷는 인천, 그냥 지나치지 마세요 📷\n대학 캠퍼스·개항장 골목·송도 풍경, 한 장이면 충분해요. 15초 릴스도 좋아요 🎬\n친구가 나오면 «찍어도 돼?» 먼저 물어보기!\n출품: 꿈길 앱 홈 → 사진전·릴스전 → 📤 출품하기 (사진 한 장만 내도 동판 미션 ③ 인정!)"},
+ {t:"14:30", p:"탐방 종료 · 버스 탑승", todo:[["담임", "반별 탑승 인원 확인 → 보고"], ["학년부장", "전 학급 출발 확인"]],
+  msg:"[탐방 종료]\n반별 탑승 인원 올려 주세요. 학교로 출발합니다 🚌\n4곳 다 모은 학생은 앱에서 «스탬프 인증 제출»까지 눌러 주세요 🏅"},
+ {t:"15:30", p:"학교 도착 · 하교", todo:[["담임", "도착 인원 확인 · 하교 지도"], ["담임", "다친 학생 보건실 · 가정 연락"], ["학년부장", "「전원 도착」 공지"]],
+  msg:"[도착]\n학교 도착했습니다. 담임 선생님들 인원 확인 후 하교 지도 부탁드립니다.\n오늘 찍은 사진·영상은 집에서 한 장 골라 사진전·릴스전에 출품! (동판 미션 ③)\n내일 2일차 신청자는 08:10 등교입니다 🏝"}
 ]};
 
+/* ── 10/29 사용자 요청: 카드 안에서 직접 고치기·메시지 추가·국면 추가 ──
+   기본 내용(P)은 그대로 두고, 손대는 순간 그날 목록 전체를 이 폰 localStorage(kg_lead_data)에 복사해 그 사본을 고친다.
+   «처음 내용으로»를 누르면 사본을 지우고 P 로 돌아간다. 체크·완료는 국면 id 로 기록(kg_lead_st2). */
 function ls(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
-var day = ls('kg_lead_day') || (new Date().getDate() === 31 ? 2 : 1);
-var st = ls('kg_lead_st') || {};          // {'1-3':{ck:[0,2], done:'09:32'}}
-function save() { ls('kg_lead_st', st); }
+var DAYS = {'1': '1일차 1학년', 'g2': '1일차 2학년', '2': '2일차'};
+var qd = (location.search.match(/[?&]d=(\w+)/) || [])[1];
+var day = (qd && DAYS[qd]) ? qd : (ls('kg_lead_day') || (new Date().getDate() === 31 ? '2' : '1'));
+day = String(day);
+var st = ls('kg_lead_st2') || {};          // {id:{ck:[0,2], done:'09:32'}}
+var DATA = ls('kg_lead_data') || {};       // {day:[phase…]} — 고친 날만
+var ED = null;                             // 지금 고치는 것 {id, m} (m: 메시지 번호 | 'p' 국면 정보 | 'new' 새 메시지)
+function save() { ls('kg_lead_st2', st); }
+function saveData() { ls('kg_lead_data', DATA); }
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 function toast(t) { var e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(function () { e.classList.remove('on'); }, 1800); }
+function base(d) {
+  return P[d].map(function (x, i) {
+    return {id: d + '-' + i, t: x.t, p: x.p, stamp: x.stamp || '', sn: x.sn || '', todo: x.todo.map(function (a) { return a.slice(); }), msgs: x.msgs ? x.msgs.slice() : [x.msg]};
+  });
+}
+function list() { return DATA[day] || base(day); }
+function mine() { if (!DATA[day]) DATA[day] = base(day); return DATA[day]; }   // 고치기 전에 부른다
+function find(id) { var L = mine(); for (var i = 0; i < L.length; i++) if (L[i].id === id) return {L: L, i: i, x: L[i]}; }
+function tagOf(w) { return TAG[w] || 'a'; }
 
 function render() {
-  document.querySelectorAll('.seg button').forEach(function (b) { b.classList.toggle('on', +b.dataset.d === day); });
-  $('who').innerHTML = WHO[day].map(function (w) { return '<span class="' + TAG[w[0]] + '">' + w[0] + ' · ' + w[1] + '</span>'; }).join('');
-  var arr = P[day], nDone = 0, nowSet = false, h = '';
+  document.querySelectorAll('.seg button').forEach(function (b) { b.classList.toggle('on', b.dataset.d === day); });
+  $('who').innerHTML = (WHO[day] || []).map(function (w) { return '<span class="' + tagOf(w[0]) + '">' + w[0] + ' · ' + w[1] + '</span>'; }).join('')
+    + (DATA[day] ? '<span class="a">✏️ 고친 내용</span>' : '');
+  var arr = list(), nDone = 0, nowSet = false, h = '';
   arr.forEach(function (x, i) {
-    var s = st[day + '-' + i] || {ck: []}, done = !!s.done;
+    var s = st[x.id] || {ck: []}, done = !!s.done;
     if (done) nDone++;
     var now = !done && !nowSet; if (now) nowSet = true;
-    h += '<div class="card' + (done ? ' done' : '') + (now ? ' now' : '') + '" id="c' + i + '">'
-      + '<div class="ch"><div class="num">' + (i + 1) + '</div><div class="ct"><b>' + esc(x.p) + '</b><small>' + esc(x.t) + (done ? ' · ✅ ' + s.done + ' 완료' : '') + '</small></div>'
-      + (x.stamp ? '<span class="stp">🏅 스탬프 ' + x.sn + '</span>' : '') + '</div>'
+    h += '<div class="card' + (done ? ' done' : '') + (now ? ' now' : '') + '" id="c' + i + '">';
+    if (ED && ED.id === x.id && ED.m === 'p') {
+      h += '<div class="body ed" style="padding-top:14px"><label>시각·지점</label><input id="e_t" value="' + esc(x.t) + '">'
+        + '<label>국면 이름</label><input id="e_p" value="' + esc(x.p) + '">'
+        + '<label>할 일 (한 줄에 하나 · «누가: 할 일»)</label><textarea id="e_todo" rows="5">' + esc(x.todo.map(function (t) { return t[0] + ': ' + t[1]; }).join('\n')) + '</textarea>'
+        + '<div class="btns"><button class="copy" data-a="cancel">취소</button><button class="fin" data-a="psave" data-id="' + x.id + '">저장</button></div>'
+        + '<div class="btns"><button class="del" data-a="pdel" data-id="' + x.id + '">🗑 이 국면 삭제</button></div></div></div>';
+      return;
+    }
+    h += '<div class="ch"><div class="num">' + (i + 1) + '</div><div class="ct"><b>' + esc(x.p) + '</b><small>' + esc(x.t) + (done ? ' · ✅ ' + s.done + ' 완료' : '') + '</small></div>'
+      + (x.stamp ? '<span class="stp">🏅 스탬프 ' + esc(x.sn) + '</span>' : '')
+      + '<button class="pen" data-a="pedit" data-id="' + x.id + '" aria-label="국면 고치기">✏️</button></div>'
       + '<div class="body"><ul class="todo">'
       + x.todo.map(function (t, j) {
           var ok = s.ck.indexOf(j) >= 0;
-          return '<li class="' + (ok ? 'ok' : '') + '" data-i="' + i + '" data-j="' + j + '"><span class="bx">' + (ok ? '✓' : '') + '</span><span class="tx"><span class="tg ' + TAG[t[0]] + '">' + t[0] + '</span>' + esc(t[1]) + '</span></li>';
+          return '<li class="' + (ok ? 'ok' : '') + '" data-id="' + x.id + '" data-j="' + j + '"><span class="bx">' + (ok ? '✓' : '') + '</span><span class="tx"><span class="tg ' + tagOf(t[0]) + '">' + esc(t[0]) + '</span>' + esc(t[1]) + '</span></li>';
         }).join('') + '</ul>'
-      + (x.stamp ? '<img class="img" src="lead/' + x.stamp + '.jpg" alt="" loading="lazy">' : '')
-      + '<div class="msg">' + esc(x.msg) + '</div>'
-      + '<div class="btns"><button class="share" data-i="' + i + '">📤 단톡으로 보내기</button><button class="copy" data-i="' + i + '">📋 문구 복사</button></div>'
-      + '<div class="btns"><button class="fin" data-i="' + i + '">' + (done ? '↩ 완료 취소' : '✅ 이 국면 완료') + '</button></div>'
+      + (x.stamp ? '<img class="img" src="lead/' + x.stamp + '.jpg" alt="" loading="lazy">' : '');
+    x.msgs.forEach(function (m, k) {
+      if (ED && ED.id === x.id && ED.m === k) {
+        h += '<div class="ed"><textarea id="e_msg" rows="7">' + esc(m) + '</textarea>'
+          + '<div class="btns"><button class="copy" data-a="cancel">취소</button><button class="fin" data-a="msave" data-id="' + x.id + '" data-k="' + k + '">저장</button></div>'
+          + '<div class="btns"><button class="del" data-a="mdel" data-id="' + x.id + '" data-k="' + k + '">🗑 이 메시지 삭제</button></div></div>';
+        return;
+      }
+      h += '<div class="msg">' + esc(m) + '</div>'
+        + '<div class="btns"><button class="share" data-a="share" data-id="' + x.id + '" data-k="' + k + '">📤 보내기</button>'
+        + '<button class="copy" data-a="copy" data-id="' + x.id + '" data-k="' + k + '">📋 복사</button>'
+        + '<button class="copy sm" data-a="medit" data-id="' + x.id + '" data-k="' + k + '">✏️</button></div>';
+    });
+    if (ED && ED.id === x.id && ED.m === 'new') {
+      h += '<div class="ed"><textarea id="e_msg" rows="6" placeholder="[제목]&#10;내용은 다음 줄부터"></textarea>'
+        + '<div class="btns"><button class="copy" data-a="cancel">취소</button><button class="fin" data-a="madd" data-id="' + x.id + '">추가</button></div></div>';
+    }
+    h += '<div class="mini"><button data-a="mnew" data-id="' + x.id + '">＋ 메시지 추가</button><button data-a="pnew" data-id="' + x.id + '">＋ 아래에 국면 추가</button></div>'
+      + '<div class="btns"><button class="fin" data-a="fin" data-id="' + x.id + '">' + (done ? '↩ 완료 취소' : '✅ 이 국면 완료') + '</button></div>'
       + '</div></div>';
   });
   $('list').innerHTML = h;
-  $('bar').style.width = (nDone / arr.length * 100) + '%';
-  $('sub').textContent = (day === 1 ? '1학년 도보 25km' : '1·2학년 희망자 · 무의도~용유') + ' · ' + nDone + '/' + arr.length + ' 완료';
+  $('bar').style.width = (arr.length ? nDone / arr.length * 100 : 0) + '%';
+  $('sub').textContent = SUB[day] + ' · ' + nDone + '/' + arr.length + ' 완료';
+  $('restore').hidden = !DATA[day];
+  var f = document.querySelector('.ed textarea, .ed input'); if (f) { f.focus(); }
 }
 
 function copy(t) {
@@ -188,47 +264,75 @@ function fallbackCopy(t) {
   try { document.execCommand('copy'); toast('문구를 복사했어요'); } catch (e) { toast('복사가 안 돼요 — 길게 눌러 복사해 주세요'); }
   a.remove();
 }
-function share(x) {
-  if (!navigator.share) { copy(x.msg); return; }
+function share(x, text) {
+  if (!navigator.share) { copy(text); return; }
   // 카톡은 그림+글을 같이 받으면 글을 버리는 경우가 있어 → 글은 먼저 클립보드에도 넣어 둔다
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(x.msg).catch(function () {});
-  if (!x.stamp) { navigator.share({text: x.msg}).catch(function () {}); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(function () {});
+  if (!x.stamp) { navigator.share({text: text}).catch(function () {}); return; }
   fetch('lead/' + x.stamp + '.jpg').then(function (r) { return r.blob(); }).then(function (b) {
     var f = new File([b], '스탬프_' + x.p + '.jpg', {type: 'image/jpeg'});
-    var d = {files: [f], text: x.msg};
-    if (navigator.canShare && !navigator.canShare(d)) d = {text: x.msg};
+    var d = {files: [f], text: text};
+    if (navigator.canShare && !navigator.canShare(d)) d = {text: text};
     return navigator.share(d).then(function () { if (d.files) toast('글이 빠졌으면 카톡 입력창에 붙여 넣기 하세요'); });
-  }).catch(function (e) { if (!e || e.name !== 'AbortError') navigator.share({text: x.msg}).catch(function () {}); });
+  }).catch(function (e) { if (!e || e.name !== 'AbortError') navigator.share({text: text}).catch(function () {}); });
 }
 
 document.querySelector('.seg').onclick = function (e) {
   var b = e.target.closest('button'); if (!b) return;
-  day = +b.dataset.d; ls('kg_lead_day', day); render(); scrollNow();
+  day = b.dataset.d; ED = null; ls('kg_lead_day', day); render(); scrollNow();
 };
 $('list').onclick = function (e) {
-  var li = e.target.closest('li[data-j]'), b = e.target.closest('button');
-  if (li) {
-    var k = day + '-' + li.dataset.i, s = st[k] || (st[k] = {ck: []}), j = +li.dataset.j, p = s.ck.indexOf(j);
+  var li = e.target.closest('li[data-j]'), b = e.target.closest('button[data-a]');
+  if (li && !ED) {
+    var s = st[li.dataset.id] || (st[li.dataset.id] = {ck: []}), j = +li.dataset.j, p = s.ck.indexOf(j);
     if (p >= 0) s.ck.splice(p, 1); else s.ck.push(j);
     save(); render(); return;
   }
   if (!b) return;
-  var i = +b.dataset.i, x = P[day][i];
-  if (b.classList.contains('share')) share(x);
-  else if (b.classList.contains('copy')) copy(x.msg);
-  else if (b.classList.contains('fin')) {
-    var k2 = day + '-' + i, s2 = st[k2] || (st[k2] = {ck: []});
+  var a = b.dataset.a, id = b.dataset.id, k = +b.dataset.k, F;
+  var x = id ? list().filter(function (y) { return y.id === id; })[0] : null;
+  if (a === 'share') return share(x, x.msgs[k]);
+  if (a === 'copy') return copy(x.msgs[k]);
+  if (a === 'cancel') { ED = null; return render(); }
+  if (a === 'medit') { ED = {id: id, m: k}; return render(); }
+  if (a === 'mnew') { ED = {id: id, m: 'new'}; return render(); }
+  if (a === 'pedit') { ED = {id: id, m: 'p'}; return render(); }
+  if (a === 'msave') { F = find(id); F.x.msgs[k] = $('e_msg').value; ED = null; saveData(); toast('저장했어요'); return render(); }
+  if (a === 'madd') { var v = $('e_msg').value.trim(); if (!v) { ED = null; return render(); } F = find(id); F.x.msgs.push(v); ED = null; saveData(); toast('메시지를 추가했어요'); return render(); }
+  if (a === 'mdel') { if (!confirm('이 메시지를 지울까요?')) return; F = find(id); F.x.msgs.splice(k, 1); ED = null; saveData(); return render(); }
+  if (a === 'psave') {
+    F = find(id);
+    F.x.t = $('e_t').value.trim(); F.x.p = $('e_p').value.trim() || '(이름 없음)';
+    F.x.todo = $('e_todo').value.split('\n').map(function (l) { return l.trim(); }).filter(Boolean).map(function (l) {
+      var m = l.match(/^([^:：]{1,8})[:：]\s*(.+)$/); return m ? [m[1].trim(), m[2]] : ['전체', l];
+    });
+    delete st[id]; save();                    // 할 일 순서가 바뀌었을 수 있어 체크는 비운다
+    ED = null; saveData(); toast('저장했어요'); return render();
+  }
+  if (a === 'pdel') { if (!confirm('«' + x.p + '» 국면을 지울까요?')) return; F = find(id); F.L.splice(F.i, 1); ED = null; saveData(); return render(); }
+  if (a === 'pnew') {
+    F = find(id); var nid = 'n' + Date.now().toString(36);
+    F.L.splice(F.i + 1, 0, {id: nid, t: '', p: '새 국면', stamp: '', sn: '', todo: [], msgs: []});
+    ED = {id: nid, m: 'p'}; saveData(); return render();
+  }
+  if (a === 'fin') {
+    var s2 = st[id] || (st[id] = {ck: []});
     if (s2.done) delete s2.done;
     else { var d = new Date(); s2.done = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
     save(); render(); if (s2.done) scrollNow();
   }
 };
 $('reset').onclick = function () {
-  if (!confirm(day + '일차 체크·완료 기록을 지울까요?')) return;
-  Object.keys(st).forEach(function (k) { if (k.indexOf(day + '-') === 0) delete st[k]; });
+  if (!confirm(DAYS[day] + ' 체크·완료 기록을 지울까요?')) return;
+  list().forEach(function (x) { delete st[x.id]; });
   save(); render();
+};
+$('restore').onclick = function () {
+  if (!confirm(DAYS[day] + '에서 고친 내용(메시지·국면)을 모두 버리고 처음 내용으로 돌릴까요?')) return;
+  delete DATA[day]; ED = null; saveData(); render();
 };
 function scrollNow() { var n = document.querySelector('.card.now'); if (n) window.scrollTo({top: n.offsetTop - 150, behavior: 'smooth'}); }
 render(); setTimeout(scrollNow, 100);
 </script>
 </body></html>
+
