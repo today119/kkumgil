@@ -1647,10 +1647,11 @@
   };
 
   /* 👥 대형 — 지도에 선생님 이름표 + 맨 앞~맨 뒤 구간을 칠한다. 켜 둔 동안 30초마다 새로 */
-  var troopOn = false, troopTimer = null, troopMarks = [], troopLine = null;
+  var troopOn = false, troopTimer = null, troopMarks = [], troopLine = null, troopCase = null, troopFit = false;
   function troopClear(){
     troopMarks.forEach(function(m){ m.setMap(null); }); troopMarks = [];
     if(troopLine){ troopLine.setMap(null); troopLine = null; }
+    if(troopCase){ troopCase.setMap(null); troopCase = null; }
   }
   function troopOff(){
     troopOn = false; clearInterval(troopTimer); troopTimer = null; troopClear();
@@ -1679,10 +1680,16 @@
           path.push(new kakao.maps.LatLng(e0.lat, e0.lng));
           for(var i=0;i<CUM.length;i++) if(CUM[i] > a && CUM[i] < b) path.push(new kakao.maps.LatLng(C.course[i][0], C.course[i][1]));
           var e1 = pointAt(b, 0); path.push(new kakao.maps.LatLng(e1.lat, e1.lng));
-          troopLine = new kakao.maps.Polyline({map:map, path:path, strokeWeight:9, strokeColor:"#F59E0B", strokeOpacity:.55, zIndex:3});
+          /* 10/30 «대열이 얼마나 늘어졌는지 지도에서 다른 선으로» — 흰 테두리 + 진한 주황 굵은 선(코스 파랑·지나온 회색 위에서도 보이게) */
+          troopCase = new kakao.maps.Polyline({map:map, path:path, strokeWeight:18, strokeColor:"#FFFFFF", strokeOpacity:.95, zIndex:6});
+          troopLine = new kakao.maps.Polyline({map:map, path:path, strokeWeight:12, strokeColor:"#F97316", strokeOpacity:1, zIndex:7});
+          if(!troopFit){                                             // 켤 때 한 번 — 맨 앞~맨 뒤가 화면에 다 들어오게
+            troopFit = true; var bd = new kakao.maps.LatLngBounds();
+            path.forEach(function(q){ bd.extend(q); }); map.setBounds(bd, 80, 40, 160, 40);
+          }
         }
       }
-      $("troopBar").innerHTML = (T.length > 1 ? "대형 <b class='len'>" + (hi.km - lo.km).toFixed(1) + "km</b><br>" : "") +
+      $("troopBar").innerHTML = (T.length > 1 ? "<span style='color:#FB923C'>━</span> 대열(주황 선) <b class='len'>" + (hi.km - lo.km).toFixed(1) + "km</b><br>" : "") +
         T.map(function(t){
           return (t === hi ? "🚩 " : t === lo && T.length > 1 ? "🏁 " : "· ") +
                  (t.phone ? "<a href='tel:" + esc(t.phone) + "' style='color:#7DD3FC' onclick='event.stopPropagation()'>" : "") +
@@ -1693,7 +1700,7 @@
   }
   $("troopBtn").onclick = function(){
     if(troopOn){ troopOff(); return; }
-    troopOn = true; $("troopBtn").classList.add("on");
+    troopOn = true; troopFit = false; $("troopBtn").classList.add("on");
     $("troopBar").innerHTML = "선생님 위치를 불러오는 중…"; $("troopBar").classList.add("show");
     setFollow(false); if(nav) setNav(false);                    // 대형 전체를 보려면 북쪽 위·자유 이동
     troopLoad(); troopTimer = setInterval(troopLoad, 30000);
