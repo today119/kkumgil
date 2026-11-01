@@ -1266,8 +1266,19 @@ function reportDoc_(s) {
   var p0 = b.getChild(0).asParagraph(); p0.setText('2026 제10회 꿈길 걷기 탐방보고서'); p0.setHeading(DocumentApp.ParagraphHeading.TITLE);
   b.appendParagraph(grade + '학년 ' + cls + '반 ' + num + '번  ' + s.name + (P.job ? '   ·   희망 진로: ' + P.job : '')).editAsText().setBold(true);
   H(grade === '1' ? '📍 가장 기억에 남는 영종도 랜드마크' : '📍 가장 기억에 남는 탐방 장소');   // 10/28 사용자: «내가 고른» → «기억에 남는»
-  guide('하나만 남기고 나머지는 지우세요. 작품집에서 이 장소의 장(章)에 실려요.');
-  plain(b.appendParagraph((REPORT_PLACES[grade] || REPORT_PLACES['1']).concat(s.day2 ? REPORT_PLACES2 : [], ['기타: ']).join('   /   ')));
+  guide('하나만 골라 옆 칸에 ✔ 표시하세요. 작품집에서 이 장소의 장(章)에 실려요.');
+  /* 11/1 사용자: 랜드마크는 표에 체크 칸으로 — 「장소 | ✔」 두 쌍씩, 동의 표와 같은 방식 */
+  var lm = (REPORT_PLACES[grade] || REPORT_PLACES['1']).concat(s.day2 ? REPORT_PLACES2 : [], ['기타: ']), lr = [];
+  for (var j = 0; j < lm.length; j += 2) lr.push([lm[j], '', lm[j + 1] || '', '']);
+  var lt = b.appendTable(lr);
+  lt.setBorderColor('#94A3B8');
+  for (var r0 = 0; r0 < lt.getNumRows(); r0++) {
+    for (var c0 = 0; c0 < 4; c0++) {
+      var lc = lt.getRow(r0).getCell(c0).setWidth(c0 % 2 ? 40 : 190);
+      if (lc.getText()) lc.editAsText().setItalic(false).setForegroundColor('#000000').setBold(false).setFontSize(10);
+      if (c0 % 2) lc.getChild(0).asParagraph().setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    }
+  }
   H('① 가기 전에 — 나의 탐방계획서');
   guide(s.plan ? '7월에 내가 쓴 계획서예요. 고치지 말고 그대로 두세요.' : '제출한 계획서가 없어요. 무엇을 보고 싶었는지 짧게 적어 보세요.');
   var t = b.appendTable([['장소 특징 조사', String(P.place || '')], ['진로 연계 계획', String(P.plan || '')]]);
