@@ -1359,3 +1359,74 @@ function reportResetAll() {
   Logger.log('폴더 ' + n + '개 휴지통, 목록 탭 삭제');
 }
 function reportMakeAll() { return reportRun_(9999); }
+
+/* ── 11/1 사용자: 클래스룸 «사본 제공» 대신 학생별 문서 — 공유·작성 현황·마감 잠금을 스크립트로 ──
+   「보고서 목록」 D열(공유)·F~I열(④ 글자 수·제목·확인 시각·잠금)을 쓴다. 모두 6분 제한 안에서 끊고, 다시 실행하면 이어서. */
+function reportId_(url) { var m = String(url).match(/[?&]id=([\w-]+)|\/d\/([\w-]+)/); return m ? (m[1] || m[2]) : ''; }
+function reportRows_() {
+  var sh = reportIndex_();
+  if (sh.getLastColumn() < 9) sh.getRange(1, 6, 1, 4).setValues([['④ 글자 수', '제목', '확인 시각', '잠금']]).setFontWeight('bold').setBackground('#E0F2FE');
+  return sh;
+}
+/* 만든 문서를 학생 계정에 «편집자»로 공유 — 구글이 학생마다 알림 메일을 보낸다 */
+function reportShareAll() {
+  var sh = reportRows_(), t0 = Date.now(), n = 0, left = 0;
+  if (sh.getLastRow() < 2) return Logger.log('보고서 목록이 비어 있어요');
+  var v = sh.getRange(2, 1, sh.getLastRow() - 1, 4).getDisplayValues();
+  for (var i = 0; i < v.length; i++) {
+    if (v[i][3]) continue;
+    if (Date.now() - t0 > 5 * 60 * 1000) { left++; continue; }
+    var mail = REPORT_ACCT.replace('{학번}', v[i][0]), out;
+    try { DriveApp.getFileById(reportId_(v[i][2])).addEditor(mail); out = mail; n++; } catch (e) { out = '공유 실패: ' + mail; }
+    sh.getRange(i + 2, 4).setValue(out);
+  }
+  Logger.log('공유 ' + n + '명 · 남은 ' + left + '명');
+}
+/* ④ 작품집 글의 글자 수(공백 포함)와 제목을 세고, 반별 요약을 「보고서 현황」 탭에 */
+function reportStatus() {
+  var sh = reportRows_(), t0 = Date.now(), n = 0;
+  if (sh.getLastRow() < 2) return Logger.log('보고서 목록이 비어 있어요');
+  var v = sh.getRange(2, 1, sh.getLastRow() - 1, 9).getDisplayValues();
+  var order = v.map(function (r, i) { return i; }).sort(function (a, b) { return (v[a][7] || '').localeCompare(v[b][7] || ''); });   // 오래 전에 센 것부터
+  for (var k = 0; k < order.length && Date.now() - t0 < 5 * 60 * 1000; k++) {
+    var i = order[k], txt;
+    try { txt = DocumentApp.openById(reportId_(v[i][2])).getBody().getText(); } catch (e) { continue; }
+    var a = txt.indexOf('✍️ ④'), b = txt.indexOf('📚 작품집 싣기 동의');
+    var seg = a < 0 ? '' : txt.slice(a, b < 0 ? undefined : b).split('\n').slice(2);   // 제목 줄·안내 글 다음부터
+    var title = '', body = [];
+    seg.forEach(function (ln) { if (/^제목\s*:/.test(ln)) title = ln.replace(/^제목\s*:\s*/, '').trim(); else body.push(ln); });
+    var len = body.join(' ').replace(/\s+/g, ' ').trim().length;
+    v[i][5] = len; v[i][6] = title; v[i][7] = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+    sh.getRange(i + 2, 6, 1, 3).setValues([[len, title, v[i][7]]]);
+    n++;
+  }
+  var cls = {};
+  v.forEach(function (r) {
+    var c = r[0].charAt(0) + '-' + Number(r[0].slice(1, 3)), x = cls[c] || (cls[c] = [0, 0, 0, 0]), len = Number(r[5]) || 0;
+    x[0]++; if (len > 0) x[1]++; if (len >= 600) x[2]++; if (r[8]) x[3]++;
+  });
+  var ss = SpreadsheetApp.getActive(), st = ss.getSheetByName('보고서 현황') || ss.insertSheet('보고서 현황');
+  st.clear();
+  var rows = [['반', '인원', '쓰기 시작(④ 1자 이상)', '완성(④ 600자 이상)', '잠금']];
+  Object.keys(cls).sort(function (p, q) { var a = p.split('-'), b = q.split('-'); return a[0] - b[0] || a[1] - b[1]; })
+    .forEach(function (c) { rows.push([c].concat(cls[c])); });
+  st.getRange(1, 1, rows.length, 5).setValues(rows);
+  st.getRange(1, 1, 1, 5).setFontWeight('bold').setBackground('#E0F2FE'); st.setFrozenRows(1);
+  Logger.log('이번에 센 문서 ' + n + '개 / 전체 ' + v.length + '개 — 미제출자는 「보고서 목록」 F열(④ 글자 수)을 정렬해서 보세요');
+}
+/* 마감 — 학생 권한을 «댓글 작성자»로 바꿔 더 고치지 못하게(선생님은 그대로 편집). 권한이 바뀌어 학생에게 메일이 다시 갈 수 있다 */
+function reportLockAll() {
+  var sh = reportRows_(), t0 = Date.now(), n = 0, left = 0;
+  if (sh.getLastRow() < 2) return Logger.log('보고서 목록이 비어 있어요');
+  var v = sh.getRange(2, 1, sh.getLastRow() - 1, 9).getDisplayValues();
+  for (var i = 0; i < v.length; i++) {
+    if (v[i][8] || !/@/.test(v[i][3]) || /실패/.test(v[i][3])) continue;
+    if (Date.now() - t0 > 5 * 60 * 1000) { left++; continue; }
+    try {
+      var f = DriveApp.getFileById(reportId_(v[i][2]));
+      f.removeEditor(v[i][3]); f.addCommenter(v[i][3]);
+      sh.getRange(i + 2, 9).setValue('잠금 ' + Utilities.formatDate(new Date(), 'Asia/Seoul', 'MM-dd HH:mm')); n++;
+    } catch (e) { sh.getRange(i + 2, 9).setValue(''); }
+  }
+  Logger.log('잠금 ' + n + '명 · 남은 ' + left + '명');
+}
